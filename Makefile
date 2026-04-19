@@ -8,7 +8,7 @@ FLAGS   ?=
 # Pass CONFIG / FLAGS from make env:  make deploy CONFIG=my.conf FLAGS=-v
 
 .PHONY: help init preflight deploy scale upgrade remove-node \
-        fetch-kubeconfig merge-kubeconfig status destroy check-deps
+        fetch-kubeconfig merge-kubeconfig install-kubevirt status destroy check-deps
 
 help: ## 📖  Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -47,7 +47,10 @@ fetch-kubeconfig: check-deps ## 📥  Copy admin.conf from control-plane node
 merge-kubeconfig: check-deps ## 🔀  Merge cluster kubeconfig into ~/.kube/config
 	$(HC) -c $(CONFIG) $(FLAGS) merge-kubeconfig
 
-status: check-deps ## 🖥️   Show cluster node status (kubectl get nodes)
+install-kubevirt: check-deps ## 🖥️   Install KubeVirt operator + CDI on the cluster
+	$(HC) -c $(CONFIG) $(FLAGS) install-kubevirt
+
+status: check-deps ## 📊  Show cluster node status (kubectl get nodes)
 	$(HC) -c $(CONFIG) $(FLAGS) status
 
 destroy: check-deps ## 💥  Destroy the cluster (requires confirmation)

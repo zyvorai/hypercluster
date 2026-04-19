@@ -12,6 +12,7 @@
 #   remove-node       Drain and remove a single node
 #   fetch-kubeconfig  Copy admin.conf from the first control-plane node
 #   merge-kubeconfig  Merge the cluster kubeconfig into ~/.kube/config
+#   install-kubevirt  Install KubeVirt operator + CDI (also runs after deploy if KUBEVIRT_ENABLED=true)
 #   destroy           Tear down the cluster (reset.yml)
 #   status            Run 'kubectl get nodes' against the cluster
 #
@@ -121,6 +122,29 @@ cmd_deploy() {
   kubespray::run_playbook "$KUBESPRAY_DIR" cluster.yml
   log::ok "Cluster deployed! 🎉"
   cmd_fetch_kubeconfig
+  [[ "${KUBEVIRT_ENABLED:-false}" == "true" ]] && cmd_install_kubevirt
+}
+
+cmd_install_kubevirt() {
+  log::section "Installing KubeVirt"
+  local kc="${KUBECONFIG_OUTPUT/#\~/$HOME}"
+  [[ -f "$kc" ]] || { log::warn "kubeconfig not found — skipping KubeVirt install."; return; }
+  local kv_ver="${KUBEVIRT_VERSION:-v1.3.1}"
+  local cdi_ver="${CDI_VERSION:-v1.59.0}"
+  local base="https://github.com/kubevirt/kubevirt/releases/download/$kv_ver"
+  log::info "Deploying KubeVirt operator $kv_ver …"
+  KUBECONFIG="$kc" kubectl apply -f "$base/kubevirt-operator.yaml"
+  KUBECONFIG="$kc" kubectl apply -f "$base/kubevirt-cr.yaml"
+  log::info "Waiting for KubeVirt to be ready (up to 10 min) …"
+  KUBECONFIG="$kc" kubectl -n kubevirt wait kubevirt kubevirt \
+    --for=condition=Available --timeout=600s
+  log::info "Deploying CDI $cdi_ver …"
+  local cdi_base="https://github.com/kubevirt/containerized-data-importer/releases/download/$cdi_ver"
+  KUBECONFIG="$kc" kubectl apply -f "$cdi_base/cdi-operator.yaml"
+  KUBECONFIG="$kc" kubectl apply -f "$cdi_base/cdi-cr.yaml"
+  KUBECONFIG="$kc" kubectl -n cdi wait cdi cdi \
+    --for=condition=Available --timeout=300s
+  log::ok "KubeVirt $kv_ver + CDI $cdi_ver installed ✅"
 }
 
 cmd_scale() {
@@ -198,6 +222,7 @@ case "$COMMAND" in
   remove-node)        cmd_remove_node "${1:-}" ;;
   fetch-kubeconfig)   cmd_fetch_kubeconfig ;;
   merge-kubeconfig)   cmd_merge_kubeconfig ;;
+  install-kubevirt)   cmd_install_kubevirt ;;
   destroy)            cmd_destroy ;;
   status)             cmd_status ;;
   "")                 usage ;;

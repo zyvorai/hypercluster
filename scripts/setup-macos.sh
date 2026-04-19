@@ -12,8 +12,10 @@
 #   - bash 5        (macOS ships with bash 3.2; hypercluster needs 4.3+)
 #   - ansible       (cluster deployment engine)
 #   - kubectl       (cluster access)
-#   - helm          (optional, for add-on management)
-#   - multipass     (lightweight Ubuntu VMs for local testing)
+#   - helm          (chart management)
+#   - cilium CLI    (Cilium CNI management)
+#   - virtctl       (KubeVirt VM management)
+#   - podman        (local testing + preferred container runtime)
 #   - Python modules: jinja2, netaddr (required by Kubespray)
 
 set -euo pipefail
@@ -30,7 +32,6 @@ if command -v brew &>/dev/null; then
 else
   info "Installing Homebrew …"
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  # Add brew to PATH for Apple Silicon
   if [[ -f /opt/homebrew/bin/brew ]]; then
     eval "$(/opt/homebrew/bin/brew shellenv)"
   fi
@@ -46,20 +47,20 @@ else
   brew install bash
 fi
 
-# Add brew bash to /etc/shells and set as default if not already
 if ! grep -qF "$BREW_BASH" /etc/shells 2>/dev/null; then
-  warn "$BREW_BASH not in /etc/shells — adding (requires sudo)."
-  echo "$BREW_BASH" | sudo tee -a /etc/shells
+  if sudo -n true 2>/dev/null; then
+    echo "$BREW_BASH" | sudo tee -a /etc/shells >/dev/null
+    info "$BREW_BASH added to /etc/shells"
+  else
+    warn "$BREW_BASH not in /etc/shells — to add it run: echo $BREW_BASH | sudo tee -a /etc/shells"
+  fi
 fi
 
 CURRENT_SHELL=$(dscl . -read ~/ UserShell | awk '{print $2}')
 if [[ "$CURRENT_SHELL" != "$BREW_BASH" ]]; then
-  warn "Your login shell is $CURRENT_SHELL."
-  warn "To use bash 5 as your default: chsh -s $BREW_BASH"
-  warn "(Not changed automatically — run the command above if you want it.)"
+  warn "Your login shell is $CURRENT_SHELL. To use bash 5: chsh -s $BREW_BASH"
 fi
 
-# Ensure brew bash is early in PATH for this session
 export PATH="$(brew --prefix)/bin:$PATH"
 info "Active bash: $(bash --version | head -1)"
 
@@ -68,9 +69,8 @@ step "Ansible"
 if command -v ansible &>/dev/null; then
   info "Ansible already installed: $(ansible --version | head -1)"
 else
-  info "Installing Ansible via pip3 …"
-  pip3 install --user ansible
-  export PATH="$HOME/Library/Python/$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')/bin:$PATH"
+  info "Installing Ansible via Homebrew …"
+  brew install ansible
   info "Ansible installed: $(ansible --version | head -1)"
 fi
 
@@ -83,8 +83,8 @@ else
   brew install kubectl
 fi
 
-# ── helm (optional) ───────────────────────────────────────────────────────────
-step "helm (optional)"
+# ── helm ──────────────────────────────────────────────────────────────────────
+step "helm"
 if command -v helm &>/dev/null; then
   info "helm already installed: $(helm version --short)"
 else
@@ -92,23 +92,63 @@ else
   brew install helm
 fi
 
-# ── multipass (local test VMs) ────────────────────────────────────────────────
-step "Multipass (local test VMs)"
-if command -v multipass &>/dev/null; then
-  info "Multipass already installed: $(multipass version | head -1)"
+# ── Cilium CLI ────────────────────────────────────────────────────────────────
+step "Cilium CLI"
+if command -v cilium &>/dev/null; then
+  info "cilium CLI already installed: $(cilium version --client 2>/dev/null | head -1)"
 else
-  info "Installing Multipass …"
-  brew install --cask multipass
+  info "Installing Cilium CLI via Homebrew …"
+  brew install cilium-cli
+  info "cilium CLI installed: $(cilium version --client 2>/dev/null | head -1)"
 fi
 
+# ── virtctl (KubeVirt) ────────────────────────────────────────────────────────
+step "virtctl (KubeVirt)"
+if command -v virtctl &>/dev/null; then
+  info "virtctl already installed: $(virtctl version --client 2>/dev/null | head -1)"
+else
+  info "Installing virtctl …"
+  VIRTCTL_VER="v1.3.1"
+  ARCH="$(uname -m)"
+  [[ "$ARCH" == "arm64" ]] && ARCH="arm64" || ARCH="amd64"
+  curl -L -o /tmp/virtctl \
+    "https://github.com/kubevirt/kubevirt/releases/download/$VIRTCTL_VER/virtctl-$VIRTCTL_VER-darwin-$ARCH"
+  chmod +x /tmp/virtctl
+  sudo mv /tmp/virtctl /usr/local/bin/virtctl
+  info "virtctl installed: $(virtctl version --client 2>/dev/null | head -1 || echo $VIRTCTL_VER)"
+fi
+
+# ── Podman ────────────────────────────────────────────────────────────────────
+step "Podman (local testing + container runtime)"
+if command -v podman &>/dev/null; then
+  info "podman already installed: $(podman --version)"
+else
+  info "Installing Podman via Homebrew …"
+  brew install podman
+fi
+
+# Init podman machine if not exists
+if ! podman machine list --format '{{.Name}}' 2>/dev/null | grep -q .; then
+  info "Initialising Podman machine …"
+  podman machine init --cpus 2 --memory 2048 --disk-size 20
+fi
+
+if ! podman machine list --format '{{.LastUp}}' 2>/dev/null | grep -qi "running"; then
+  info "Starting Podman machine …"
+  podman machine start
+fi
+info "Podman machine: $(podman machine list --format '{{.Name}} {{.LastUp}}' 2>/dev/null | head -1)"
+
 # ── Python modules (required by Kubespray) ────────────────────────────────────
+# Modern macOS Python is PEP 668 "externally managed" — use --break-system-packages
 step "Python modules"
 for mod in jinja2 netaddr; do
   if python3 -c "import $mod" &>/dev/null; then
     info "$mod already installed."
   else
     info "Installing $mod …"
-    pip3 install --user "$mod"
+    pip3 install --user --break-system-packages "$mod"
+    info "$mod installed."
   fi
 done
 
@@ -122,7 +162,7 @@ PY_VER=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_i
 
 LINES=(
   "# hypercluster — added by setup-macos.sh"
-  "export PATH=\"$BREW_PREFIX/bin:\$HOME/Library/Python/$PY_VER/bin:\$PATH\""
+  "export PATH=\"$BREW_PREFIX/bin:$BREW_PREFIX/opt/ansible/bin:\$HOME/Library/Python/$PY_VER/bin:/usr/local/bin:\$PATH\""
 )
 
 ALREADY_SET=true
@@ -137,7 +177,7 @@ else
   info "PATH already configured in $PROFILE"
 fi
 
-# ── Summary ───────────────────────────────────────────────────────────────────
+# ── Summary ───────────────────────────────────────────────name───────────────
 step "Summary"
 declare -A checks=(
   [bash]="$BREW_PREFIX/bin/bash"
@@ -145,11 +185,13 @@ declare -A checks=(
   [ansible-playbook]="$(command -v ansible-playbook 2>/dev/null || echo '')"
   [kubectl]="$(command -v kubectl 2>/dev/null || echo '')"
   [helm]="$(command -v helm 2>/dev/null || echo '')"
-  [multipass]="$(command -v multipass 2>/dev/null || echo '')"
+  [cilium]="$(command -v cilium 2>/dev/null || echo '')"
+  [virtctl]="$(command -v virtctl 2>/dev/null || echo '')"
+  [podman]="$(command -v podman 2>/dev/null || echo '')"
   [python3]="$(command -v python3 2>/dev/null || echo '')"
 )
-for tool in bash ansible ansible-playbook kubectl helm multipass python3; do
-  if [[ -n "${checks[$tool]}" && -x "${checks[$tool]}" ]]; then
+for tool in bash ansible ansible-playbook kubectl helm cilium virtctl podman python3; do
+  if [[ -n "${checks[$tool]:-}" && -x "${checks[$tool]}" ]]; then
     info "$tool  →  ${checks[$tool]}"
   else
     warn "$tool  →  NOT FOUND (check PATH or re-run)"

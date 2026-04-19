@@ -17,7 +17,7 @@ KUBESPRAY_DIR=".kubespray"          # relative to this repo root
 # ---------------------------------------------------------------------------
 KUBE_VERSION="v1.32.0"
 CONTAINER_MANAGER="podman"          # podman | containerd | docker
-CNI_PLUGIN="calico"                 # calico | cilium | flannel | kube-ovn
+CNI_PLUGIN="cilium"                 # cilium | calico | flannel | kube-ovn
 
 # Pod / service CIDRs (must not overlap with node network)
 KUBE_PODS_SUBNET="10.233.64.0/18"
@@ -28,6 +28,7 @@ KUBE_SERVICE_ADDRESSES="10.233.0.0/18"
 # ---------------------------------------------------------------------------
 SSH_USER="root"
 SSH_KEY="$HOME/.ssh/id_rsa"
+SSH_PORT=22                         # set to e.g. 2222 when nodes are containers with port forwarding
 SSH_EXTRA_ARGS=""                   # e.g. "-o StrictHostKeyChecking=no"
 
 # ---------------------------------------------------------------------------
@@ -42,6 +43,14 @@ WORKER_IPS="192.168.1.101 192.168.1.102"
 METRICS_SERVER_ENABLED="true"
 INGRESS_NGINX_ENABLED="false"
 DASHBOARD_ENABLED="false"
+
+# ---------------------------------------------------------------------------
+# KubeVirt — VM workloads on Kubernetes
+# Set to "true" to install KubeVirt operator + CDI after cluster bootstrap.
+# ---------------------------------------------------------------------------
+KUBEVIRT_ENABLED="true"
+KUBEVIRT_VERSION="v1.3.1"          # see github.com/kubevirt/kubevirt/releases
+CDI_VERSION="v1.59.0"              # Containerized Data Importer
 
 # ---------------------------------------------------------------------------
 # kubeconfig output

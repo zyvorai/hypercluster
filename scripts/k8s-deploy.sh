@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# Re-exec with Homebrew bash 5 on macOS (system bash is 3.2, missing declare -A)
+if [[ "$(uname)" == "Darwin" && "${BASH_VERSINFO[0]:-3}" -lt 4 ]]; then
+  _b="$(brew --prefix 2>/dev/null)/bin/bash"
+  [[ -x "$_b" ]] && exec "$_b" "$0" "$@"
+  echo "bash 4+ required — run: brew install bash" >&2; exit 1
+fi
 # k8s-deploy.sh — lightweight standalone Kubernetes deployer (k3s or kubeadm).
 #
 # Simpler alternative to the full hypercluster/Kubespray workflow.
@@ -44,6 +50,9 @@ CONTAINER_RUNTIME="podman"
 INSTALL_LOCAL_KUBECTL=true
 INSTALL_LOCAL_HELM=false
 
+# --- SSH port (default 22; set to e.g. 2222 when nodes are containers with port forwarding) ---
+SSH_PORT=22
+
 # --- K3s Extra Arguments ---
 K3S_EXTRA_ARGS="--disable traefik --disable servicelb"
 
@@ -64,6 +73,10 @@ HYPER2KVM_DEPS_SCRIPT="./install-deps.sh"   # relative to this script's director
 # SCRIPT LOGIC — DO NOT EDIT BELOW
 # ============================================
 set -euo pipefail
+
+# Allow an external config file to override the CONFIGURATION section above.
+# Set HC_CONFIG=/path/to/file before running to use an external config.
+[[ -n "${HC_CONFIG:-}" && -f "$HC_CONFIG" ]] && source "$HC_CONFIG"
 
 # ── logging ──────────────────────────────────────────────────────────────────
 _ts() { date '+%H:%M:%S'; }
@@ -87,8 +100,10 @@ esac
 ssh_cmd() {
   local ip="$1" user="$2" key="${3/#\~/$HOME}" cmd="$4"
   ssh -o StrictHostKeyChecking=no \
+      -o UserKnownHostsFile=/dev/null \
       -o ConnectTimeout=10 \
       -o BatchMode=yes \
+      -p "${SSH_PORT:-22}" \
       -i "$key" \
       "$user@$ip" "$cmd"
 }
