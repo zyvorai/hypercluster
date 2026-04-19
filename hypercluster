@@ -84,13 +84,14 @@ if [[ "${#_missing[@]}" -gt 0 ]]; then
 fi
 unset _required_vars _missing _v
 
-# Acquire per-cluster lock — prevents two concurrent hypercluster runs from racing
-_LOCK_FILE="/tmp/hypercluster-${CLUSTER_NAME}.lock"
-exec 9>"$_LOCK_FILE"
-if ! flock -n 9 2>/dev/null; then
+# Acquire per-cluster lock — prevents two concurrent hypercluster runs from racing.
+# Uses mkdir (POSIX-atomic, works on Linux and macOS; no flock dependency).
+_LOCK_DIR="/tmp/hypercluster-${CLUSTER_NAME}.lock"
+if ! mkdir "$_LOCK_DIR" 2>/dev/null; then
   die "Another hypercluster instance is already running for cluster '$CLUSTER_NAME'.
-       Lock file: $_LOCK_FILE — remove it if the previous run crashed."
+       Lock dir: $_LOCK_DIR — remove it if the previous run crashed."
 fi
+trap 'rmdir "$_LOCK_DIR" 2>/dev/null || true' EXIT INT TERM
 
 # Resolve KUBESPRAY_DIR: absolute paths pass through, relative paths are anchored to SCRIPT_DIR
 _raw_ks="${KUBESPRAY_DIR:-.kubespray}"

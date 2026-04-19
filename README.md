@@ -9,24 +9,21 @@ Deploys upstream Kubernetes with **Podman** as the container runtime, entirely o
 
 1. [How it works](#how-it-works)
 2. [Prerequisites](#prerequisites)
-3. [Installation](#installation)
-4. [Configuration](#configuration)
-5. [Tutorial: first cluster](#tutorial-first-cluster)
+3. [macOS setup & local testing](#macos-setup--local-testing)
+4. [Installation](#installation)
+5. [Configuration](#configuration)
+6. [Tutorial: first cluster](#tutorial-first-cluster)
    - [Step 1 — Prepare your nodes](#step-1--prepare-your-nodes)
    - [Step 2 — Create your config](#step-2--create-your-config)
    - [Step 3 — Run preflight checks](#step-3--run-preflight-checks)
    - [Step 4 — Deploy](#step-4--deploy)
    - [Step 5 — Access the cluster](#step-5--access-the-cluster)
-6. [Day-2 operations](#day-2-operations)
-7. [Standalone script](#standalone-script)
-   - [Add worker nodes](#add-worker-nodes)
-   - [Upgrade Kubernetes](#upgrade-kubernetes)
-   - [Remove a node](#remove-a-node)
-   - [Destroy the cluster](#destroy-the-cluster)
-7. [Command reference](#command-reference)
-8. [Project layout](#project-layout)
-9. [Podman notes](#podman-notes)
-10. [Troubleshooting](#troubleshooting)
+7. [Day-2 operations](#day-2-operations)
+8. [Standalone script](#standalone-script)
+9. [Command reference](#command-reference)
+10. [Project layout](#project-layout)
+11. [Podman notes](#podman-notes)
+12. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -42,6 +39,80 @@ cluster.conf  ──►  hypercluster  ──►  Kubespray (Ansible)  ──►
 ```
 
 hypercluster is a **thin shell wrapper** — it does no Kubernetes work itself. Every cluster operation delegates to a Kubespray Ansible playbook; hypercluster just handles the surrounding lifecycle (config → inventory generation → playbook execution → kubeconfig retrieval).
+
+---
+
+## macOS setup & local testing
+
+### Why macOS needs extra steps
+
+| Issue | Detail |
+|-------|--------|
+| **bash 3.2** | macOS ships with bash 3.2 (GPL licensing). hypercluster requires bash 4.3+ for nameref arrays (`local -n`) and associative arrays (`declare -A`). |
+| **`flock` missing** | Linux locking tool not present on macOS — hypercluster uses `mkdir`-based locking instead (POSIX-portable). |
+| **`ansible` missing** | Not bundled with macOS — installed via pip. |
+
+### One-command setup
+
+```bash
+chmod +x scripts/setup-macos.sh
+./scripts/setup-macos.sh
+```
+
+This script installs (via Homebrew + pip3, idempotent — safe to re-run):
+
+| Tool | Purpose |
+|------|---------|
+| bash 5 | Required for nameref arrays and `declare -A` |
+| ansible + ansible-playbook | Kubespray deployment engine |
+| kubectl | Cluster access |
+| helm | Add-on management (optional) |
+| multipass | Lightweight Ubuntu VMs for local testing |
+| jinja2, netaddr | Python modules required by Kubespray |
+
+After the script finishes, open a new terminal (or `source ~/.zshrc`) to pick up the PATH changes.
+
+### Local end-to-end test with Multipass
+
+`scripts/test-local.sh` automates a complete local test:
+
+1. 🖥️ Creates 3 Multipass VMs (1 control-plane + 2 workers, Ubuntu 22.04)
+2. 🔑 Generates a test SSH key and injects it into every VM
+3. 📋 Writes a `cluster-test.conf` from the actual VM IPs
+4. 🚀 Runs `hypercluster deploy` end-to-end
+5. ✅ Verifies all nodes reach `Ready` state
+
+```bash
+# Full test (20–30 min first run)
+chmod +x scripts/test-local.sh
+./scripts/test-local.sh
+
+# Just create VMs and print IPs (no deploy)
+./scripts/test-local.sh --vms-only
+
+# Tear down everything when done
+./scripts/test-local.sh --clean
+```
+
+After a successful test:
+
+```bash
+export KUBECONFIG=~/.kube/hc-test.yaml
+kubectl get nodes -o wide
+```
+
+### Deploying to real remote nodes from macOS
+
+Once `setup-macos.sh` has run, the full workflow is identical to Linux:
+
+```bash
+cp config/cluster.conf.example cluster.conf
+$EDITOR cluster.conf           # set real node IPs, SSH key
+make preflight                 # verify connectivity
+make deploy                    # deploy
+```
+
+The only macOS-specific requirement is that `hypercluster` is invoked through the Homebrew bash (`/opt/homebrew/bin/bash`) rather than the system bash. The `#!/usr/bin/env bash` shebang will pick up the correct one as long as `$(brew --prefix)/bin` is early in your `PATH` (which `setup-macos.sh` ensures).
 
 ---
 
@@ -505,7 +576,9 @@ hypercluster/
 │   └── kubeconfig.sh             ← kubeconfig fetch + merge
 └── scripts/
     ├── k8s-deploy.sh             ← standalone k3s/kubeadm deployer
-    └── install-deps.sh           ← KVM/virt host dependency installer (hyper2kvm)
+    ├── install-deps.sh           ← KVM/virt host dependency installer (hyper2kvm)
+    ├── setup-macos.sh            ← install all deployer-side deps on macOS
+    └── test-local.sh             ← end-to-end test using Multipass VMs
 ```
 
 **Generated at runtime (gitignored):**
