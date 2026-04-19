@@ -1,0 +1,204 @@
+#!/usr/bin/env bash
+# hypercluster — end-to-end Kubernetes cluster lifecycle wrapper for Kubespray.
+#
+# Usage:  hypercluster [OPTIONS] <command> [ARGS]
+#
+# Commands:
+#   init              Clone Kubespray and generate inventory + group_vars
+#   preflight         Verify local tools and SSH connectivity to all nodes
+#   deploy            Full cluster deployment (init + preflight + cluster.yml)
+#   scale             Add worker nodes listed in cluster.conf (scale.yml)
+#   upgrade           Upgrade Kubernetes to the version in cluster.conf
+#   remove-node       Drain and remove a single node
+#   fetch-kubeconfig  Copy admin.conf from the first control-plane node
+#   merge-kubeconfig  Merge the cluster kubeconfig into ~/.kube/config
+#   destroy           Tear down the cluster (reset.yml)
+#   status            Run 'kubectl get nodes' against the cluster
+#
+# Options:
+#   -c <file>   Path to cluster config (default: ./cluster.conf)
+#   -f          Force overwrite of existing inventory
+#   -n          Dry run — print what would be executed, skip actual changes
+#   -v          Verbose Ansible output
+#   -h          Show this help
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# ── defaults ────────────────────────────────────────────────────────────────
+CONFIG_FILE="$(pwd)/cluster.conf"
+FORCE=0
+DRY_RUN=0
+VERBOSE=0
+
+# ── parse options ───────────────────────────────────────────────────────────
+usage() {
+  grep '^#' "$0" | grep -v '^#!/' | sed 's/^# \{0,1\}//'
+  exit 0
+}
+
+while getopts ":c:fnvh" opt; do
+  case "$opt" in
+    c) CONFIG_FILE="$OPTARG" ;;
+    f) FORCE=1 ;;
+    n) DRY_RUN=1 ;;
+    v) VERBOSE=1 ;;
+    h) usage ;;
+    :) echo "❌  Option -$OPTARG requires an argument." >&2; exit 1 ;;
+    \?) echo "❌  Unknown option: -$OPTARG" >&2; exit 1 ;;
+  esac
+done
+shift $(( OPTIND - 1 ))
+
+export FORCE DRY_RUN VERBOSE
+
+# ── load libraries ───────────────────────────────────────────────────────────
+# shellcheck source=lib/log.sh
+source "$SCRIPT_DIR/lib/log.sh"
+# shellcheck source=lib/preflight.sh
+source "$SCRIPT_DIR/lib/preflight.sh"
+# shellcheck source=lib/inventory.sh
+source "$SCRIPT_DIR/lib/inventory.sh"
+# shellcheck source=lib/kubespray.sh
+source "$SCRIPT_DIR/lib/kubespray.sh"
+# shellcheck source=lib/kubeconfig.sh
+source "$SCRIPT_DIR/lib/kubeconfig.sh"
+
+# ── load cluster config ──────────────────────────────────────────────────────
+if [[ ! -f "$CONFIG_FILE" ]]; then
+  die "Config file not found: $CONFIG_FILE
+       Copy config/cluster.conf.example → cluster.conf and edit it."
+fi
+# shellcheck source=/dev/null
+source "$CONFIG_FILE"
+
+# Validate required config variables
+_required_vars=(CLUSTER_NAME KUBESPRAY_VERSION KUBE_VERSION SSH_USER SSH_KEY CONTROL_PLANE_IPS)
+_missing=()
+for _v in "${_required_vars[@]}"; do
+  [[ -n "${!_v:-}" ]] || _missing+=("$_v")
+done
+if [[ "${#_missing[@]}" -gt 0 ]]; then
+  die "Missing required variables in $CONFIG_FILE: ${_missing[*]}"
+fi
+unset _required_vars _missing _v
+
+# Acquire per-cluster lock — prevents two concurrent hypercluster runs from racing
+_LOCK_FILE="/tmp/hypercluster-${CLUSTER_NAME}.lock"
+exec 9>"$_LOCK_FILE"
+if ! flock -n 9 2>/dev/null; then
+  die "Another hypercluster instance is already running for cluster '$CLUSTER_NAME'.
+       Lock file: $_LOCK_FILE — remove it if the previous run crashed."
+fi
+
+# Resolve KUBESPRAY_DIR: absolute paths pass through, relative paths are anchored to SCRIPT_DIR
+_raw_ks="${KUBESPRAY_DIR:-.kubespray}"
+if [[ "$_raw_ks" == /* ]]; then
+  KUBESPRAY_DIR="$_raw_ks"
+else
+  KUBESPRAY_DIR="$SCRIPT_DIR/$_raw_ks"
+fi
+unset _raw_ks
+INV_DIR="$KUBESPRAY_DIR/inventory/$CLUSTER_NAME"
+
+# ── commands ─────────────────────────────────────────────────────────────────
+cmd_init() {
+  log::section "Init: Kubespray source + inventory"
+  kubespray::ensure_source "$KUBESPRAY_DIR" "$KUBESPRAY_VERSION"
+  inventory::init "$KUBESPRAY_DIR"
+}
+
+cmd_preflight() {
+  preflight::run
+}
+
+cmd_deploy() {
+  log::section "Deploy cluster: $CLUSTER_NAME"
+  cmd_preflight
+  cmd_init
+  kubespray::run_playbook "$KUBESPRAY_DIR" cluster.yml
+  log::ok "Cluster deployed! 🎉"
+  cmd_fetch_kubeconfig
+}
+
+cmd_scale() {
+  log::section "Scale cluster: $CLUSTER_NAME"
+  [[ -d "$INV_DIR" ]] || die "Inventory not found. Run 'init' first."
+  inventory::generate_hosts_yaml "$INV_DIR"
+  inventory::generate_group_vars "$INV_DIR"
+  kubespray::run_playbook "$KUBESPRAY_DIR" scale.yml
+  log::ok "Scale complete ✅"
+}
+
+cmd_upgrade() {
+  log::section "Upgrade cluster → $KUBE_VERSION"
+  [[ -d "$INV_DIR" ]] || die "Inventory not found. Run 'init' first."
+  kubespray::run_playbook "$KUBESPRAY_DIR" upgrade_cluster.yml
+  log::ok "Upgrade complete ✅"
+}
+
+cmd_remove_node() {
+  local node="${1:-}"
+  [[ -n "$node" ]] || die "Usage: hypercluster remove-node <node-name>"
+  log::section "Remove node: $node"
+  local extra_vars=("-e" "node=$node" "-e" "reset_nodes=true")
+  if [[ "${FORCE:-0}" == "1" ]]; then
+    log::warn "Forcing ungraceful removal (--force)."
+    extra_vars+=("-e" "allow_ungraceful_removal=true")
+  fi
+  kubespray::run_playbook "$KUBESPRAY_DIR" remove_node.yml "${extra_vars[@]}"
+  log::ok "Node $node removed ✅"
+}
+
+cmd_fetch_kubeconfig() {
+  kubeconfig::fetch "$KUBESPRAY_DIR"
+}
+
+cmd_merge_kubeconfig() {
+  kubeconfig::merge_into_default
+}
+
+cmd_destroy() {
+  log::section "⚠️  DESTROY cluster: $CLUSTER_NAME"
+  if [[ "${FORCE:-0}" != "1" ]]; then
+    read -r -p "Type the cluster name to confirm destruction ($CLUSTER_NAME): " confirm
+    [[ "$confirm" == "$CLUSTER_NAME" ]] || die "Aborted."
+  fi
+  kubespray::run_playbook "$KUBESPRAY_DIR" reset.yml -e "reset_confirmation=yes"
+  log::ok "Cluster destroyed."
+}
+
+cmd_status() {
+  local kc="${KUBECONFIG_OUTPUT/#\~/$HOME}"
+  if [[ ! -f "$kc" ]]; then
+    local artifacts_kc="$INV_DIR/artifacts/admin.conf"
+    if [[ -f "$artifacts_kc" ]]; then
+      log::warn "kubeconfig not found at $kc — falling back to artifacts copy."
+      kc="$artifacts_kc"
+    else
+      die "kubeconfig not found: $kc — run 'fetch-kubeconfig' first."
+    fi
+  fi
+  log::section "Cluster status: $CLUSTER_NAME"
+  KUBECONFIG="$kc" kubectl get nodes -o wide
+}
+
+# ── dispatch ─────────────────────────────────────────────────────────────────
+COMMAND="${1:-}"
+shift || true
+
+case "$COMMAND" in
+  init)               cmd_init ;;
+  preflight)          cmd_preflight ;;
+  deploy)             cmd_deploy ;;
+  scale)              cmd_scale ;;
+  upgrade)            cmd_upgrade ;;
+  remove-node)        cmd_remove_node "${1:-}" ;;
+  fetch-kubeconfig)   cmd_fetch_kubeconfig ;;
+  merge-kubeconfig)   cmd_merge_kubeconfig ;;
+  destroy)            cmd_destroy ;;
+  status)             cmd_status ;;
+  "")                 usage ;;
+  *)                  log::error "Unknown command: $COMMAND"; echo; usage ;;
+esac

@@ -1,0 +1,49 @@
+# hypercluster cluster configuration
+# Copy to cluster.conf and edit before running.
+
+# ---------------------------------------------------------------------------
+# Cluster identity
+# ---------------------------------------------------------------------------
+CLUSTER_NAME="mycluster"
+
+# ---------------------------------------------------------------------------
+# Kubespray source
+# ---------------------------------------------------------------------------
+KUBESPRAY_VERSION="v2.30.0"
+KUBESPRAY_DIR=".kubespray"          # relative to this repo root
+
+# ---------------------------------------------------------------------------
+# Kubernetes
+# ---------------------------------------------------------------------------
+KUBE_VERSION="v1.32.0"
+CONTAINER_MANAGER="podman"          # podman | containerd | docker
+CNI_PLUGIN="calico"                 # calico | cilium | flannel | kube-ovn
+
+# Pod / service CIDRs (must not overlap with node network)
+KUBE_PODS_SUBNET="10.233.64.0/18"
+KUBE_SERVICE_ADDRESSES="10.233.0.0/18"
+
+# ---------------------------------------------------------------------------
+# Node SSH access
+# ---------------------------------------------------------------------------
+SSH_USER="root"
+SSH_KEY="$HOME/.ssh/id_rsa"
+SSH_EXTRA_ARGS=""                   # e.g. "-o StrictHostKeyChecking=no"
+
+# ---------------------------------------------------------------------------
+# Nodes  (space-separated IPv4 addresses)
+# ---------------------------------------------------------------------------
+CONTROL_PLANE_IPS="192.168.1.100"
+WORKER_IPS="192.168.1.101 192.168.1.102"
+
+# ---------------------------------------------------------------------------
+# Optional add-ons
+# ---------------------------------------------------------------------------
+METRICS_SERVER_ENABLED="true"
+INGRESS_NGINX_ENABLED="false"
+DASHBOARD_ENABLED="false"
+
+# ---------------------------------------------------------------------------
+# kubeconfig output
+# ---------------------------------------------------------------------------
+KUBECONFIG_OUTPUT="$HOME/.kube/${CLUSTER_NAME}.yaml"

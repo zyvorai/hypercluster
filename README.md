@@ -1,1 +1,704 @@
 # hypercluster
+
+End-to-end Kubernetes cluster lifecycle wrapper around [Kubespray](https://github.com/kubernetes-sigs/kubespray).
+Deploys upstream Kubernetes with **Podman** as the container runtime, entirely over SSH — no cloud provider, no special agents on the nodes.
+
+---
+
+## 📋 Table of Contents
+
+1. [How it works](#how-it-works)
+2. [Prerequisites](#prerequisites)
+3. [Installation](#installation)
+4. [Configuration](#configuration)
+5. [Tutorial: first cluster](#tutorial-first-cluster)
+   - [Step 1 — Prepare your nodes](#step-1--prepare-your-nodes)
+   - [Step 2 — Create your config](#step-2--create-your-config)
+   - [Step 3 — Run preflight checks](#step-3--run-preflight-checks)
+   - [Step 4 — Deploy](#step-4--deploy)
+   - [Step 5 — Access the cluster](#step-5--access-the-cluster)
+6. [Day-2 operations](#day-2-operations)
+7. [Standalone script](#standalone-script)
+   - [Add worker nodes](#add-worker-nodes)
+   - [Upgrade Kubernetes](#upgrade-kubernetes)
+   - [Remove a node](#remove-a-node)
+   - [Destroy the cluster](#destroy-the-cluster)
+7. [Command reference](#command-reference)
+8. [Project layout](#project-layout)
+9. [Podman notes](#podman-notes)
+10. [Troubleshooting](#troubleshooting)
+
+---
+
+## How it works
+
+```
+cluster.conf  ──►  hypercluster  ──►  Kubespray (Ansible)  ──►  nodes via SSH
+                        │
+                        ├─ clones Kubespray into .kubespray/
+                        ├─ generates hosts.yaml + group_vars from your config
+                        ├─ runs cluster.yml / scale.yml / upgrade_cluster.yml
+                        └─ fetches kubeconfig to your workstation
+```
+
+hypercluster is a **thin shell wrapper** — it does no Kubernetes work itself. Every cluster operation delegates to a Kubespray Ansible playbook; hypercluster just handles the surrounding lifecycle (config → inventory generation → playbook execution → kubeconfig retrieval).
+
+---
+
+## Prerequisites
+
+### On your deployer machine (laptop / bastion host)
+
+| Tool | Minimum version | Install |
+|------|----------------|---------|
+| Bash | 4.0+ | bundled on Linux; `brew install bash` on macOS |
+| Ansible | 2.14+ | `pip3 install ansible` |
+| Python | 3.9+ | `python3 --version` |
+| Git | any | `apt install git` / `brew install git` |
+| kubectl | matches cluster version | see [Step 5](#step-5--access-the-cluster) |
+
+```bash
+# Install Python dependencies (required by Kubespray)
+pip3 install jinja2 netaddr
+
+# Verify
+ansible --version
+python3 -c "import jinja2, netaddr; print('ok')"
+```
+
+> **macOS note:** the system Bash is 3.x. Install `brew install bash` and ensure `/opt/homebrew/bin/bash` appears before `/bin/bash` in your `PATH`, or invoke `hypercluster` with `bash hypercluster`.
+
+### On every target node
+
+- Linux (Ubuntu 22.04 LTS or Rocky Linux 9 recommended)
+- `sudo`-capable user or direct `root` access via SSH
+- Swap **disabled** (`swapoff -a` + remove from `/etc/fstab`)
+- Port `6443` open between deployer and control-plane nodes
+- Internet access (to pull container images and packages)
+
+---
+
+## Installation
+
+```bash
+git clone https://github.com/your-org/hypercluster.git
+cd hypercluster
+chmod +x hypercluster
+```
+
+Optionally add it to your `PATH`:
+
+```bash
+export PATH="$PATH:$(pwd)"
+```
+
+---
+
+## Configuration
+
+All cluster settings live in a single shell-sourced file — `cluster.conf`.
+
+```bash
+cp config/cluster.conf.example cluster.conf
+$EDITOR cluster.conf
+```
+
+The file is gitignored by default so secrets (SSH key paths) never end up in version control.
+
+### Key variables
+
+```bash
+# ── Identity ─────────────────────────────────────────────────────────────────
+CLUSTER_NAME="mycluster"           # used as inventory dir name and kubeconfig context
+
+# ── Kubespray source ──────────────────────────────────────────────────────────
+KUBESPRAY_VERSION="v2.30.0"        # any git tag from the Kubespray repo
+KUBESPRAY_DIR=".kubespray"         # where to clone it (relative or absolute)
+
+# ── Kubernetes ────────────────────────────────────────────────────────────────
+KUBE_VERSION="v1.32.0"
+CONTAINER_MANAGER="podman"         # podman | containerd | docker
+CNI_PLUGIN="calico"                # calico | cilium | flannel | kube-ovn
+
+KUBE_PODS_SUBNET="10.233.64.0/18"
+KUBE_SERVICE_ADDRESSES="10.233.0.0/18"
+
+# ── SSH access ────────────────────────────────────────────────────────────────
+SSH_USER="root"
+SSH_KEY="$HOME/.ssh/id_rsa"
+SSH_EXTRA_ARGS=""                   # e.g. "-o ProxyJump=bastion"
+
+# ── Nodes (space-separated IPs) ───────────────────────────────────────────────
+CONTROL_PLANE_IPS="192.168.1.100"
+WORKER_IPS="192.168.1.101 192.168.1.102"
+
+# ── Add-ons ───────────────────────────────────────────────────────────────────
+METRICS_SERVER_ENABLED="true"
+INGRESS_NGINX_ENABLED="false"
+DASHBOARD_ENABLED="false"
+
+# ── Output ────────────────────────────────────────────────────────────────────
+KUBECONFIG_OUTPUT="$HOME/.kube/${CLUSTER_NAME}.yaml"
+```
+
+### CIDR planning
+
+The pod and service subnets must **not overlap** with your node network.
+
+| Your node network | Safe pods subnet | Safe service subnet |
+|---|---|---|
+| `192.168.0.0/16` | `10.233.64.0/18` ✅ | `10.233.0.0/18` ✅ |
+| `10.233.0.0/16` ⚠️ | pick `172.16.0.0/18` | pick `172.16.64.0/18` |
+| `10.0.0.0/8` ⚠️ | pick `192.168.64.0/18` | pick `192.168.0.0/18` |
+
+---
+
+## Tutorial: first cluster
+
+This tutorial deploys a 3-node cluster:
+
+| Role | IP |
+|------|-----|
+| Control plane | `192.168.1.100` |
+| Worker 1 | `192.168.1.101` |
+| Worker 2 | `192.168.1.102` |
+
+### Step 1 — Prepare your nodes
+
+Run the following on **each node** (or automate it with your provisioning tool):
+
+```bash
+# Disable swap (Kubernetes requires this)
+swapoff -a
+sed -i '/swap/d' /etc/fstab
+
+# Ensure time sync is running (kubelet is sensitive to clock skew)
+systemctl enable --now chronyd   # or systemd-timesyncd
+
+# Open required ports (if using firewalld)
+firewall-cmd --permanent --add-port=6443/tcp   # API server
+firewall-cmd --permanent --add-port=2379-2380/tcp  # etcd
+firewall-cmd --permanent --add-port=10250/tcp  # kubelet
+firewall-cmd --reload
+
+# Or simply disable the firewall for a lab environment
+systemctl stop firewalld && systemctl disable firewalld
+```
+
+Set up **passwordless SSH** from your deployer machine:
+
+```bash
+# Generate a key if you don't have one
+ssh-keygen -t ed25519 -f ~/.ssh/id_hypercluster -C "hypercluster deployer"
+
+# Copy it to each node
+for ip in 192.168.1.100 192.168.1.101 192.168.1.102; do
+  ssh-copy-id -i ~/.ssh/id_hypercluster.pub root@$ip
+done
+
+# Verify
+ssh -i ~/.ssh/id_hypercluster root@192.168.1.100 "hostname"
+```
+
+---
+
+### Step 2 — Create your config
+
+```bash
+cp config/cluster.conf.example cluster.conf
+```
+
+Edit `cluster.conf` with your values:
+
+```bash
+CLUSTER_NAME="mycluster"
+KUBESPRAY_VERSION="v2.30.0"
+KUBE_VERSION="v1.32.0"
+CONTAINER_MANAGER="podman"
+CNI_PLUGIN="calico"
+
+KUBE_PODS_SUBNET="10.233.64.0/18"
+KUBE_SERVICE_ADDRESSES="10.233.0.0/18"
+
+SSH_USER="root"
+SSH_KEY="$HOME/.ssh/id_hypercluster"
+
+CONTROL_PLANE_IPS="192.168.1.100"
+WORKER_IPS="192.168.1.101 192.168.1.102"
+
+METRICS_SERVER_ENABLED="true"
+INGRESS_NGINX_ENABLED="false"
+DASHBOARD_ENABLED="false"
+
+KUBECONFIG_OUTPUT="$HOME/.kube/mycluster.yaml"
+```
+
+> **HA control plane:** set `CONTROL_PLANE_IPS` to 3 (or 5) IPs separated by spaces.
+> hypercluster will put all of them in `kube_control_plane` and `etcd` groups automatically.
+
+---
+
+### Step 3 — Run preflight checks
+
+```bash
+make preflight
+# or:  ./hypercluster preflight
+```
+
+This will:
+
+1. ✅ Check that `ansible`, `ansible-playbook`, `python3`, `ssh`, `scp`, `git` are on your `PATH`
+2. ✅ Check that Python modules `jinja2` and `netaddr` are importable
+3. ✅ Check and fix SSH key permissions (`chmod 600`)
+4. ✅ Open an SSH connection to every node and verify it responds
+
+Example output:
+
+```
+🔷  Preflight checks
+────────────────────────────────────────────────────────────
+
+[10:42:01] ➜  Testing SSH → root@192.168.1.100 …
+[10:42:01] ✅  root@192.168.1.100 reachable
+[10:42:02] ➜  Testing SSH → root@192.168.1.101 …
+[10:42:02] ✅  root@192.168.1.101 reachable
+[10:42:03] ➜  Testing SSH → root@192.168.1.102 …
+[10:42:03] ✅  root@192.168.1.102 reachable
+[10:42:03] ✅  Preflight passed. 🚀
+```
+
+Fix any failures before proceeding — the preflight output tells you exactly what is missing.
+
+---
+
+### Step 4 — Deploy
+
+```bash
+make deploy
+# or:  ./hypercluster deploy
+```
+
+`deploy` runs four stages in sequence:
+
+| Stage | What happens |
+|-------|-------------|
+| **init** | Clones Kubespray at `KUBESPRAY_VERSION`, installs Python requirements, generates `hosts.yaml` and `group_vars` from your config |
+| **preflight** | Re-runs connectivity checks |
+| **cluster.yml** | Kubespray's main playbook — installs Podman, bootstraps etcd, initialises the control plane with kubeadm, joins workers, deploys Calico, CoreDNS, metrics-server |
+| **fetch-kubeconfig** | Copies `admin.conf` from the first control-plane node and patches the server address |
+
+Typical runtime: **15–30 minutes** depending on node speed and network.
+
+You can watch progress in real time; pass `-v` for full Ansible output:
+
+```bash
+./hypercluster -v deploy
+# or
+make deploy FLAGS=-v
+```
+
+To test the config path without touching nodes:
+
+```bash
+make dry-deploy          # skips all playbook + scp calls
+```
+
+---
+
+### Step 5 — Access the cluster
+
+After a successful deploy, hypercluster prints:
+
+```
+[10:58:44] ✅  kubeconfig saved → /Users/you/.kube/mycluster.yaml
+[10:58:44] ➜  To use:
+    export KUBECONFIG=/Users/you/.kube/mycluster.yaml
+    kubectl get nodes
+```
+
+```bash
+export KUBECONFIG=~/.kube/mycluster.yaml
+kubectl get nodes -o wide
+```
+
+Expected output:
+
+```
+NAME      STATUS   ROLES           AGE   VERSION   INTERNAL-IP     OS-IMAGE
+master1   Ready    control-plane   5m    v1.32.0   192.168.1.100   Ubuntu 22.04
+worker1   Ready    <none>          4m    v1.32.0   192.168.1.101   Ubuntu 22.04
+worker2   Ready    <none>          4m    v1.32.0   192.168.1.102   Ubuntu 22.04
+```
+
+#### Install kubectl (if not already installed)
+
+```bash
+# Linux
+curl -LO "https://dl.k8s.io/release/v1.32.0/bin/linux/amd64/kubectl"
+chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+
+# macOS
+brew install kubectl
+```
+
+#### Merge into the default kubeconfig
+
+If you manage multiple clusters and want them all in `~/.kube/config`:
+
+```bash
+make merge-kubeconfig
+# then switch contexts with:
+kubectl config use-context mycluster
+```
+
+#### Verify add-ons
+
+```bash
+# metrics-server
+kubectl top nodes
+
+# CoreDNS
+kubectl get pods -n kube-system -l k8s-app=kube-dns
+
+# Calico
+kubectl get pods -n kube-system -l k8s-app=calico-node
+```
+
+---
+
+## Day-2 operations
+
+### Add worker nodes
+
+1. Add the new IP(s) to `WORKER_IPS` in `cluster.conf`.
+2. Ensure SSH access is configured on the new node (same key, same user).
+3. Run:
+
+```bash
+make scale
+# or:  ./hypercluster scale
+```
+
+`scale` regenerates `hosts.yaml` from the updated config and then runs `scale.yml`, which only touches nodes not yet in the cluster.
+
+---
+
+### Upgrade Kubernetes
+
+1. Update `KUBE_VERSION` in `cluster.conf` (e.g. `v1.32.0` → `v1.33.0`).
+2. Optionally update `KUBESPRAY_VERSION` to a release that supports the new Kubernetes version.
+3. Run:
+
+```bash
+make upgrade
+# or:  ./hypercluster upgrade
+```
+
+Kubespray upgrades nodes one at a time: it cordons each node, drains it, upgrades the components, then uncordons it. Workloads keep running as long as you have replicas spread across nodes.
+
+> ⚠️ **Skip no minor versions.** Kubernetes only supports upgrading one minor version at a time (e.g. 1.30 → 1.31 → 1.32). Never jump 1.30 → 1.32 directly.
+
+---
+
+### Remove a node
+
+**Graceful removal** (drains pods first — recommended):
+
+```bash
+make remove-node NODE=worker2
+# or:  ./hypercluster remove-node worker2
+```
+
+**Forced removal** (skips drain — use only if node is already dead):
+
+```bash
+./hypercluster -f remove-node worker2
+```
+
+After removal, update `WORKER_IPS` in `cluster.conf` to keep it in sync with the actual cluster state.
+
+---
+
+### Destroy the cluster
+
+Runs Kubespray's `reset.yml`, which uninstalls all Kubernetes components and reverts node configuration. **This is irreversible.**
+
+```bash
+make destroy
+# or:  ./hypercluster destroy
+```
+
+You will be prompted to type the cluster name to confirm:
+
+```
+Type the cluster name to confirm destruction (mycluster): mycluster
+```
+
+Skip the prompt (for CI pipelines):
+
+```bash
+./hypercluster -f destroy
+```
+
+---
+
+## Command reference
+
+### CLI flags
+
+| Flag | Meaning |
+|------|---------|
+| `-c <file>` | Config file path (default: `./cluster.conf`) |
+| `-f` | Force: overwrite existing inventory; ungraceful node removal; skip destroy confirmation |
+| `-n` | Dry run: skip all playbook and scp calls |
+| `-v` | Verbose Ansible output |
+| `-h` | Show help |
+
+### Commands
+
+| Command | Make target | Description |
+|---------|------------|-------------|
+| `init` | `make init` | Clone Kubespray + generate inventory |
+| `preflight` | `make preflight` | Check local tools + SSH connectivity |
+| `deploy` | `make deploy` | Full deployment (init + preflight + cluster.yml + fetch kubeconfig) |
+| `scale` | `make scale` | Add nodes from updated config |
+| `upgrade` | `make upgrade` | Upgrade to `KUBE_VERSION` |
+| `remove-node <name>` | `make remove-node NODE=<name>` | Drain and remove one node |
+| `fetch-kubeconfig` | `make fetch-kubeconfig` | Copy admin.conf from first control-plane node |
+| `merge-kubeconfig` | `make merge-kubeconfig` | Merge into `~/.kube/config` |
+| `status` | `make status` | `kubectl get nodes -o wide` |
+| `destroy` | `make destroy` | Reset the cluster |
+
+### Multiple clusters / environments
+
+```bash
+# Production cluster
+./hypercluster -c prod.conf deploy
+
+# Staging cluster
+./hypercluster -c staging.conf deploy
+
+# Or with Make
+make deploy CONFIG=prod.conf
+make status CONFIG=prod.conf
+
+make deploy CONFIG=staging.conf FLAGS=-v
+```
+
+---
+
+## Project layout
+
+```
+hypercluster/
+├── hypercluster                  ← CLI entrypoint (chmod +x)
+├── Makefile                      ← convenience targets
+├── cluster.conf                  ← your config (gitignored)
+├── .gitignore
+├── config/
+│   └── cluster.conf.example      ← template — copy and edit
+├── lib/
+│   ├── log.sh                    ← emoji logging (info/ok/warn/error/section/debug)
+│   ├── preflight.sh              ← dependency + SSH key + connectivity checks
+│   ├── inventory.sh              ← hosts.yaml + group_vars generation
+│   ├── kubespray.sh              ← Kubespray clone + playbook runner
+│   └── kubeconfig.sh             ← kubeconfig fetch + merge
+└── scripts/
+    ├── k8s-deploy.sh             ← standalone k3s/kubeadm deployer
+    └── install-deps.sh           ← KVM/virt host dependency installer (hyper2kvm)
+```
+
+**Generated at runtime (gitignored):**
+
+```
+.kubespray/                       ← Kubespray checkout
+.kubespray/inventory/mycluster/
+    hosts.yaml                    ← generated from CONTROL_PLANE_IPS / WORKER_IPS
+    group_vars/
+        all/all.yml               ← SSH user + key
+        k8s_cluster/
+            k8s-cluster.yml       ← kube version, container runtime, CNI, CIDRs
+            addons.yml            ← metrics-server, ingress, dashboard
+    artifacts/
+        admin.conf                ← written by Kubespray after deploy
+```
+
+---
+
+## Podman notes
+
+Kubernetes requires a CRI-compatible container runtime. Podman supports this via `cri-o` (which Kubespray installs as the CRI shim when `container_manager: podman` is set).
+
+| Concern | How hypercluster handles it |
+|---------|----------------------------|
+| Rootful vs rootless | Kubespray configures Podman in rootful mode via systemd — required by kubelet |
+| Cgroup driver | `kubelet_cgroup_driver: systemd` is set in generated `k8s-cluster.yml` |
+| CNI conflict | Podman's built-in network is disabled; the Kubernetes CNI plugin (Calico by default) owns all pod networking |
+| Image pulls | Podman pulls images the same way containerd does — no configuration change needed |
+
+To use a different runtime, set `CONTAINER_MANAGER` in `cluster.conf`:
+
+```bash
+CONTAINER_MANAGER="containerd"   # production default upstream
+CONTAINER_MANAGER="docker"       # legacy; not recommended for new clusters
+```
+
+---
+
+## Troubleshooting
+
+### ❌ `Config file not found: ./cluster.conf`
+
+```bash
+cp config/cluster.conf.example cluster.conf
+$EDITOR cluster.conf
+```
+
+### ❌ `Missing required variables in cluster.conf: SSH_KEY CONTROL_PLANE_IPS`
+
+Open `cluster.conf` — those variables are either commented out or left as empty strings. All variables in the "required" list must be set to non-empty values.
+
+### ❌ SSH connectivity check fails
+
+```
+[10:42:01] ❌  Cannot reach root@192.168.1.101
+```
+
+Check in order:
+1. Can you ping the node? `ping 192.168.1.101`
+2. Does the SSH key match what was copied to the node? `ssh -i "$SSH_KEY" root@192.168.1.101`
+3. Is `SSH_USER` correct? (e.g. `ubuntu` on Ubuntu cloud images, not `root`)
+4. Is port 22 open? `nc -zv 192.168.1.101 22`
+5. Add `-o StrictHostKeyChecking=no` to `SSH_EXTRA_ARGS` if the host key has changed.
+
+### ❌ `Inventory already exists`
+
+You already ran `init` or `deploy`. To regenerate from your current `cluster.conf`:
+
+```bash
+./hypercluster -f init
+```
+
+### ❌ `pip3 install failed`
+
+Kubespray's `requirements.txt` may need a newer pip:
+
+```bash
+pip3 install --upgrade pip
+pip3 install -r .kubespray/requirements.txt
+```
+
+### ❌ kubeadm times out waiting for API server
+
+Usually a firewall issue. On the control-plane node:
+
+```bash
+# Disable firewall temporarily to test
+systemctl stop firewalld
+# Retry deploy, then re-enable and configure rules properly
+```
+
+### ❌ Podman error: `cannot create cgroup`
+
+cgroup v2 is not properly enabled. Add the following to the kernel command line and reboot:
+
+```
+systemd.unified_cgroup_hierarchy=1
+```
+
+On GRUB-based systems:
+
+```bash
+grubby --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=1"
+reboot
+```
+
+### 🐛 Enable debug logging
+
+```bash
+./hypercluster -v deploy          # verbose Ansible output
+VERBOSE=1 ./hypercluster deploy   # also enables log::debug messages in lib/
+```
+
+---
+
+## Standalone script
+
+`scripts/k8s-deploy.sh` is a self-contained single-file alternative to the full Kubespray workflow. Use it when you want a quick deployment without Ansible or when you need k3s instead of upstream Kubernetes.
+
+### What it does
+
+1. **Installs host dependencies** via `scripts/install-deps.sh` — libvirt, QEMU, govc, pyvmomi, and the rest of the KVM/virtualization toolchain needed to manage the VMs that will become your cluster nodes.
+2. **Installs the container runtime** (Podman or Docker) on every node over SSH.
+3. **Deploys Kubernetes** — either k3s (single `curl | sh` per node) or kubeadm (full upstream bootstrap).
+4. **Fetches and merges kubeconfig** to your local `~/.kube/config`.
+
+### Quick start
+
+```bash
+# Edit the CONFIGURATION block at the top of the script
+$EDITOR scripts/k8s-deploy.sh
+
+chmod +x scripts/k8s-deploy.sh
+./scripts/k8s-deploy.sh
+```
+
+### Key configuration variables
+
+```bash
+MASTER_IP="192.168.1.100"
+WORKERS=("192.168.1.101:root:~/.ssh/id_rsa" "192.168.1.102:root:~/.ssh/id_rsa")
+
+K8S_DISTRO="k3s"           # "k3s" or "kubeadm"
+CONTAINER_RUNTIME="podman" # "podman", "docker", or "none"
+
+# Host dependency installer (bundled copy of hyper2kvm install-deps.sh)
+INSTALL_HYPER2KVM_DEPS=true
+HYPER2KVM_DEPS_SCRIPT="./install-deps.sh"   # relative to scripts/
+```
+
+Set `INSTALL_HYPER2KVM_DEPS=false` to skip the host dependency step if your deployer machine already has libvirt/QEMU installed.
+
+### `scripts/install-deps.sh`
+
+This is a copy of the [hyper2kvm](https://github.com/your-org/hyper2kvm) dependency installer, bundled here for self-contained operation. It installs:
+
+| Component | Purpose |
+|-----------|---------|
+| `qemu-img` / `qemu-nbd` | Disk image conversion and NBD mounting |
+| `libvirt` + `KVM` | VM lifecycle management |
+| `OVMF` | UEFI firmware for VMs |
+| `govc` | VMware vSphere CLI |
+| `pyvmomi` | VMware Python SDK |
+| `libguestfs` | Guest filesystem access (LVM/LUKS) |
+| `hivex` + `bsdtar` | Windows registry editing + ISO extraction |
+| `boto3` | AWS EC2 provider support |
+| VirtIO Windows drivers | Paravirtual drivers for Windows VMs |
+
+Run it standalone to set up just the host tools:
+
+```bash
+# Install everything
+sudo ./scripts/install-deps.sh
+
+# Install specific components
+sudo ./scripts/install-deps.sh --govc --libvirt --qemu
+
+# Verify what is installed
+sudo ./scripts/install-deps.sh --verify
+
+# Preview without making changes
+DRY_RUN=true sudo ./scripts/install-deps.sh
+```
+
+### Comparison: standalone vs hypercluster
+
+| | `k8s-deploy.sh` | `hypercluster` + Kubespray |
+|---|---|---|
+| Setup time | ~5 min | ~15 min (first run) |
+| Kubernetes flavour | k3s or kubeadm | Upstream only (kubeadm) |
+| HA control plane | ❌ | ✅ |
+| Podman support | ✅ (via runtime install) | ✅ (via Kubespray CRI) |
+| Host dep install | ✅ (`install-deps.sh`) | ❌ (separate step) |
+| Idempotent re-runs | ⚠️ partial | ✅ full |
+| Day-2 operations | ❌ manual | ✅ scale / upgrade / remove-node |
