@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hypercluster - End-to-End Kubernetes Lifecycle Management</title>
+<style>
+  @page {
+    size: landscape;
+    margin: 0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    color: #1a1a1a;
+    background: white;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .slide {
+    width: 100vw;
+    height: 100vh;
+    padding: 50px 70px;
+    page-break-after: always;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .slide:last-child { page-break-after: auto; }
+
+  /* ── Title slide ── */
+  .slide.title-slide {
+    background: linear-gradient(135deg, #0a1628 0%, #0d2045 50%, #0f3468 100%);
+    color: white;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .slide.title-slide h1 {
+    font-size: 64pt;
+    color: #3b9eff;
+    border: none;
+    margin-bottom: 10px;
+    letter-spacing: 2px;
+  }
+  .slide.title-slide .subtitle {
+    font-size: 22pt;
+    color: #7ec8ff;
+    margin-bottom: 8px;
+    font-weight: 300;
+  }
+  .slide.title-slide .tagline {
+    font-size: 15pt;
+    color: #7090b0;
+    margin-bottom: 40px;
+  }
+  .slide.title-slide .author {
+    font-size: 14pt;
+    color: #90aac8;
+    margin-top: 20px;
+  }
+  .slide.title-slide .meta {
+    font-size: 11pt;
+    color: #5a7a9a;
+    margin-top: 8px;
+  }
+
+  /* ── End slide ── */
+  .slide.end-slide {
+    background: linear-gradient(135deg, #0a1628 0%, #0d2045 50%, #0f3468 100%);
+    color: white;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .slide.end-slide h2 {
+    font-size: 36pt;
+    color: #3b9eff;
+    border: none;
+    margin-bottom: 15px;
+  }
+  .slide.end-slide .tagline {
+    font-size: 20pt;
+    color: #7ec8ff;
+    font-style: italic;
+    margin-bottom: 40px;
+  }
+  .slide.end-slide .links {
+    font-size: 13pt;
+    color: #7090b0;
+    line-height: 2;
+  }
+  .slide.end-slide .links strong { color: #7ec8ff; }
+
+  /* ── Content slides ── */
+  h2 {
+    font-size: 26pt;
+    color: #0a5fd6;
+    border-bottom: 3px solid #3b9eff;
+    padding-bottom: 10px;
+    margin-bottom: 25px;
+    flex-shrink: 0;
+  }
+  h3 {
+    font-size: 15pt;
+    color: #083fa0;
+    margin-top: 18px;
+    margin-bottom: 8px;
+  }
+  .content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+  ul {
+    font-size: 14pt;
+    line-height: 1.8;
+    padding-left: 30px;
+  }
+  ul li { margin-bottom: 4px; }
+  li strong { color: #0a5fd6; }
+  p {
+    font-size: 14pt;
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 10px 0;
+    font-size: 12pt;
+  }
+  th {
+    background-color: #0a5fd6;
+    color: white;
+    padding: 10px 16px;
+    text-align: left;
+    font-weight: 600;
+  }
+  td {
+    padding: 9px 16px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  tr:nth-child(even) { background-color: #f0f6ff; }
+  pre {
+    background-color: #0d1117;
+    color: #e6edf3;
+    padding: 16px 22px;
+    border-radius: 8px;
+    font-size: 11pt;
+    line-height: 1.5;
+    border-left: 4px solid #3b9eff;
+    overflow: hidden;
+    margin: 10px 0;
+  }
+  code { font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace; }
+
+  .two-col   { display: flex; gap: 40px; flex: 1; }
+  .two-col .col { flex: 1; }
+  .three-col { display: flex; gap: 25px; flex: 1; }
+  .three-col .col { flex: 1; }
+
+  .highlight-box {
+    background: linear-gradient(135deg, #e8f0fe, #d0e4ff);
+    border-left: 5px solid #3b9eff;
+    padding: 18px 22px;
+    border-radius: 0 8px 8px 0;
+    margin: 12px 0;
+    font-size: 14pt;
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin: 15px 0;
+  }
+  .stat-card {
+    background: linear-gradient(135deg, #e8f0fe, #d0e4ff);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    border-top: 4px solid #3b9eff;
+  }
+  .stat-card .number {
+    font-size: 28pt;
+    font-weight: 700;
+    color: #0a5fd6;
+    display: block;
+  }
+  .stat-card .label {
+    font-size: 10pt;
+    color: #34558a;
+    margin-top: 5px;
+    display: block;
+  }
+
+  .pipeline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 20px 0;
+  }
+  .pipeline-step {
+    background: linear-gradient(135deg, #0a5fd6, #3b9eff);
+    color: white;
+    padding: 14px 16px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 11pt;
+    font-weight: 600;
+    min-width: 120px;
+  }
+  .pipeline-step .step-num {
+    font-size: 9pt;
+    opacity: 0.8;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .pipeline-arrow {
+    font-size: 22pt;
+    color: #3b9eff;
+    font-weight: bold;
+  }
+  .source-box {
+    background: #1a1a2e;
+    color: white;
+    padding: 14px 18px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 11pt;
+    min-width: 100px;
+    line-height: 1.8;
+  }
+  .target-box {
+    background: #0d2045;
+    border: 2px solid #3b9eff;
+    color: white;
+    padding: 14px 18px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 11pt;
+    min-width: 100px;
+    line-height: 1.8;
+  }
+
+  .badge {
+    display: inline-block;
+    background: #0a5fd6;
+    color: white;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 10pt;
+    font-weight: 600;
+    margin: 2px;
+  }
+  .badge.green  { background: #2e7d32; }
+  .badge.teal   { background: #00796b; }
+  .badge.orange { background: #e65100; }
+  .badge.purple { background: #6a1b9a; }
+
+  .slide-number {
+    position: absolute;
+    bottom: 20px;
+    right: 40px;
+    font-size: 10pt;
+    color: #bdbdbd;
+  }
+  .logo-footer {
+    position: absolute;
+    bottom: 20px;
+    left: 40px;
+    font-size: 10pt;
+    color: #bdbdbd;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+
+  .flow-box {
+    background: #0d1117;
+    color: #e6edf3;
+    border-radius: 10px;
+    padding: 20px 26px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11pt;
+    line-height: 1.9;
+    border-left: 4px solid #3b9eff;
+  }
+  .flow-box .arrow { color: #3b9eff; }
+  .flow-box .branch { color: #7ec8ff; }
+  .flow-box .comment { color: #5a7a9a; }
+
+  .cmd-table { width: 100%; border-collapse: collapse; font-size: 12pt; }
+  .cmd-table th { background: #0a5fd6; color: white; padding: 9px 14px; text-align: left; }
+  .cmd-table td { padding: 8px 14px; border-bottom: 1px solid #e0e0e0; vertical-align: top; }
+  .cmd-table td:first-child { font-family: monospace; font-size: 11pt; color: #0a5fd6; white-space: nowrap; font-weight: 600; }
+  .cmd-table tr:nth-child(even) { background: #f0f6ff; }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: Title -->
+<div class="slide title-slide">
+  <h1>hypercluster</h1>
+  <div class="subtitle">End-to-End Kubernetes Lifecycle Management</div>
+  <div class="tagline">Kubespray-powered &nbsp;&middot;&nbsp; Cilium-native &nbsp;&middot;&nbsp; KubeVirt-ready &nbsp;&middot;&nbsp; SSH-first</div>
+  <div class="author">Susant Sahani</div>
+  <div class="meta">Bash &nbsp;|&nbsp; Kubespray + Ansible &nbsp;|&nbsp; Cilium CNI &nbsp;|&nbsp; KubeVirt</div>
+</div>
+
+<!-- SLIDE 2: The Problem -->
+<div class="slide">
+  <h2>The Problem</h2>
+  <div class="content">
+    <p style="font-size:16pt; margin-bottom: 20px;">Deploying and maintaining a production Kubernetes cluster is still <strong>painful</strong>:</p>
+    <div class="two-col">
+      <div class="col">
+        <ul>
+          <li><strong>Tool sprawl</strong> &mdash; kubeadm + Ansible + Helm + custom scripts</li>
+          <li><strong>Inventory hell</strong> &mdash; YAML by hand, per-cluster, error-prone</li>
+          <li><strong>Day-2 forgotten</strong> &mdash; scaling and upgrades need separate runbooks</li>
+          <li><strong>kubeconfig chaos</strong> &mdash; scattered, unpatched, not merged</li>
+          <li><strong>No local testing</strong> &mdash; cloud VMs or expensive hardware needed</li>
+          <li><strong>No VM workloads</strong> &mdash; KubeVirt setup left as an exercise</li>
+        </ul>
+      </div>
+      <div class="col" style="display:flex; align-items:center; justify-content:center;">
+        <div class="highlight-box" style="font-size:16pt; text-align:center; padding: 28px;">
+          Current reality:<br><br>
+          <span style="font-size: 22pt; color: #0a5fd6;">10+ commands<br>to get a cluster</span><br><br>
+          <span style="font-size: 12pt; color: #888;">&#10060; No single lifecycle tool</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="logo-footer">hypercluster</div>
+  <div class="slide-number">2</div>
+</div>
+
+<!-- SLIDE 3: The Solution -->
+<div class="slide">
+  <h2>The Solution: hypercluster</h2>
+  <div class="content">
+    <div class="highlight-box" style="font-size:16pt; text-align:center; margin-bottom:20px;">
+      <strong>One config file. One command. Full lifecycle.</strong>
+    </div>
+    <table>
+      <tr><th style="width:50%">Without hypercluster</th><th>With hypercluster</th></tr>
+      <tr><td>&#10060; Clone Kubespray manually</td><td>&#9989; Auto-cloned and version-locked</td></tr>
+      <tr><td>&#10060; Hand-write hosts.yaml + group_vars</td><td>&#9989; Generated from a single IP list</td></tr>
+      <tr><td>&#10060; Run Ansible playbooks by hand</td><td>&#9989; <code>hypercluster deploy</code></td></tr>
+      <tr><td>&#10060; kubeconfig scatter + manual patching</td><td>&#9989; Auto-fetched, IP-patched, merged</td></tr>
+      <tr><td>&#10060; Scale = edit inventory + re-run</td><td>&#9989; Edit conf, <code>hypercluster scale</code></td></tr>
+      <tr><td>&#10060; KubeVirt = separate multi-step process</td><td>&#9989; <code>KUBEVIRT_ENABLED=true</code> in conf</td></tr>
+    </table>
+  </div>
+  <div class="logo-footer">hypercluster</div>
+  <div class="slide-number">3</div>
+</div>
+
+<!-- SLIDE 4: At a Glance -->
+<div class="slide">
+  <h2>At a Glance</h2>
+  <div class="content">
+    <div class="stat-grid">
+      <div class="stat-card">
+        <span class="number">1</span>
+        <span class="label">Config File</span>
+      </div>
+      <div class="stat-card">
+        <span class="number">9</span>
+        <span class="label">CLI Commands</span>
+      </div>
+      <div class="stat-card">
+        <span class="number">0</span>
+        <span class="label">Cloud Provider Needed</span>
+      </div>
+      <div class="stat-card">
+        <span class="number">v1.32+</span>
+        <span class="label">Kubernetes Versions</span>
+      </div>
+      <div class="stat-card">
+        <span class="number">Cilium</span>
+        <span class="label">Default CNI</span>
+      </div>
+      <div class="stat-card">
+        <span class="number">KubeVirt</span>
+        <span class="label">VM Workloads</span>
+      </div>
+      <div class="stat-card">
+        <span class="number">SSH</span>
+        <span class="label">Only Access Method</span>
+      </div>
+      <div class="stat-card">
+        <span class="number">Air-gap</span>
+        <span class="label">Capable</span>
+      </div>
+    </div>
+    <div style="margin-top: 20px; text-align: center;">
+      <span class="badge">Kubespray</span>
+      <span class="badge">Ansible</span>
+      <span class="badge teal">Cilium</span>
+      <span class="badge teal">Hubble</span>
+      <span class="badge orange">KubeVirt</span>
+      <span class="badge orange">CDI</span>
+      <span class="badge green">k3s</span>
+      <span class="badge green">kubeadm</span>
+      <span class="badge purple">Podman</span>
+      <span class="badge purple">containerd</span>
+    </div>
+  </div>
+  <div class="logo-footer">hypercluster</div>
+  <div class="slide-number">4</div>
+</div>
+
+<!-- SLIDE 5: Architecture -->
+<div class="slide">
+  <h2>Architecture</h2>
+  <div class="content">
+    <div class="two-col" style="gap: 50px;">
+      <div class="col" style="flex: 1.1;">
+        <div class="flow-box">
+          <span style="color:#7ec8ff;">cluster.conf</span>  <span class="arrow">──►</span>  <span style="color:#3b9eff;">hypercluster</span>  <span class="arrow">──►</span>  Kubespray<br>
+          <span class="comment">                        │</span><br>
+          <span class="comment">                        ├─</span> <span style="color:#7ec8ff;">clone Kubespray</span> (version-locked)<br>
+          <span class="comment">                        ├─</span> <span style="color:#7ec8ff;">generate hosts.yaml</span><br>
+          <span class="comment">                        ├─</span> <span style="color:#7ec8ff;">generate group_vars</span><br>
+          <span class="comment">                        ├─</span> <span style="color:#7ec8ff;">run cluster.yml</span><br>
+          <span class="comment">                        ├─</span> <span style="color:#7ec8ff;">fetch + patch kubeconfig</span><br>
+          <span class="comment">                        └─</span> <span style="color:#7ec8ff;">install KubeVirt + CDI</span>
+        </div>
+        <div style="margin-top: 18px;">
+          <h3>Repository Layout</h3>
+          <pre style="font-size: 10pt; margin-top: 8px;"><code>hypercluster/
+  hypercluster        # CLI entry point
+  cluster.conf        # Your config (one file)
+  lib/
+    log.sh            # Emoji logging
+    preflight.sh      # SSH + tool checks
+    inventory.sh      # hosts.yaml generation
+    kubespray.sh      # Clone + run playbooks
+    kubeconfig.sh     # Fetch + patch + merge
+  scripts/
+    k8s-deploy.sh     # Standalone k3s/kubeadm
+    setup-macos.sh    # macOS dev setup
+    test-podman.sh    # Local container testing</code></pre>
+        </div>
+      </div>
+      <div class="col" style="flex: 0.9;">
+        <h3>What hypercluster Does NOT Do</h3>
+        <div class="highlight-box" style="font-size: 12pt; padding: 14px;">
+          hypercluster is a <strong>thin shell wrapper</strong>.<br>
+          It does <em>zero</em> Kubernetes work itself.<br><br>
+          Every operation delegates to a<br>
+          <strong>Kubespray Ansible playbook</strong>.
+        </div>
+        <h3 style="margin-top: 18px;">Nodes Required</h3>
+        <ul style="font-size: 12pt;">
+          <li>Any bare-metal or VM with Linux</li>
+          <li>SSH access (key auth, root)</li>
+          <li>No cloud provider dependency</li>
+          <li>Works air-gapped</li>
+        </ul>
+        <h3 style="margin-top: 18px;">Tested On</h3>
+        <p style="font-size: 12pt;">
+          <span class="badge green">AlmaLinux 9</span>
+          <span class="badge green">Rocky 9</span>
+          <span class="badge green">Ubuntu 22.04</span>
+          <span class="badge green">RHEL 9</span>
+          <span class="badge green">Debian 12</span>
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="logo-footer">hypercluster</div>
+  <div class="slide-number">5</div>
+</div>
+
+<!-- SLIDE 6: One Config File -->
+<div class="slide">
+  <h2>One Config File</h2>
+  <div class="content">
+    <div class="two-col">
+      <div class="col">
+        <pre><code># cluster.conf
+CLUSTER_NAME="prod-k8s"
+KUBESPRAY_VERSION="v2.30.0"
+
+# Kubernetes
+KUBE_VERSION="v1.32.0"
+CONTAINER_MANAGER="podman"
+CNI_PLUGIN="cilium"
+
+# Nodes (space-separated IPs)
+CONTROL_PLANE_IPS="10.0.1.10"
+WORKER_IPS="10.0.1.11 10.0.1.12 10.0.1.13"
+
+# SSH
+SSH_USER="root"
+SSH_KEY="$HOME/.ssh/id_cluster"
+SSH_PORT=22
+
+# Add-ons
+METRICS_SERVER_ENABLED="true"
+INGRESS_NGINX_ENABLED="false"
+
+# KubeVirt — VM workloads
+KUBEVIRT_ENABLED="true"
+KUBEVIRT_VERSION="v1.3.1"
+CDI_VERSION="v1.59.0"
+
+# Output
+KUBECONFIG_OUTPUT="$HOME/.kube/prod-k8s.yaml"</code></pre>
+      </div>
+      <div class="col">
+        <h3>Then just run:</h3>
+        <pre><code># Check everything first
+./hypercluster preflight
+
+# Full cluster bootstrap
+./hypercluster deploy
+
+# That's it. You get:
+# ✅  Kubernetes cluster
+# ✅  Cilium CNI + Hubble
+# ✅  kubeconfig auto-fetched
+# ✅  KubeVirt operator
+# ✅  CDI for disk images</code></pre>
+        <div class="highlight-box" style="font-size: 13pt; margin-top: 20px;">
+          <strong>No Ansible knowledge required.</strong><br>
+          No inventory.ini, no group_vars, no playbook flags.<br>
+          All of that is generated automatically.
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="logo-footer">hypercluster</div>
+  <div class="slide-number">6</div>
+</div>
+
+<!-- SLIDE 7: Command Reference -->
+<div class="slide">
+  <h2>Command Reference</h2>
+  <div class="content">
+    <table class="cmd-table">
+      <tr><th style="width: 28%">Command</th><th>What it does</th></tr>
+      <tr>
+        <td>hypercluster init</td>
+        <td>Clone Kubespray (version-locked) and generate <code>hosts.yaml</code> + <code>group_vars</code></td>
+      </tr>
+      <tr>
+        <td>hypercluster preflight</td>
+        <td>Verify Ansible, Python, kubectl are installed; check SSH key permissions and node reachability</td>
+      </tr>
+      <tr>
+        <td>hypercluster deploy</td>
+        <td>Full bootstrap: preflight → init → <code>cluster.yml</code> → kubeconfig → KubeVirt</td>
+      </tr>
+      <tr>
+        <td>hypercluster scale</td>
+        <td>Add worker nodes listed in conf — runs <code>scale.yml</code>, existing workloads untouched</td>
+      </tr>
+      <tr>
+        <td>hypercluster upgrade</td>
+        <td>Rolling Kubernetes upgrade via <code>upgrade_cluster.yml</code> — one node at a time</td>
+      </tr>
+      <tr>
+        <td>hypercluster remove-node &lt;name&gt;</td>
+        <td>Gracefully drain and remove a node; <code>-f</code> for ungraceful removal</td>
+      </tr>
+      <tr>
+        <td>hypercluster fetch-kubeconfig</td>
+        <td>Pull <code>admin.conf</code>, patch 127.0.0.1 → master IP, save + merge into <code>~/.kube/config</code></td>
+      </tr>
+      <tr>
+        <td>hypercluster install-kubevirt</td>
+        <td>Deploy KubeVirt operator + CDI on an existing cluster (also runs post-deploy automatically)</td>
+      </tr>
+      <tr>
+        <td>hypercluster status</td>
+        <td>Run <code>kubectl get nodes -o wide</code> against the cluster</td>
+      </tr>
+      <tr>
+        <td>hypercluster destroy</td>
+        <td>Run <code>reset.yml</code> — tears down cluster (requires typed confirmation)</td>
+      </tr>
+    </table>
+  </div>
+  <div class="logo-footer">hypercluster</div>
+  <div class="slide-number">7</div>
+</div>
+
+<!-- SLIDE 8: Cilium CNI -->
+<div class="slide">
+  <h2>Cilium — Default CNI</h2>
+  <div class="content">
+    <div class="two-col">
+      <div class="col">
+        <div class="highlight-box" style="font-size: 13pt; margin-bottom: 18px;">
+          hypercluster deploys <strong>Cilium</strong> as the default CNI.<br>
+          eBPF-powered networking, security, and observability — out of the box.
+        </div>
+        <h3>Why Cilium</h3>
+        <table style="font-size: 12pt;">
+          <tr><th>Feature</th><th>Cilium</th><th>Calico/Flannel</th></tr>
+          <tr><td>Dataplane</td><td><strong>eBPF</strong></td><td>iptables</td></tr>
+          <tr><td>Network Policy</td><td>L3–L7</td><td>L3–L4</td></tr>
+          <tr><td>Observability</td><td>Hubble</td><td>None built-in</td></tr>
+          <tr><td>Service Mesh</td><td>Native</td><td>No</td></tr>
+          <tr><td>Performance</td><td>High</td><td>Medium</td></tr>
+        </table>
+        <h3 style="margin-top: 18px;">Hubble UI — Network Observability</h3>
+        <ul style="font-size: 12pt;">
+          <li>Real-time flow visualization</li>
+          <li>Per-namespace traffic maps</li>
+          <li>Policy verdict monitoring</li>
+          <li>Service dependency graphs</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3>Cilium CLI — Installed by Default</h3>
+        <pre><code># Check Cilium status
+cilium status
+
+# Connectivity test
+cilium connectivity test
+
+# Enable Hubble UI
+cilium hubble enable --ui
+
+# Port-forward Hubble
+kubectl -n kube-system \
+  port-forward svc/hubble-ui 12000:80</code></pre>
+        <h3 style="margin-top: 15px;">What Kubespray Generates</h3>
+        <pre><code># group_vars/k8s_cluster/k8s-cluster.yml
+kube_network_plugin: cilium
+cilium_hubble_enabled: true
+cilium_enable_bpf_masquerade: true</code></pre>
+        <p style="font-size: 11pt; margin-top: 10px; color: #555;">
+          To switch CNI: set <code>CNI_PLUGIN="calico"</code> in <code>cluster.conf</code>
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="logo-footer">hypercluster</div>
+  <div class="slide-number">8</div>
+</div>
+
+<!-- SLIDE 9: KubeVirt -->
+<div class="slide">
+  <h2>KubeVirt — VM Workloads on Kubernetes</h2>
+  <div class="content">
+    <div class="two-col">
+      <div class="col">
+        <div class="highlight-box" style="font-size: 13pt; margin-bottom: 15px;">
+          Run <strong>Windows and Linux VMs</strong> alongside containers<br>
+          on the same Kubernetes cluster — using familiar <code>kubectl</code>.
+        </div>
+        <h3>What Gets Installed</h3>
+        <table style="font-size: 12pt;">
+          <tr><th>Component</th><th>Purpose</th></tr>
+          <tr><td><strong>KubeVirt Operator</strong></td><td>VM lifecycle management</td></tr>
+          <tr><td><strong>CDI</strong></td><td>Containerized Data Importer — disk image uploads</td></tr>
+          <tr><td><strong>virt-launcher</strong></td><td>Pod wrapping each VM (QEMU inside)</td></tr>
+          <tr><td><strong>virtctl</strong> (CLI)</td><td>VM console, VNC, SSH, start/stop</td></tr>
+        </table>
+        <h3 style="margin-top: 18px;">Supported VM Types</h3>
+        <p style="font-size: 12pt; margin-top: 8px;">
+          <span class="badge green">Ubuntu</span>
+          <span class="badge green">RHEL / Rocky</span>
+          <span class="badge green">AlmaLinux</span>
+          <span class="badge green">CentOS</span>
+          <span class="badge orange">Windows 10/11</span>
+          <span class="badge orange">Windows Server</span>
+          <span class="badge">Any QEMU-compatible image</span>
+        </p>
+      </div>
+      <div class="col">
+        <h3>Enable in cluster.conf</h3>
+        <pre><code>KUBEVIRT_ENABLED="true"
+KUBEVIRT_VERSION="v1.3.1"
+CDI_VERSION="v1.59.0"</code></pre>
+        <h3 style="margin-top: 15px;">Or install standalone</h3>
+        <pre><code>./hypercluster install-kubevirt</code></pre>
+        <h3 style="margin-top: 15px;">Manage VMs with virtctl</h3>
+        <pre><code># Start / stop
+virtctl start my-windows-vm
+virtctl stop my-ubuntu-vm
+
+# Connect to serial console
+virtctl console my-ubuntu-vm
+
+# SSH via VirtIO
+virtctl ssh fedora@my-vm
+
+# VNC (graphical)
+virtctl vnc my-windows-vm</code></pre>
+      </div>
+    </div>
+  </div>
+  <div class="logo-footer">hypercluster</div>
+  <div class="slide-number">9</div>
+</div>
+
+<!-- SLIDE 10: Standalone k8s-deploy.sh -->
+<div class="slide">
+  <h2>Standalone: k8s-deploy.sh</h2>
+  <div class="content">
+    <p style="margin-bottom: 15px;">
+      A <strong>single-file bash deployer</strong> — no Kubespray, no Ansible, no Python.
+      Ideal for quick k3s clusters or when Kubespray is overkill.
+    </p>
+    <div class="three-col">
+      <div class="col">
+        <h3>Configure</h3>
+        <pre style="font-size: 10pt;"><code># Edit top of script
+CLUSTER_NAME="prod"
+MASTER_IP="10.0.1.10"
+MASTER_USER="root"
+MASTER_SSH_KEY="~/.ssh/id_rsa"
+WORKERS=(
+  "10.0.1.11|root|~/.ssh/id_rsa"
+  "10.0.1.12|root|~/.ssh/id_rsa"
+)
+K8S_DISTRO="k3s"
+SSH_PORT=22</code></pre>
+      </div>
+      <div class="col">
+        <h3>Run</h3>
+        <pre style="font-size: 10pt;"><code># Basic run
+./scripts/k8s-deploy.sh
+
+# External config (no edit)
+HC_CONFIG=my.conf \
+  ./scripts/k8s-deploy.sh
+
+# Verify SSH only
+./scripts/k8s-deploy.sh --verify
+
+# Help
+./scripts/k8s-deploy.sh --help</code></pre>
+      </div>
+      <div class="col">
+        <h3>Features</h3>
+        <ul style="font-size: 12pt;">
+          <li><strong>k3s</strong> or <strong>kubeadm</strong></li>
+          <li>Parallel worker install</li>
+          <li>OS auto-detection (cache)</li>
+          <li>Podman / Docker / none</li>
+          <li>kubeconfig fetch + merge</li>
+          <li>Idempotent — re-run safe</li>
+          <li>Bash 5 re-exec on macOS</li>
+        </ul>
+        <div class="highlight-box" style="font-size: 11pt; margin-top: 12px;">
+          <strong>Tested:</strong> AlmaLinux 9.7 with k3s v1.34<br>
+          Node <code>Ready</code> in under 90s.
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="logo-footer">hypercluster</div>
+  <div class="slide-number">10</div>
+</div>
+
+<!-- SLIDE 11: Day-2 Operations -->
+<div class="slide">
+  <h2>Day-2 Operations</h2>
+  <div class="content">
+    <div class="three-col">
+      <div class="col">
+        <h3>Scale — Add Nodes</h3>
+        <pre style="font-size: 10pt;"><code># cluster.conf
+WORKER_IPS="10.0.1.11 10.0.1.12
+            10.0.1.13 10.0.1.14"
+
+# Run scale
+./hypercluster scale</code></pre>
+        <div class="highlight-box" style="font-size: 11pt; padding: 12px;">
+          Kubespray's <code>scale.yml</code> only touches<br>
+          <strong>new nodes</strong> — existing workloads<br>
+          are not disrupted.
+        </div>
+      </div>
+      <div class="col">
+        <h3>Upgrade — Rolling</h3>
+        <pre style="font-size: 10pt;"><code># cluster.conf
+KUBE_VERSION="v1.33.0"
+
+# Run upgrade
+./hypercluster upgrade</code></pre>
+        <div class="highlight-box" style="font-size: 11pt; padding: 12px;">
+          Kubespray drains each node before<br>
+          upgrading — pods are rescheduled,<br>
+          not killed.
+        </div>
+      </div>
+      <div class="col">
+        <h3>Remove Node</h3>
+        <pre style="font-size: 10pt;"><code># Graceful drain + remove
+./hypercluster remove-node worker3
+
+# Force (no drain)
+./hypercluster -f remove-node worker3</code></pre>
+        <h3 style="margin-top: 15px;">kubeconfig Management</h3>
+        <pre style="font-size: 10pt;"><code># Fetch from cluster
+./hypercluster fetch-kubeconfig
+
+# Merge all clusters
+./hypercluster merge-kubeconfig
+
+# Use it
+export KUBECONFIG=\
+  ~/.kube/prod-k8s.yaml</code></pre>
+      </div>
+    </div>
+  </div>
+  <div class="logo-footer">hypercluster</div>
+  <div class="slide-number">11</div>
+</div>
+
+<!-- SLIDE 12: macOS Setup -->
+<div class="slide">
+  <h2>macOS Developer Setup</h2>
+  <div class="content">
+    <div class="two-col">
+      <div class="col">
+        <h3>One-Command Setup</h3>
+        <pre><code>./scripts/setup-macos.sh</code></pre>
+        <h3 style="margin-top: 15px;">What Gets Installed</h3>
+        <table style="font-size: 12pt;">
+          <tr><th>Tool</th><th>Purpose</th></tr>
+          <tr><td><strong>bash 5</strong></td><td>macOS ships 3.2 — needs 4.3+</td></tr>
+          <tr><td><strong>ansible</strong></td><td>via Homebrew (not pip)</td></tr>
+          <tr><td><strong>kubectl</strong></td><td>Cluster access</td></tr>
+          <tr><td><strong>helm</strong></td><td>Chart management</td></tr>
+          <tr><td><strong>cilium CLI</strong></td><td>CNI management</td></tr>
+          <tr><td><strong>virtctl</strong></td><td>KubeVirt VM management</td></tr>
+          <tr><td><strong>podman</strong></td><td>Local testing + container runtime</td></tr>
+        </table>
+      </div>
+      <div class="col">
+        <h3>Local Testing — Podman Containers</h3>
+        <pre><code># Full end-to-end k3s test
+# (no cloud, no VMs, no sudo)
+./scripts/test-podman.sh
+
+# SSH connectivity check only
+./scripts/test-podman.sh --preflight
+
+# Tear everything down
+./scripts/test-podman.sh --clean</code></pre>
+        <div class="highlight-box" style="font-size: 12pt; margin-top: 15px;">
+          3 containers: 1 master + 2 workers<br>
+          Each runs <strong>Ubuntu 22.04 + systemd</strong> as PID 1<br>
+          Identical service management to real nodes<br>
+          Port-forwarded SSH + k3s API (6443)
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="logo-footer">hypercluster</div>
+  <div class="slide-number">12</div>
+</div>
+
+<!-- SLIDE 13: Comparison -->
+<div class="slide">
+  <h2>Comparison</h2>
+  <div class="content">
+    <table>
+      <tr>
+        <th></th>
+        <th>hypercluster</th>
+        <th>Raw Kubespray</th>
+        <th>kubeadm</th>
+        <th>k3s</th>
+        <th>Managed K8s</th>
+      </tr>
+      <tr>
+        <td><strong>Config complexity</strong></td>
+        <td>&#9989; Single file</td>
+        <td>&#9888; Multi-YAML</td>
+        <td>&#10060; Multi-step</td>
+        <td>&#9989; Env vars</td>
+        <td>&#9989; UI/API</td>
+      </tr>
+      <tr>
+        <td><strong>Day-2 ops</strong></td>
+        <td>&#9989; Built-in</td>
+        <td>&#9888; Manual playbooks</td>
+        <td>&#10060; Manual</td>
+        <td>&#10060; Manual</td>
+        <td>&#9989; Managed</td>
+      </tr>
+      <tr>
+        <td><strong>kubeconfig mgmt</strong></td>
+        <td>&#9989; Auto</td>
+        <td>&#10060; Manual</td>
+        <td>&#10060; Manual</td>
+        <td>&#10060; Manual</td>
+        <td>&#9989; Auto</td>
+      </tr>
+      <tr>
+        <td><strong>Air-gap support</strong></td>
+        <td>&#9989; Yes</td>
+        <td>&#9989; Yes</td>
+        <td>&#9888; Partial</td>
+        <td>&#9988; Limited</td>
+        <td>&#10060; No</td>
+      </tr>
+      <tr>
+        <td><strong>KubeVirt built-in</strong></td>
+        <td>&#9989; Yes</td>
+        <td>&#10060; No</td>
+        <td>&#10060; No</td>
+        <td>&#10060; No</td>
+        <td>&#10060; No</td>
+      </tr>
+      <tr>
+        <td><strong>Cilium by default</strong></td>
+        <td>&#9989; Yes</td>
+        <td>&#9888; Manual</td>
+        <td>&#9888; Manual</td>
+        <td>&#9888; Manual</td>
+        <td>&#9888; Varies</td>
+      </tr>
+      <tr>
+        <td><strong>Production grade</strong></td>
+        <td>&#9989; Yes</td>
+        <td>&#9989; Yes</td>
+        <td>&#9989; Yes</td>
+        <td>&#9888; Lightweight</td>
+        <td>&#9989; Yes</td>
+      </tr>
+    </table>
+  </div>
+  <div class="logo-footer">hypercluster</div>
+  <div class="slide-number">13</div>
+</div>
+
+<!-- SLIDE 14: Summary / End -->
+<div class="slide end-slide">
+  <h2>hypercluster</h2>
+  <div class="tagline">"From bare nodes to running cluster — and every operation after."</div>
+  <table style="width: 70%; margin: 0 auto; font-size: 14pt; margin-bottom: 40px;">
+    <tr><td style="border-bottom: 1px solid #1a3060; color: #ccc; padding: 10px;"><strong style="color: #7ec8ff;">One config file</strong></td><td style="border-bottom: 1px solid #1a3060; color: #aaa;">All cluster config in one place</td></tr>
+    <tr><td style="border-bottom: 1px solid #1a3060; color: #ccc;"><strong style="color: #7ec8ff;">Full lifecycle</strong></td><td style="border-bottom: 1px solid #1a3060; color: #aaa;">Deploy, scale, upgrade, remove, destroy</td></tr>
+    <tr><td style="border-bottom: 1px solid #1a3060; color: #ccc;"><strong style="color: #7ec8ff;">Cilium default</strong></td><td style="border-bottom: 1px solid #1a3060; color: #aaa;">eBPF networking + Hubble observability</td></tr>
+    <tr><td style="border-bottom: 1px solid #1a3060; color: #ccc;"><strong style="color: #7ec8ff;">KubeVirt built-in</strong></td><td style="border-bottom: 1px solid #1a3060; color: #aaa;">Windows + Linux VMs alongside containers</td></tr>
+    <tr><td style="border-bottom: 1px solid #1a3060; color: #ccc;"><strong style="color: #7ec8ff;">SSH-first</strong></td><td style="border-bottom: 1px solid #1a3060; color: #aaa;">No cloud provider, no agents, works air-gapped</td></tr>
+    <tr><td style="border-bottom: 1px solid #1a3060; color: #ccc;"><strong style="color: #7ec8ff;">Verified</strong></td><td style="border-bottom: 1px solid #1a3060; color: #aaa;">AlmaLinux 9.7, k3s v1.34, Cilium, KubeVirt live</td></tr>
+    <tr><td style="color: #ccc;"><strong style="color: #7ec8ff;">Kubespray-backed</strong></td><td style="color: #aaa;">Battle-tested Ansible, upstream Kubernetes</td></tr>
+  </table>
+  <div class="links">
+    <strong>GitHub:</strong> github.com/ssahani/hypercluster &nbsp;&nbsp;|&nbsp;&nbsp;
+    <strong>Author:</strong> Susant Sahani &nbsp;&nbsp;|&nbsp;&nbsp;
+    <strong>Stack:</strong> Kubespray · Cilium · KubeVirt · Podman
+  </div>
+</div>
+
+</body>
+</html>
