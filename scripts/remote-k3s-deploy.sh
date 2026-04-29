@@ -145,6 +145,28 @@ install_kubectl_release() {
   printf '%s' "$ver"
 }
 
+# Official tarball from get.helm.sh (avoids get-helm-3, which shells out to `helm`
+# and breaks when /usr/local/bin is missing from sudo/non-interactive PATH).
+install_helm_binary() {
+  local ver arch="${KUBE_ARCH}"
+  local tgz=/tmp/helm-linux.tgz extract_dir sum_url expected got
+  ver="$(gh_latest_tag helm/helm)" || die "could not resolve Helm release"
+  retry curl -fsSL "https://get.helm.sh/helm-${ver}-linux-${arch}.tar.gz" -o "$tgz"
+  sum_url="https://get.helm.sh/helm-${ver}-linux-${arch}.tar.gz.sha256sum"
+  if expected=$(curl -fsSL "$sum_url" 2>/dev/null | awk '{print $1}'); then
+    got=$(sha256sum "$tgz" | awk '{print $1}')
+    [[ "$got" == "$expected" ]] || die "Helm tarball SHA256 mismatch"
+  else
+    warn "could not fetch Helm checksum — proceeding without verify"
+  fi
+  extract_dir=$(mktemp -d)
+  tar xzf "$tgz" -C "$extract_dir"
+  sudo install -m 0755 "${extract_dir}/linux-${arch}/helm" "$HELM"
+  rm -rf "$extract_dir" "$tgz"
+  [[ -x "$HELM" ]] || die "helm binary missing after install"
+  printf '%s' "$ver"
+}
+
 # --- 1. Host prep (Kubernetes + KVM guests) ---------------------------------
 log "1 — Host prep (kernel, sysctl, swap, KVM)"
 
@@ -234,14 +256,8 @@ fi
 # --- 6. Helm 3 (optional) ----------------------------------------------------
 HELM_VERSION=""
 if [[ "${SKIP_HELM:-0}" != "1" ]]; then
-  log "6 — Helm 3 (latest from get-helm-3)"
-  if retry curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 -o /tmp/get-helm.sh; then
-    sudo bash /tmp/get-helm.sh
-    rm -f /tmp/get-helm.sh
-    HELM_VERSION="$("$HELM" version --template '{{ .Version }}' 2>/dev/null || echo unknown)"
-  else
-    warn "Helm install script failed — continuing without Helm"
-  fi
+  log "6 — Helm 3 (latest release tarball → ${HELM})"
+  HELM_VERSION="$(install_helm_binary)"
 else
   log "6 — Helm 3 (skipped: SKIP_HELM=1)"
 fi
