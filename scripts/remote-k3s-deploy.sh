@@ -275,13 +275,21 @@ rm -f /tmp/cilium.tar.gz
 
 log "8 — Cilium CNI (kube-proxy replacement + Hubble)"
 
-kube_admin "$CILIUM_BIN" install \
-  --wait \
-  --wait-duration 20m \
-  --set kubeProxyReplacement=true \
-  --set hubble.enabled=true \
-  --set hubble.relay.enabled=true \
+cilium_helm_sets=(
+  --wait
+  --wait-duration 20m
+  --set kubeProxyReplacement=true
+  --set hubble.enabled=true
+  --set hubble.relay.enabled=true
   --set hubble.ui.enabled=true
+)
+# Detect existing Helm release without requiring the helm CLI (works with SKIP_HELM=1).
+if kube_admin "$KUBECTL" get secret -n kube-system 2>/dev/null | grep -qE 'sh\.helm\.release\.v1\.cilium\.'; then
+  log "Cilium Helm release already exists — upgrade (not fresh install)"
+  kube_admin "$CILIUM_BIN" upgrade "${cilium_helm_sets[@]}"
+else
+  kube_admin "$CILIUM_BIN" install "${cilium_helm_sets[@]}"
+fi
 
 kube_admin "$CILIUM_BIN" status --wait --wait-duration 25m --ignore-warnings
 
