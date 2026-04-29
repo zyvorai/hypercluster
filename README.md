@@ -575,7 +575,8 @@ hypercluster/
 │   ├── kubespray.sh              ← Kubespray clone + playbook runner
 │   └── kubeconfig.sh             ← kubeconfig fetch + merge
 └── scripts/
-    ├── k8s-deploy.sh             ← standalone k3s/kubeadm deployer
+    ├── remote-k8s-deploy.sh      ← standalone k3s/kubeadm deployer (config-in-script)
+    ├── remote-k3s-deploy.sh      ← single-host SSH: k3s + Cilium + KubeVirt + CDI
     ├── install-deps.sh           ← KVM/virt host dependency installer (hyper2kvm)
     ├── setup-macos.sh            ← install all deployer-side deps on macOS
     └── test-local.sh             ← end-to-end test using Multipass VMs
@@ -697,7 +698,7 @@ VERBOSE=1 ./hypercluster deploy   # also enables log::debug messages in lib/
 
 ## Standalone script
 
-`scripts/k8s-deploy.sh` is a self-contained single-file alternative to the full Kubespray workflow. Use it when you want a quick deployment without Ansible or when you need k3s instead of upstream Kubernetes.
+`scripts/remote-k8s-deploy.sh` is a self-contained single-file alternative to the full Kubespray workflow. Use it when you want a quick deployment without Ansible or when you need k3s instead of upstream Kubernetes.
 
 ### What it does
 
@@ -710,10 +711,10 @@ VERBOSE=1 ./hypercluster deploy   # also enables log::debug messages in lib/
 
 ```bash
 # Edit the CONFIGURATION block at the top of the script
-$EDITOR scripts/k8s-deploy.sh
+$EDITOR scripts/remote-k8s-deploy.sh
 
-chmod +x scripts/k8s-deploy.sh
-./scripts/k8s-deploy.sh
+chmod +x scripts/remote-k8s-deploy.sh
+./scripts/remote-k8s-deploy.sh
 ```
 
 ### Key configuration variables
@@ -766,7 +767,7 @@ DRY_RUN=true sudo ./scripts/install-deps.sh
 
 ### Comparison: standalone vs hypercluster
 
-| | `k8s-deploy.sh` | `hypercluster` + Kubespray |
+| | `remote-k8s-deploy.sh` | `hypercluster` + Kubespray |
 |---|---|---|
 | Setup time | ~5 min | ~15 min (first run) |
 | Kubernetes flavour | k3s or kubeadm | Upstream only (kubeadm) |

@@ -8,7 +8,7 @@ fi
 # test-podman.sh — Test hypercluster end-to-end using Podman containers as SSH nodes.
 #
 # Creates 3 rootless Podman containers (1 control-plane + 2 workers) with sshd,
-# maps unique host ports for SSH, deploys k3s via k8s-deploy.sh, and verifies
+# maps unique host ports for SSH, deploys k3s via remote-k8s-deploy.sh, and verifies
 # the cluster is healthy. No sudo required.
 #
 # Usage:
@@ -193,7 +193,7 @@ check_connectivity() {
 # ── k3s deploy ────────────────────────────────────────────────────────────────
 write_deploy_conf() {
   section "Writing $TEST_CONF"
-  # k8s-deploy.sh does not support per-node ports — all nodes must share SSH_PORT.
+  # remote-k8s-deploy.sh does not support per-node ports — all nodes must share SSH_PORT.
   # Since containers have unique host ports, we can only test 1-node k3s here
   # (master only) or use the same port trick: put all workers at 127.0.0.1
   # but differentiate via the WORKERS array entries.
@@ -309,7 +309,7 @@ case "${1:-}" in
     start_containers
     check_connectivity
     write_deploy_conf
-    HC_CONFIG="$TEST_CONF" bash "$SCRIPT_DIR/k8s-deploy.sh"
+    HC_CONFIG="$TEST_CONF" bash "$SCRIPT_DIR/remote-k8s-deploy.sh"
     verify
     section "Done"
     info "🎉 k3s cluster running in Podman containers!"

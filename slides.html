@@ -447,7 +447,7 @@
     kubespray.sh      # Clone + run playbooks
     kubeconfig.sh     # Fetch + patch + merge
   scripts/
-    k8s-deploy.sh     # Standalone k3s/kubeadm
+    remote-k8s-deploy.sh     # Standalone k3s/kubeadm
     setup-macos.sh    # macOS dev setup
     test-podman.sh    # Local container testing</code></pre>
         </div>
@@ -708,9 +708,9 @@ virtctl vnc my-windows-vm</code></pre>
   <div class="slide-number">9</div>
 </div>
 
-<!-- SLIDE 10: Standalone k8s-deploy.sh -->
+<!-- SLIDE 10: Standalone remote-k8s-deploy.sh -->
 <div class="slide">
-  <h2>Standalone: k8s-deploy.sh</h2>
+  <h2>Standalone: remote-k8s-deploy.sh</h2>
   <div class="content">
     <p style="margin-bottom: 15px;">
       A <strong>single-file bash deployer</strong> — no Kubespray, no Ansible, no Python.
@@ -734,17 +734,17 @@ SSH_PORT=22</code></pre>
       <div class="col">
         <h3>Run</h3>
         <pre style="font-size: 10pt;"><code># Basic run
-./scripts/k8s-deploy.sh
+./scripts/remote-k8s-deploy.sh
 
 # External config (no edit)
 HC_CONFIG=my.conf \
-  ./scripts/k8s-deploy.sh
+  ./scripts/remote-k8s-deploy.sh
 
 # Verify SSH only
-./scripts/k8s-deploy.sh --verify
+./scripts/remote-k8s-deploy.sh --verify
 
 # Help
-./scripts/k8s-deploy.sh --help</code></pre>
+./scripts/remote-k8s-deploy.sh --help</code></pre>
       </div>
       <div class="col">
         <h3>Features</h3>

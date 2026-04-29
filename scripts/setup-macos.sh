@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # setup-macos.sh — Install all hypercluster deployer-side dependencies on macOS.
 #
-# Run once on your Mac before using hypercluster or k8s-deploy.sh.
+# Run once on your Mac before using hypercluster or remote-k8s-deploy.sh.
 #
 # Usage:
 #   chmod +x scripts/setup-macos.sh

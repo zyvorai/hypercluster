@@ -5,7 +5,7 @@ if [[ "$(uname)" == "Darwin" && "${BASH_VERSINFO[0]:-3}" -lt 4 ]]; then
   [[ -x "$_b" ]] && exec "$_b" "$0" "$@"
   echo "bash 4+ required — run: brew install bash" >&2; exit 1
 fi
-# k8s-deploy.sh — lightweight standalone Kubernetes deployer (k3s or kubeadm).
+# remote-k8s-deploy.sh — lightweight standalone Kubernetes deployer (k3s or kubeadm).
 #
 # Simpler alternative to the full hypercluster/Kubespray workflow.
 # Supports k3s (lightweight) or kubeadm (upstream), with Podman or Docker.
@@ -13,11 +13,11 @@ fi
 #
 # Usage:
 #   Edit the CONFIGURATION section below, then:
-#     chmod +x scripts/k8s-deploy.sh
-#     ./scripts/k8s-deploy.sh
+#     chmod +x scripts/remote-k8s-deploy.sh
+#     ./scripts/remote-k8s-deploy.sh
 #
-#   ./scripts/k8s-deploy.sh --help     show this message
-#   ./scripts/k8s-deploy.sh --verify   check SSH connectivity only
+#   ./scripts/remote-k8s-deploy.sh --help     show this message
+#   ./scripts/remote-k8s-deploy.sh --verify   check SSH connectivity only
 
 # ============================================
 # CONFIGURATION — EDIT THESE VALUES
