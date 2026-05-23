@@ -1,3 +1,10 @@
 .kubespray/
 cluster.conf
 *.bak
+
+# Local AI caches
+.grok/
+
+# macOS
+.DS_Store
+**/.DS_Store
