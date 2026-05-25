@@ -90,5 +90,10 @@ kubespray::run_playbook() {
   fi
 
   kubespray::_ensure_venv
-  ansible-playbook "${base_args[@]}" "${extra_args[@]}" "$kubespray_dir/$playbook"
+  if [[ "$playbook" == cluster.yml || "$playbook" == upgrade_cluster.yml || "$playbook" == scale.yml ]]; then
+    progress::run "Running $playbook …" \
+      ansible-playbook "${base_args[@]}" "${extra_args[@]}" "$kubespray_dir/$playbook"
+  else
+    ansible-playbook "${base_args[@]}" "${extra_args[@]}" "$kubespray_dir/$playbook"
+  fi
 }

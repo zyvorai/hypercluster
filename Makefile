@@ -9,7 +9,7 @@ FLAGS   ?=
 
 .PHONY: help init preflight deploy scale upgrade remove-node \
         fetch-kubeconfig merge-kubeconfig install-kubevirt status destroy check-deps \
-        lint test-smoke test-inventory test-local test-podman dry-deploy unlock
+        lint test-smoke test-inventory test-local test-podman dry-deploy unlock wizard
 
 help: ## 📖  Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -18,10 +18,12 @@ help: ## 📖  Show this help
 check-deps: ## 🔍  Verify the script is executable and config exists
 	@[[ -x "$(HC)" ]] || { echo "❌  $(HC) is not executable — run: chmod +x $(HC)"; exit 1; }
 	@[[ -f "$(CONFIG)" ]] || { \
-	  cp config/cluster.conf.example $(CONFIG); \
-	  echo "✏️  $(CONFIG) created from example — edit it before continuing."; \
+	  echo "✏️  $(CONFIG) not found — run: make wizard CONFIG=$(CONFIG)"; \
 	  exit 1; \
 	}
+
+wizard: ## 🧙  Interactive cluster.conf generator
+	$(HC) -c $(CONFIG) wizard
 
 init: check-deps ## 🏗️   Clone Kubespray and generate inventory
 	$(HC) -c $(CONFIG) $(FLAGS) init

@@ -200,6 +200,23 @@ export PATH="$PATH:$(pwd)"
 
 All cluster settings live in a single shell-sourced file — `cluster.conf`.
 
+### Interactive wizard
+
+New to hypercluster? Generate a config interactively:
+
+```bash
+./hypercluster wizard
+# or create config then init in one step:
+./hypercluster init --wizard
+
+# via Make
+make wizard CONFIG=cluster.conf
+```
+
+The wizard prompts for cluster name, node IPs, SSH credentials, CNI plugin, container runtime, and KubeVirt.
+
+### Manual config
+
 ```bash
 cp config/cluster.conf.example cluster.conf
 $EDITOR cluster.conf
@@ -405,6 +422,10 @@ To test the config path without touching nodes:
 make dry-deploy          # skips all playbook + scp calls
 ```
 
+During a real deploy, hypercluster shows **stage progress** (1/4 … 4/4) and a **spinner** while Kubespray runs (when stdout is a TTY). Use `-v` for full Ansible output instead.
+
+After a successful deploy, a **Next steps** section lists kubeconfig export, Cilium/Hubble, KubeVirt, and dashboard commands tailored to your config.
+
 ---
 
 ### Step 5 — Access the cluster
@@ -561,6 +582,7 @@ Skip the prompt (for CI pipelines):
 | Command | Make target | Description |
 |---------|------------|-------------|
 | `init` | `make init` | Clone Kubespray + generate inventory |
+| `wizard` | `make wizard` | Interactive cluster.conf generator |
 | `preflight` | `make preflight` | Check local tools + SSH connectivity |
 | `deploy` | `make deploy` | Full deployment (preflight + init + cluster.yml + fetch kubeconfig) |
 | `scale` | `make scale` | Add nodes from updated config |
@@ -613,7 +635,10 @@ hypercluster/
 │   ├── preflight.sh              ← dependency + SSH key + connectivity checks
 │   ├── inventory.sh              ← hosts.yaml + group_vars generation
 │   ├── kubespray.sh              ← Kubespray clone + playbook runner
-│   └── kubeconfig.sh             ← kubeconfig fetch + merge
+│   ├── kubeconfig.sh             ← kubeconfig fetch + merge
+│   ├── wizard.sh                 ← interactive cluster.conf generator
+│   ├── progress.sh               ← deploy stage + spinner (TTY)
+│   └── postdeploy.sh             ← post-deploy next-step hints
 ├── tests/
 │   └── test-inventory.sh         ← unit tests for inventory generation
 └── scripts/

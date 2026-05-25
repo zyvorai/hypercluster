@@ -11,6 +11,8 @@ fi
 #
 # Commands:
 #   init              Clone Kubespray and generate inventory + group_vars
+#                     Use init --wizard to create cluster.conf interactively first
+#   wizard            Interactive cluster.conf generator (no existing config required)
 #   preflight         Verify local tools and SSH connectivity to all nodes
 #   deploy            Full cluster deployment (preflight + init + cluster.yml)
 #   scale             Add worker nodes listed in cluster.conf (scale.yml)
@@ -44,7 +46,7 @@ VERBOSE=0
 
 # ── parse options ───────────────────────────────────────────────────────────
 usage() {
-  grep '^#' "$0" | grep -v '^#!/' | sed 's/^# \{0,1\}//'
+  grep '^#' "$0" | grep -v '^#!/' | grep -v 'Re-exec' | sed 's/^# \{0,1\}//'
   exit 0
 }
 
@@ -64,9 +66,28 @@ shift $(( OPTIND - 1 ))
 
 export FORCE DRY_RUN VERBOSE
 
+COMMAND="${1:-}"
+shift || true
+
+INIT_WIZARD=0
+case "$COMMAND" in
+  init)
+    if [[ "${1:-}" == "--wizard" ]]; then
+      INIT_WIZARD=1
+      shift
+    fi
+    ;;
+esac
+
 # ── load libraries ───────────────────────────────────────────────────────────
 # shellcheck source=lib/log.sh
 source "$SCRIPT_DIR/lib/log.sh"
+# shellcheck source=lib/wizard.sh
+source "$SCRIPT_DIR/lib/wizard.sh"
+# shellcheck source=lib/progress.sh
+source "$SCRIPT_DIR/lib/progress.sh"
+# shellcheck source=lib/postdeploy.sh
+source "$SCRIPT_DIR/lib/postdeploy.sh"
 # shellcheck source=lib/preflight.sh
 source "$SCRIPT_DIR/lib/preflight.sh"
 # shellcheck source=lib/inventory.sh
@@ -76,10 +97,22 @@ source "$SCRIPT_DIR/lib/kubespray.sh"
 # shellcheck source=lib/kubeconfig.sh
 source "$SCRIPT_DIR/lib/kubeconfig.sh"
 
+# ── wizard (no cluster.conf required) ─────────────────────────────────────────
+if [[ "$COMMAND" == "wizard" ]]; then
+  wizard::write_config "$CONFIG_FILE"
+  exit 0
+fi
+
+if [[ "$INIT_WIZARD" == "1" ]]; then
+  wizard::write_config "$CONFIG_FILE"
+fi
+
 # ── load cluster config ──────────────────────────────────────────────────────
 if [[ ! -f "$CONFIG_FILE" ]]; then
   die "Config file not found: $CONFIG_FILE
-       Copy config/cluster.conf.example → cluster.conf and edit it."
+       Run: ./hypercluster wizard
+       Or:  ./hypercluster init --wizard
+       Or:  cp config/cluster.conf.example cluster.conf"
 fi
 # shellcheck source=/dev/null
 source "$CONFIG_FILE"
@@ -144,8 +177,8 @@ cmd_unlock() {
   log::ok "Lock removed for cluster '$CLUSTER_NAME'."
 }
 
-# unlock skips lock acquisition — handle before _acquire_lock
-if [[ "${1:-}" == "unlock" ]]; then
+# unlock skips lock acquisition
+if [[ "$COMMAND" == "unlock" ]]; then
   _SKIP_LOCK=1
 fi
 
@@ -176,12 +209,17 @@ cmd_preflight() {
 
 cmd_deploy() {
   log::section "Deploy cluster: $CLUSTER_NAME"
+  progress::stage 1 4 "Preflight checks"
   cmd_preflight
+  progress::stage 2 4 "Init — Kubespray + inventory"
   cmd_init
+  progress::stage 3 4 "Kubespray cluster.yml (typically 15–30 min)"
   kubespray::run_playbook "$KUBESPRAY_DIR" cluster.yml
   log::ok "Cluster deployed! 🎉"
+  progress::stage 4 4 "Fetch kubeconfig + optional add-ons"
   cmd_fetch_kubeconfig
   [[ "${KUBEVIRT_ENABLED:-false}" == "true" ]] && cmd_install_kubevirt
+  postdeploy::print_hints
 }
 
 cmd_install_kubevirt() {
@@ -280,9 +318,6 @@ cmd_status() {
 }
 
 # ── dispatch ─────────────────────────────────────────────────────────────────
-COMMAND="${1:-}"
-shift || true
-
 case "$COMMAND" in
   init)               cmd_init ;;
   preflight)          cmd_preflight ;;
@@ -296,6 +331,7 @@ case "$COMMAND" in
   destroy)            cmd_destroy ;;
   status)             cmd_status ;;
   unlock)             cmd_unlock ;;
+  wizard)             ;; # handled before config load
   "")                 usage ;;
   *)                  log::error "Unknown command: $COMMAND"; echo; usage ;;
 esac
