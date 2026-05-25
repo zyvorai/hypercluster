@@ -1,6 +1,29 @@
 #!/usr/bin/env bash
 # Kubespray clone / playbook execution helpers — source this file.
 
+kubespray::_venv_dir() {
+  local script_dir="${HYPERCLUSTER_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+  echo "$script_dir/.kubespray-venv"
+}
+
+kubespray::_ensure_venv() {
+  local venv_dir
+  venv_dir="$(kubespray::_venv_dir)"
+  if [[ ! -d "$venv_dir/bin" ]]; then
+    log::info "Creating Python venv at $venv_dir …"
+    python3 -m venv "$venv_dir" || die "python3 -m venv failed — is python3-venv installed?"
+  fi
+  # shellcheck disable=SC1091
+  source "$venv_dir/bin/activate"
+}
+
+kubespray::_install_requirements() {
+  local dir="$1"
+  log::info "Installing Python requirements into venv …"
+  pip install -r "$dir/requirements.txt" || die "pip install failed — check requirements.txt"
+  log::ok "Python requirements installed."
+}
+
 kubespray::_clone() {
   local dir="$1" version="$2"
   log::info "Cloning Kubespray $version …"
@@ -8,9 +31,8 @@ kubespray::_clone() {
     https://github.com/kubernetes-sigs/kubespray.git "$dir"
   log::ok "Kubespray cloned → $dir"
 
-  log::info "Installing Python requirements …"
-  pip3 install -r "$dir/requirements.txt" || die "pip3 install failed — check requirements.txt"
-  log::ok "Python requirements installed."
+  kubespray::_ensure_venv
+  kubespray::_install_requirements "$dir"
 }
 
 kubespray::ensure_source() {
@@ -21,6 +43,8 @@ kubespray::ensure_source() {
     current_tag=$(git -C "$dir" describe --tags --exact-match 2>/dev/null || echo "unknown")
     if [[ "$current_tag" == "$version" ]]; then
       log::info "Kubespray $version already present at $dir"
+      kubespray::_ensure_venv
+      kubespray::_install_requirements "$dir"
       return
     fi
     log::warn "Version mismatch: cloned=$current_tag requested=$version."
@@ -65,5 +89,6 @@ kubespray::run_playbook() {
     return 0
   fi
 
+  kubespray::_ensure_venv
   ansible-playbook "${base_args[@]}" "${extra_args[@]}" "$kubespray_dir/$playbook"
 }

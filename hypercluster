@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# Re-exec with Homebrew bash 5 on macOS (system bash is 3.2, missing bash 4+ features)
+if [[ "$(uname)" == "Darwin" && "${BASH_VERSINFO[0]:-3}" -lt 4 ]]; then
+  _b="$(brew --prefix 2>/dev/null)/bin/bash"
+  [[ -x "$_b" ]] && exec "$_b" "$0" "$@"
+  echo "bash 4+ required — run: brew install bash" >&2; exit 1
+fi
 # hypercluster — end-to-end Kubernetes cluster lifecycle wrapper for Kubespray.
 #
 # Usage:  hypercluster [OPTIONS] <command> [ARGS]
@@ -6,7 +12,7 @@
 # Commands:
 #   init              Clone Kubespray and generate inventory + group_vars
 #   preflight         Verify local tools and SSH connectivity to all nodes
-#   deploy            Full cluster deployment (init + preflight + cluster.yml)
+#   deploy            Full cluster deployment (preflight + init + cluster.yml)
 #   scale             Add worker nodes listed in cluster.conf (scale.yml)
 #   upgrade           Upgrade Kubernetes to the version in cluster.conf
 #   remove-node       Drain and remove a single node
@@ -15,17 +21,20 @@
 #   install-kubevirt  Install KubeVirt operator + CDI (also runs after deploy if KUBEVIRT_ENABLED=true)
 #   destroy           Tear down the cluster (reset.yml)
 #   status            Run 'kubectl get nodes' against the cluster
+#   unlock            Remove stale per-cluster lock after a crash
 #
 # Options:
 #   -c <file>   Path to cluster config (default: ./cluster.conf)
 #   -f          Force overwrite of existing inventory
 #   -n          Dry run — print what would be executed, skip actual changes
 #   -v          Verbose Ansible output
+#   -V          Show version
 #   -h          Show this help
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export HYPERCLUSTER_SCRIPT_DIR="$SCRIPT_DIR"
 
 # ── defaults ────────────────────────────────────────────────────────────────
 CONFIG_FILE="$(pwd)/cluster.conf"
@@ -39,12 +48,13 @@ usage() {
   exit 0
 }
 
-while getopts ":c:fnvh" opt; do
+while getopts ":c:fnvhV" opt; do
   case "$opt" in
     c) CONFIG_FILE="$OPTARG" ;;
     f) FORCE=1 ;;
     n) DRY_RUN=1 ;;
     v) VERBOSE=1 ;;
+    V) cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "unknown"; exit 0 ;;
     h) usage ;;
     :) echo "❌  Option -$OPTARG requires an argument." >&2; exit 1 ;;
     \?) echo "❌  Unknown option: -$OPTARG" >&2; exit 1 ;;
@@ -85,14 +95,63 @@ if [[ "${#_missing[@]}" -gt 0 ]]; then
 fi
 unset _required_vars _missing _v
 
-# Acquire per-cluster lock — prevents two concurrent hypercluster runs from racing.
-# Uses mkdir (POSIX-atomic, works on Linux and macOS; no flock dependency).
-_LOCK_DIR="/tmp/hypercluster-${CLUSTER_NAME}.lock"
-if ! mkdir "$_LOCK_DIR" 2>/dev/null; then
-  die "Another hypercluster instance is already running for cluster '$CLUSTER_NAME'.
-       Lock dir: $_LOCK_DIR — remove it if the previous run crashed."
+# ── lock helpers ─────────────────────────────────────────────────────────────
+_lock_dir_for_cluster() {
+  echo "/tmp/hypercluster-${1}.lock"
+}
+
+_acquire_lock() {
+  local lock_dir pid_file
+  lock_dir="$(_lock_dir_for_cluster "$CLUSTER_NAME")"
+  pid_file="$lock_dir/pid"
+
+  if [[ -d "$lock_dir" ]]; then
+    if [[ -f "$pid_file" ]]; then
+      local old_pid
+      old_pid=$(cat "$pid_file" 2>/dev/null || echo "")
+      if [[ -n "$old_pid" ]] && kill -0 "$old_pid" 2>/dev/null; then
+        die "Another hypercluster instance is already running for cluster '$CLUSTER_NAME' (PID $old_pid).
+       Lock dir: $lock_dir — use 'hypercluster unlock' if the previous run crashed."
+      fi
+      log::warn "Removing stale lock for cluster '$CLUSTER_NAME' (PID $old_pid not running)."
+      rm -rf "$lock_dir"
+    else
+      die "Lock dir exists without PID file: $lock_dir
+       Remove it manually or run 'hypercluster unlock'."
+    fi
+  fi
+
+  if ! mkdir "$lock_dir" 2>/dev/null; then
+    die "Could not acquire lock for cluster '$CLUSTER_NAME' ($lock_dir)."
+  fi
+  echo "$$" > "$pid_file"
+  _LOCK_DIR="$lock_dir"
+  trap '_release_lock' EXIT INT TERM
+}
+
+_release_lock() {
+  [[ -n "${_LOCK_DIR:-}" ]] && rm -rf "$_LOCK_DIR" 2>/dev/null || true
+}
+
+cmd_unlock() {
+  local lock_dir
+  lock_dir="$(_lock_dir_for_cluster "$CLUSTER_NAME")"
+  if [[ ! -d "$lock_dir" ]]; then
+    log::info "No lock found for cluster '$CLUSTER_NAME'."
+    return 0
+  fi
+  rm -rf "$lock_dir"
+  log::ok "Lock removed for cluster '$CLUSTER_NAME'."
+}
+
+# unlock skips lock acquisition — handle before _acquire_lock
+if [[ "${1:-}" == "unlock" ]]; then
+  _SKIP_LOCK=1
 fi
-trap 'rmdir "$_LOCK_DIR" 2>/dev/null || true' EXIT INT TERM
+
+if [[ "${_SKIP_LOCK:-0}" != "1" ]]; then
+  _acquire_lock
+fi
 
 # Resolve KUBESPRAY_DIR: absolute paths pass through, relative paths are anchored to SCRIPT_DIR
 _raw_ks="${KUBESPRAY_DIR:-.kubespray}"
@@ -128,7 +187,18 @@ cmd_deploy() {
 cmd_install_kubevirt() {
   log::section "Installing KubeVirt"
   local kc="${KUBECONFIG_OUTPUT/#\~/$HOME}"
-  [[ -f "$kc" ]] || { log::warn "kubeconfig not found — skipping KubeVirt install."; return; }
+  local required="${KUBEVIRT_REQUIRED:-false}"
+  if [[ "${KUBEVIRT_ENABLED:-false}" == "true" ]]; then
+    required="true"
+  fi
+  if [[ ! -f "$kc" ]]; then
+    if [[ "$required" == "true" ]]; then
+      die "kubeconfig not found at $kc — cannot install KubeVirt.
+       Run 'fetch-kubeconfig' first, or set KUBEVIRT_ENABLED=false to skip."
+    fi
+    log::warn "kubeconfig not found at $kc — skipping KubeVirt install."
+    return 0
+  fi
   local kv_ver="${KUBEVIRT_VERSION:-v1.3.1}"
   local cdi_ver="${CDI_VERSION:-v1.59.0}"
   local base="https://github.com/kubevirt/kubevirt/releases/download/$kv_ver"
@@ -222,9 +292,10 @@ case "$COMMAND" in
   remove-node)        cmd_remove_node "${1:-}" ;;
   fetch-kubeconfig)   cmd_fetch_kubeconfig ;;
   merge-kubeconfig)   cmd_merge_kubeconfig ;;
-  install-kubevirt)   cmd_install_kubevirt ;;
+  install-kubevirt)   KUBEVIRT_REQUIRED=1; cmd_install_kubevirt ;;
   destroy)            cmd_destroy ;;
   status)             cmd_status ;;
+  unlock)             cmd_unlock ;;
   "")                 usage ;;
   *)                  log::error "Unknown command: $COMMAND"; echo; usage ;;
 esac

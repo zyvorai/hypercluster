@@ -16,3 +16,13 @@ die() {
   log::error "$*"
   exit 1
 }
+
+# Compatibility aliases for standalone scripts (test-local.sh, remote-k8s-deploy.sh, etc.)
+info()        { log::ok "$@"; }
+warn()        { log::warn "$@"; }
+section()     { log::section "$@"; }
+step()        { log::section "$@"; }
+log_info()    { log::ok "$@"; }
+log_warn()    { log::warn "$@"; }
+log_section() { log::section "$@"; }
+log_error()   { log::error "$@"; exit 1; }

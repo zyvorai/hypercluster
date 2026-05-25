@@ -1,5 +1,8 @@
 .kubespray/
+.kubespray-venv/
 cluster.conf
+cluster-test.conf
+cluster-podman.conf
 *.bak
 
 # Local AI caches

@@ -74,16 +74,14 @@ HYPER2KVM_DEPS_SCRIPT="./install-deps.sh"   # relative to this script's director
 # ============================================
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+# shellcheck source=lib/log.sh
+source "$REPO_DIR/lib/log.sh"
+
 # Allow an external config file to override the CONFIGURATION section above.
 # Set HC_CONFIG=/path/to/file before running to use an external config.
 [[ -n "${HC_CONFIG:-}" && -f "$HC_CONFIG" ]] && source "$HC_CONFIG"
-
-# ── logging ──────────────────────────────────────────────────────────────────
-_ts() { date '+%H:%M:%S'; }
-log_info()    { printf "[%s] ✅  %s\n"  "$(_ts)" "$*"; }
-log_warn()    { printf "[%s] ⚠️   %s\n" "$(_ts)" "$*" >&2; }
-log_error()   { printf "[%s] ❌  %s\n"  "$(_ts)" "$*" >&2; exit 1; }
-log_section() { printf "\n🔷  %s\n%s\n\n" "$*" "$(printf '─%.0s' {1..60})"; }
 
 # ── help / verify mode ────────────────────────────────────────────────────────
 case "${1:-}" in

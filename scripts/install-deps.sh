@@ -387,7 +387,7 @@ install_hivex() {
     fi
 
     # System python3-hivex targets a different Python version — rebuild from source
-    if [ "$PKG_MGR" = "dnf" ] && command -v rpmbuild &>/dev/null 2>/dev/null; then
+    if [ "$PKG_MGR" = "dnf" ] && command -v rpmbuild &>/dev/null; then
         info "Rebuilding hivex Python bindings for $active_py..."
         run dnf install -y hivex-devel "$active_py"-devel gcc make 2>/dev/null || true
 

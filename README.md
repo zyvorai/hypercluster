@@ -101,6 +101,37 @@ export KUBECONFIG=~/.kube/hc-test.yaml
 kubectl get nodes -o wide
 ```
 
+### Fast integration test with Podman
+
+`scripts/test-podman.sh` is a **lighter-weight** test that uses Podman containers as SSH nodes and deploys via `remote-k8s-deploy.sh` (k3s path). It does **not** exercise the full Kubespray/hypercluster workflow.
+
+| Test script | What it validates | Runtime |
+|-------------|-------------------|---------|
+| `scripts/test-local.sh` | Full Kubespray path via `hypercluster deploy` | 20–30 min |
+| `scripts/test-podman.sh` | k3s path via `remote-k8s-deploy.sh` | ~10 min |
+
+```bash
+# Fast k3s integration test (Podman containers, no sudo)
+chmod +x scripts/test-podman.sh
+./scripts/test-podman.sh
+
+# Preflight SSH check only
+./scripts/test-podman.sh --preflight
+
+# Tear down containers and test config
+./scripts/test-podman.sh --clean
+```
+
+### Automated checks (no VMs required)
+
+```bash
+make lint            # shellcheck on all scripts
+make test-smoke      # CLI help, version, config validation
+make test-inventory  # inventory generation unit tests
+```
+
+These run automatically in CI on every push/PR.
+
 ### Deploying to real remote nodes from macOS
 
 Once `setup-macos.sh` has run, the full workflow is identical to Linux:
@@ -152,7 +183,7 @@ python3 -c "import jinja2, netaddr; print('ok')"
 ## Installation
 
 ```bash
-git clone https://github.com/your-org/hypercluster.git
+git clone https://github.com/ssahani/hypercluster.git
 cd hypercluster
 chmod +x hypercluster
 ```
@@ -353,9 +384,9 @@ make deploy
 
 | Stage | What happens |
 |-------|-------------|
+| **preflight** | Verifies local tools and SSH connectivity to all nodes |
 | **init** | Clones Kubespray at `KUBESPRAY_VERSION`, installs Python requirements, generates `hosts.yaml` and `group_vars` from your config |
-| **preflight** | Re-runs connectivity checks |
-| **cluster.yml** | Kubespray's main playbook — installs Podman, bootstraps etcd, initialises the control plane with kubeadm, joins workers, deploys Calico, CoreDNS, metrics-server |
+| **cluster.yml** | Kubespray's main playbook — installs Podman, bootstraps etcd, initialises the control plane with kubeadm, joins workers, deploys Cilium (or your configured CNI), CoreDNS, metrics-server |
 | **fetch-kubeconfig** | Copies `admin.conf` from the first control-plane node and patches the server address |
 
 Typical runtime: **15–30 minutes** depending on node speed and network.
@@ -431,8 +462,8 @@ kubectl top nodes
 # CoreDNS
 kubectl get pods -n kube-system -l k8s-app=kube-dns
 
-# Calico
-kubectl get pods -n kube-system -l k8s-app=calico-node
+# Cilium (default CNI)
+kubectl get pods -n kube-system -l k8s-app=cilium
 ```
 
 ---
@@ -531,7 +562,7 @@ Skip the prompt (for CI pipelines):
 |---------|------------|-------------|
 | `init` | `make init` | Clone Kubespray + generate inventory |
 | `preflight` | `make preflight` | Check local tools + SSH connectivity |
-| `deploy` | `make deploy` | Full deployment (init + preflight + cluster.yml + fetch kubeconfig) |
+| `deploy` | `make deploy` | Full deployment (preflight + init + cluster.yml + fetch kubeconfig) |
 | `scale` | `make scale` | Add nodes from updated config |
 | `upgrade` | `make upgrade` | Upgrade to `KUBE_VERSION` |
 | `remove-node <name>` | `make remove-node NODE=<name>` | Drain and remove one node |
@@ -539,6 +570,14 @@ Skip the prompt (for CI pipelines):
 | `merge-kubeconfig` | `make merge-kubeconfig` | Merge into `~/.kube/config` |
 | `status` | `make status` | `kubectl get nodes -o wide` |
 | `destroy` | `make destroy` | Reset the cluster |
+| `unlock` | `make unlock` | Remove stale per-cluster lock after a crash |
+
+### Version
+
+```bash
+./hypercluster -V
+# or read VERSION file at repo root
+```
 
 ### Multiple clusters / environments
 
@@ -563,7 +602,8 @@ make deploy CONFIG=staging.conf FLAGS=-v
 ```
 hypercluster/
 ├── hypercluster                  ← CLI entrypoint (chmod +x)
-├── Makefile                      ← convenience targets
+├── Makefile                      ← convenience targets (deploy, lint, test-smoke, …)
+├── VERSION                       ← release version (shown by hypercluster -V)
 ├── cluster.conf                  ← your config (gitignored)
 ├── .gitignore
 ├── config/
@@ -574,18 +614,25 @@ hypercluster/
 │   ├── inventory.sh              ← hosts.yaml + group_vars generation
 │   ├── kubespray.sh              ← Kubespray clone + playbook runner
 │   └── kubeconfig.sh             ← kubeconfig fetch + merge
+├── tests/
+│   └── test-inventory.sh         ← unit tests for inventory generation
 └── scripts/
     ├── remote-k8s-deploy.sh      ← standalone k3s/kubeadm deployer (config-in-script)
     ├── remote-k3s-deploy.sh      ← single-host SSH: k3s + Cilium + KubeVirt + CDI
     ├── install-deps.sh           ← KVM/virt host dependency installer (hyper2kvm)
     ├── setup-macos.sh            ← install all deployer-side deps on macOS
-    └── test-local.sh             ← end-to-end test using Multipass VMs
+    ├── test-local.sh             ← Kubespray E2E test using Multipass VMs
+    ├── test-podman.sh            ← fast k3s integration test using Podman containers
+    ├── entrypoint.sh             ← container entrypoint helper (test harness)
+    ├── Dockerfile.node           ← systemd-enabled Ubuntu image for container tests
+    └── zyvor-branding/           ← shared Zyvor product branding assets
 ```
 
 **Generated at runtime (gitignored):**
 
 ```
 .kubespray/                       ← Kubespray checkout
+.kubespray-venv/                  ← isolated Python venv for Ansible deps
 .kubespray/inventory/mycluster/
     hosts.yaml                    ← generated from CONTROL_PLANE_IPS / WORKER_IPS
     group_vars/
@@ -607,7 +654,7 @@ Kubernetes requires a CRI-compatible container runtime. Podman supports this via
 |---------|----------------------------|
 | Rootful vs rootless | Kubespray configures Podman in rootful mode via systemd — required by kubelet |
 | Cgroup driver | `kubelet_cgroup_driver: systemd` is set in generated `k8s-cluster.yml` |
-| CNI conflict | Podman's built-in network is disabled; the Kubernetes CNI plugin (Calico by default) owns all pod networking |
+| CNI conflict | Podman's built-in network is disabled; the Kubernetes CNI plugin (Cilium by default) owns all pod networking |
 | Image pulls | Podman pulls images the same way containerd does — no configuration change needed |
 
 To use a different runtime, set `CONTAINER_MANAGER` in `cluster.conf`:
@@ -632,6 +679,21 @@ $EDITOR cluster.conf
 
 Open `cluster.conf` — those variables are either commented out or left as empty strings. All variables in the "required" list must be set to non-empty values.
 
+### ❌ `Another hypercluster instance is already running`
+
+If a previous run crashed, the lock directory may be stale:
+
+```bash
+./hypercluster unlock
+# or: make unlock
+```
+
+If the lock dir exists without a PID file, remove it manually:
+
+```bash
+rm -rf /tmp/hypercluster-<CLUSTER_NAME>.lock
+```
+
 ### ❌ SSH connectivity check fails
 
 ```
@@ -655,11 +717,12 @@ You already ran `init` or `deploy`. To regenerate from your current `cluster.con
 
 ### ❌ `pip3 install failed`
 
-Kubespray's `requirements.txt` may need a newer pip:
+Kubespray dependencies are installed into an isolated venv at `.kubespray-venv/`:
 
 ```bash
-pip3 install --upgrade pip
-pip3 install -r .kubespray/requirements.txt
+source .kubespray-venv/bin/activate
+pip install --upgrade pip
+pip install -r .kubespray/requirements.txt
 ```
 
 ### ❌ kubeadm times out waiting for API server
@@ -735,7 +798,7 @@ Set `INSTALL_HYPER2KVM_DEPS=false` to skip the host dependency step if your depl
 
 ### `scripts/install-deps.sh`
 
-This is a copy of the [hyper2kvm](https://github.com/your-org/hyper2kvm) dependency installer, bundled here for self-contained operation. It installs:
+This is a copy of the [hyper2kvm](https://github.com/ssahani/hyper2kvm) dependency installer, bundled here for self-contained operation. It installs:
 
 | Component | Purpose |
 |-----------|---------|
@@ -765,14 +828,46 @@ sudo ./scripts/install-deps.sh --verify
 DRY_RUN=true sudo ./scripts/install-deps.sh
 ```
 
+### When to use which deploy path
+
+| Path | Best for |
+|------|----------|
+| **`hypercluster` + Kubespray** | Production clusters, HA control plane, day-2 ops (scale/upgrade/remove-node) |
+| **`remote-k8s-deploy.sh`** | Quick k3s or kubeadm deploy without Ansible; multi-node with config-in-script |
+| **`remote-k3s-deploy.sh`** | Single-node k3s + Cilium + KubeVirt + CDI on one remote host |
+
 ### Comparison: standalone vs hypercluster
 
-| | `remote-k8s-deploy.sh` | `hypercluster` + Kubespray |
-|---|---|---|
-| Setup time | ~5 min | ~15 min (first run) |
-| Kubernetes flavour | k3s or kubeadm | Upstream only (kubeadm) |
-| HA control plane | ❌ | ✅ |
-| Podman support | ✅ (via runtime install) | ✅ (via Kubespray CRI) |
-| Host dep install | ✅ (`install-deps.sh`) | ❌ (separate step) |
-| Idempotent re-runs | ⚠️ partial | ✅ full |
-| Day-2 operations | ❌ manual | ✅ scale / upgrade / remove-node |
+| | `remote-k8s-deploy.sh` | `remote-k3s-deploy.sh` | `hypercluster` + Kubespray |
+|---|---|---|---|
+| Setup time | ~5 min | ~10 min | ~15 min (first run) |
+| Kubernetes flavour | k3s or kubeadm | k3s only | Upstream only (kubeadm) |
+| HA control plane | ❌ | ❌ | ✅ |
+| Podman support | ✅ (via runtime install) | ❌ (k3s containerd) | ✅ (via Kubespray CRI) |
+| Host dep install | ✅ (`install-deps.sh`) | ❌ | ❌ (separate step) |
+| Idempotent re-runs | ⚠️ partial | ⚠️ partial | ✅ full |
+| Day-2 operations | ❌ manual | ❌ manual | ✅ scale / upgrade / remove-node |
+| KubeVirt + CDI | ❌ | ✅ | ✅ (when `KUBEVIRT_ENABLED=true`) |
+
+---
+
+## Releases
+
+Version is tracked in the [`VERSION`](VERSION) file and shown by `./hypercluster -V`.
+
+**Release process:**
+
+1. Update `VERSION` (semver, e.g. `0.1.0`)
+2. Verify tested version combo in `config/cluster.conf.example` (Kubespray + Kubernetes)
+3. Run `make lint && make test-smoke && make test-inventory`
+4. Tag: `git tag -a v0.1.0 -m "v0.1.0"`
+5. Push tag and create a GitHub Release noting supported Kubespray/K8s versions
+
+**Current defaults** (see `config/cluster.conf.example`):
+
+| Component | Version |
+|-----------|---------|
+| Kubespray | v2.30.0 |
+| Kubernetes | v1.32.0 |
+| KubeVirt | v1.3.1 |
+| CDI | v1.59.0 |

@@ -15,6 +15,9 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=lib/log.sh
+source "$REPO_DIR/lib/log.sh"
+
 TEST_CONF="$REPO_DIR/cluster-test.conf"
 SSH_KEY="$HOME/.ssh/id_hypercluster_test"
 
@@ -24,12 +27,6 @@ VM_CPUS=2
 VM_MEM="3G"
 VM_DISK="15G"
 VM_IMAGE="22.04"   # Ubuntu LTS
-
-_ts()    { date '+%H:%M:%S'; }
-info()   { printf "[%s] ✅  %s\n"  "$(_ts)" "$*"; }
-warn()   { printf "[%s] ⚠️   %s\n" "$(_ts)" "$*" >&2; }
-die()    { printf "[%s] ❌  %s\n"  "$(_ts)" "$*" >&2; exit 1; }
-section(){ printf "\n🔷  %s\n%s\n\n" "$*" "$(printf '─%.0s' {1..55})"; }
 
 # ── prerequisites check ───────────────────────────────────────────────────────
 check_prereqs() {

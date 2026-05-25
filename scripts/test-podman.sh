@@ -5,11 +5,14 @@ if [[ "$(uname)" == "Darwin" && "${BASH_VERSINFO[0]:-3}" -lt 4 ]]; then
   [[ -x "$_b" ]] && exec "$_b" "$0" "$@"
   echo "bash 4+ required — run: brew install bash" >&2; exit 1
 fi
-# test-podman.sh — Test hypercluster end-to-end using Podman containers as SSH nodes.
+# test-podman.sh — Fast integration test using Podman containers as SSH nodes.
 #
 # Creates 3 rootless Podman containers (1 control-plane + 2 workers) with sshd,
 # maps unique host ports for SSH, deploys k3s via remote-k8s-deploy.sh, and verifies
 # the cluster is healthy. No sudo required.
+#
+# Note: this tests the lightweight k3s path (remote-k8s-deploy.sh), NOT the full
+# Kubespray hypercluster workflow. For Kubespray E2E, use scripts/test-local.sh.
 #
 # Usage:
 #   chmod +x scripts/test-podman.sh
@@ -26,6 +29,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+# shellcheck source=lib/log.sh
+source "$REPO_DIR/lib/log.sh"
 
 # ── container names and port mapping ─────────────────────────────────────────
 CTR_MASTER="hc-master"
@@ -38,13 +43,6 @@ PORT_API=6443                 # k3s API server forwarded from master to host
 SSH_KEY="$HOME/.ssh/id_hc_podman"
 TEST_CONF="$REPO_DIR/cluster-podman.conf"
 IMAGE_NAME="hc-node:test"
-
-# ── logging ───────────────────────────────────────────────────────────────────
-_ts()    { date '+%H:%M:%S'; }
-info()   { printf "[%s] ✅  %s\n"  "$(_ts)" "$*"; }
-warn()   { printf "[%s] ⚠️   %s\n" "$(_ts)" "$*" >&2; }
-die()    { printf "[%s] ❌  %s\n"  "$(_ts)" "$*" >&2; exit 1; }
-section(){ printf "\n🔷  %s\n%s\n\n" "$*" "$(printf '─%.0s' {1..55})"; }
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 ctr_running() { podman ps --format '{{.Names}}' 2>/dev/null | grep -qx "$1"; }

@@ -20,10 +20,9 @@
 
 set -euo pipefail
 
-_ts()  { date '+%H:%M:%S'; }
-info() { printf "[%s] ✅  %s\n" "$(_ts)" "$*"; }
-warn() { printf "[%s] ⚠️   %s\n" "$(_ts)" "$*" >&2; }
-step() { printf "\n🔷  %s\n%s\n\n" "$*" "$(printf '─%.0s' {1..50})"; }
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=lib/log.sh
+source "$REPO_DIR/lib/log.sh"
 
 # ── Homebrew ──────────────────────────────────────────────────────────────────
 step "Homebrew"
