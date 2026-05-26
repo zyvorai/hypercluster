@@ -896,3 +896,6 @@ Version is tracked in the [`VERSION`](VERSION) file and shown by `./hypercluster
 | Kubernetes | v1.32.0 |
 | KubeVirt | v1.3.1 |
 | CDI | v1.59.0 |
+## License
+
+**Proprietary — ZyvorAI Labs Private Limited** ([zyvor.dev](https://zyvor.dev)). All rights reserved. See [LICENSE](LICENSE). No redistribution without written permission.
