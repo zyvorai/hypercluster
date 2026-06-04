@@ -1,6 +1,6 @@
 # Hypercluster Documentation Hub
 
-End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** paths. Version **0.1.0** · generated 2026-06-04T16:22:04Z.
+End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** paths. Version **0.1.0** · generated 2026-06-04T16:28:10Z.
 
 ---
 
@@ -40,6 +40,17 @@ End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** p
 | [Configuration reference](generated/CONFIG-REFERENCE.md) | `config/cluster.conf.example` |
 | [Make targets](generated/MAKE-TARGETS.md) | `make help` |
 
+### Printable PDFs
+
+| Document | Description |
+|----------|-------------|
+| [PDF index](PDF_INDEX.txt) | List of all PDFs |
+| [WELCOME.pdf](pdf/WELCOME.pdf) | One-page quick start |
+| [Desktop UX guide](pdf/DESKTOP-UX-GUIDE.pdf) | Full desktop UI reference |
+| [CLI guide](pdf/CLI-GUIDE.pdf) | Commands and k3s workflow |
+| [CLI reference](pdf/CLI-REFERENCE.pdf) | Generated help text |
+| [Presentations](pdf/) | Client deck PDFs (when Chrome available) |
+
 ### Client presentations
 
 | Document | Description |
@@ -66,4 +77,4 @@ npm run desktop        # Hypercluster Desktop
 
 ---
 
-**Regenerate:** `make docs` · **Last generated:** 2026-06-04T16:22:04Z
+**Regenerate:** `make docs` · **Last generated:** 2026-06-04T16:28:10Z

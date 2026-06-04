@@ -1,5 +1,8 @@
 .kubespray/
 .kubespray-venv/
+.docs-venv/
+__pycache__/
+*.pyc
 cluster.conf
 cluster-test.conf
 cluster-podman.conf

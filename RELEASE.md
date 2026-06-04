@@ -4,7 +4,8 @@
 2. Confirm defaults in [`config/cluster.conf.example`](config/cluster.conf.example) match what was tested.
 3. Regenerate documentation:
    ```bash
-   make docs
+   pip3 install -r requirements-docs.txt   # once
+   make docs                               # markdown + docs/pdf/
    ```
 4. Run quality gates:
    ```bash

@@ -242,6 +242,8 @@ On macOS, run `./scripts/setup-macos.sh` first (installs bash 5, helm, kubectl).
 |----------|-------------|
 | [`docs/index.md`](docs/index.md) | Documentation hub (hyper2kvm-style) |
 | [`docs/welcome.html`](docs/welcome.html) | Offline interactive doc browser |
+| [`docs/pdf/`](docs/pdf/) | **Printable PDFs** (guides + presentations) |
+| [`docs/PDF_INDEX.txt`](docs/PDF_INDEX.txt) | PDF catalog |
 | [`docs/guides/desktop-ux-guide.md`](docs/guides/desktop-ux-guide.md) | **Desktop UX** — full UI reference |
 | [`docs/guides/cli/hypercluster-guide.md`](docs/guides/cli/hypercluster-guide.md) | CLI commands, JSON, k3s workflow |
 | [`docs/generated/CLI.md`](docs/generated/CLI.md) | Auto-generated CLI help |
@@ -253,8 +255,8 @@ On macOS, run `./scripts/setup-macos.sh` first (installs bash 5, helm, kubectl).
 Regenerate from sources:
 
 ```bash
-make docs
-make docs-serve   # http://localhost:8080
+make docs          # markdown + HTML + docs/pdf/ (uses .docs-venv + fpdf2)
+make docs-serve    # http://localhost:8080
 ```
 
 ---

@@ -10,7 +10,7 @@ FLAGS   ?=
 .PHONY: help init preflight deploy deploy-remote scale upgrade remove-node \
         fetch-kubeconfig merge-kubeconfig install-kubevirt status destroy check-deps \
         lint test-smoke test-inventory test-platform-config test-platform-json test-local test-podman \
-        test-remote dry-deploy unlock wizard desktop-dev desktop-build desktop-check docs
+        test-remote dry-deploy unlock wizard desktop-dev desktop-build desktop-check docs docs-venv
 
 help: ## 📖  Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -114,8 +114,13 @@ desktop-check: ## 🖥️  Typecheck + cargo check desktop app
 	cd desktop && npm install && npm run build
 	cd desktop/src-tauri && cargo check
 
-docs: ## 📚  Generate docs (_build/, guides, welcome.html, presentations)
-	chmod +x scripts/generate-docs.sh
+docs-venv: ## 📚  Create Python venv for doc PDF generation
+	python3 -m venv .docs-venv
+	.docs-venv/bin/pip install -q --upgrade pip
+	.docs-venv/bin/pip install -q -r requirements-docs.txt
+
+docs: docs-venv ## 📚  Generate docs + PDFs (_build/, guides, welcome.html, docs/pdf/)
+	chmod +x scripts/generate-docs.sh scripts/generate-doc-pdfs.py
 	./scripts/generate-docs.sh
 
 docs-serve: docs ## 📚  Serve docs locally on port 8080

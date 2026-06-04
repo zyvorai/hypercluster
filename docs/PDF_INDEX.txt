@@ -1,0 +1,19 @@
+hypercluster — printable PDF index
+Version 0.1.0
+
+  docs/welcome.html     interactive hub
+  docs/pdf/WELCOME.pdf  one-page overview
+
+  Guides:
+    01-hypercluster-overview.pdf         01 hypercluster overview
+    02-hypercluster-architecture.pdf     02 hypercluster architecture
+    03-hypercluster-deployment.pdf       03 hypercluster deployment
+    04-hypercluster-desktop.pdf          04 hypercluster desktop
+    05-hypercluster-desktop-ux.pdf       05 hypercluster desktop ux
+    CLI-GUIDE.pdf                        CLI GUIDE
+    CLI-REFERENCE.pdf                    CLI REFERENCE
+    CONFIG-REFERENCE.pdf                 CONFIG REFERENCE
+    DESKTOP-UX-GUIDE.pdf                 DESKTOP UX GUIDE
+    WELCOME.pdf                          WELCOME
+
+  Regenerate: make docs

@@ -170,6 +170,17 @@ End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** p
 | [Configuration reference](generated/CONFIG-REFERENCE.md) | \`config/cluster.conf.example\` |
 | [Make targets](generated/MAKE-TARGETS.md) | \`make help\` |
 
+### Printable PDFs
+
+| Document | Description |
+|----------|-------------|
+| [PDF index](PDF_INDEX.txt) | List of all PDFs |
+| [WELCOME.pdf](pdf/WELCOME.pdf) | One-page quick start |
+| [Desktop UX guide](pdf/DESKTOP-UX-GUIDE.pdf) | Full desktop UI reference |
+| [CLI guide](pdf/CLI-GUIDE.pdf) | Commands and k3s workflow |
+| [CLI reference](pdf/CLI-REFERENCE.pdf) | Generated help text |
+| [Presentations](pdf/) | Client deck PDFs (when Chrome available) |
+
 ### Client presentations
 
 | Document | Description |
@@ -273,6 +284,14 @@ html = f"""<!DOCTYPE html>
       <a class="link" href="guides/desktop-ux-guide.md">Desktop UX guide (Markdown)</a>
       <a class="link" href="client-presentations/04-hypercluster-desktop.html">Desktop presentation deck</a>
       <a class="link" href="../desktop/README.md">desktop/README.md</a>
+    </div>
+    <div class="panel">
+      <h3>Printable PDFs</h3>
+      <a class="link" href="pdf/WELCOME.pdf">WELCOME.pdf</a>
+      <a class="link" href="pdf/DESKTOP-UX-GUIDE.pdf">Desktop UX guide</a>
+      <a class="link" href="pdf/CLI-GUIDE.pdf">CLI guide</a>
+      <a class="link" href="pdf/CLI-REFERENCE.pdf">CLI reference</a>
+      <a class="link" href="PDF_INDEX.txt">PDF_INDEX.txt</a>
     </div>
     <div class="panel">
       <h3>CLI &amp; config</h3>
@@ -445,6 +464,18 @@ stamp_guides() {
   echo "  stamped guide footers"
 }
 
+docs_python() {
+  if [[ -x "${ROOT}/.docs-venv/bin/python" ]]; then
+    echo "${ROOT}/.docs-venv/bin/python"
+  else
+    echo python3
+  fi
+}
+
+gen_pdfs() {
+  "$(docs_python)" "${ROOT}/scripts/generate-doc-pdfs.py"
+}
+
 echo "Generating hypercluster docs (v${VERSION})…"
 gen_cli_txt
 gen_cli_md
@@ -455,4 +486,8 @@ gen_welcome_html
 DOCS="${DOCS}" gen_presentations
 gen_presentations_readme
 stamp_guides
+gen_pdfs || {
+  echo "  hint: make docs-venv && make docs" >&2
+  exit 1
+}
 echo "Done."
