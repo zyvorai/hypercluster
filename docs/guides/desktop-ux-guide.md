@@ -238,4 +238,4 @@ Human-readable test output appears in the log console; JSON mode keeps stdout cl
 
 ---
 
-_Doc version: 2026-06-04T17:30:01Z · hypercluster v0.1.0_
+_Doc version: 2026-06-04T17:43:57Z · hypercluster v0.1.0_
