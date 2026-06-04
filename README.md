@@ -246,6 +246,10 @@ On macOS, run `./scripts/setup-macos.sh` first (installs bash 5, helm, kubectl).
 | [`docs/PDF_INDEX.txt`](docs/PDF_INDEX.txt) | PDF catalog |
 | [`docs/guides/desktop-ux-guide.md`](docs/guides/desktop-ux-guide.md) | **Desktop UX** — full UI reference |
 | [`docs/guides/cli/hypercluster-guide.md`](docs/guides/cli/hypercluster-guide.md) | CLI commands, JSON, k3s workflow |
+| [`AGENTS.md`](AGENTS.md) | **AI agent instructions** (start here for agents) |
+| [`docs/agents/training.md`](docs/agents/training.md) | Full agent training guide |
+| [`docs/generated/AGENT-QUICKREF.md`](docs/generated/AGENT-QUICKREF.md) | Auto-generated agent quickref |
+| [`.cursor/rules/`](.cursor/rules/) | Cursor rules (auto-applied) |
 | [`docs/generated/CLI.md`](docs/generated/CLI.md) | Auto-generated CLI help |
 | [`docs/generated/CONFIG-REFERENCE.md`](docs/generated/CONFIG-REFERENCE.md) | `cluster.conf` variables |
 | [`desktop/README.md`](desktop/README.md) | Desktop install |

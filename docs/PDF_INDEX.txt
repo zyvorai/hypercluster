@@ -10,6 +10,7 @@ Version 0.1.0
     03-hypercluster-deployment.pdf       03 hypercluster deployment
     04-hypercluster-desktop.pdf          04 hypercluster desktop
     05-hypercluster-desktop-ux.pdf       05 hypercluster desktop ux
+    AGENT-TRAINING.pdf                   AGENT TRAINING
     CLI-GUIDE.pdf                        CLI GUIDE
     CLI-REFERENCE.pdf                    CLI REFERENCE
     CONFIG-REFERENCE.pdf                 CONFIG REFERENCE

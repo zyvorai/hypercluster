@@ -1,0 +1,13 @@
+---
+description: Hypercluster Desktop — CLI-only lifecycle
+globs: desktop/**/*
+alwaysApply: false
+---
+
+# Desktop
+
+- All deploy/test/destroy/scale paths go through `desktop/src-tauri/src/hypercluster.rs`.
+- JSON status: `run_sync(..., "status", ..., json=true)` and `test --json`.
+- Tauri events need `use tauri::Emitter`.
+- Update `docs/guides/desktop-ux-guide.md` when UX changes; run `make docs`.
+- Check: `make desktop-check`.

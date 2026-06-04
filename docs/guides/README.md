@@ -18,6 +18,14 @@ Task-oriented guides for hypercluster CLI and Desktop UX.
 |-------|----------|
 | [Desktop UX guide](desktop-ux-guide.md) | Dashboard, wizard, operations, palette |
 
+### Agent training (AI / Cursor)
+
+| Guide | Best for |
+|-------|----------|
+| [AGENTS.md](../../AGENTS.md) | Root agent summary |
+| [Agent training](agents/training.md) | Full architecture and workflows |
+| [AGENT-QUICKREF](../generated/AGENT-QUICKREF.md) | Generated quickref (`make docs`) |
+
 ### Operations
 
 | Guide | Best for |

@@ -245,6 +245,7 @@ def main() -> int:
     print(f"  pdf: docs/pdf/WELCOME.pdf")
 
     sources: list[tuple[Path, str]] = [
+        (DOCS / "agents" / "training.md", "AGENT-TRAINING.pdf"),
         (DOCS / "guides" / "desktop-ux-guide.md", "DESKTOP-UX-GUIDE.pdf"),
         (DOCS / "guides" / "cli" / "hypercluster-guide.md", "CLI-GUIDE.pdf"),
         (DOCS / "_build" / "cli-reference.txt", "CLI-REFERENCE.pdf"),

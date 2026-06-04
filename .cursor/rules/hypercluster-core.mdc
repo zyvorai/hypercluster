@@ -1,0 +1,14 @@
+---
+description: hypercluster core invariants and layout
+alwaysApply: true
+---
+
+# hypercluster core
+
+- Config: single `cluster.conf` (template `config/cluster.conf.example`).
+- k3s platform: Cilium before cert-manager; `K3S_EXEC_ARGS` includes `--disable-kube-proxy`.
+- Re-deploy skips healthy k3s reinstall unless `FORCE_K3S_REINSTALL=1`.
+- `test --json` / `status --json`: stdout JSON only; human output on stderr.
+- Desktop lifecycle ops spawn `hypercluster` only — never direct helm/kubectl.
+- After CLI/config changes run `make docs`. After shell changes run `make lint`.
+- See `AGENTS.md` and `docs/agents/training.md`.

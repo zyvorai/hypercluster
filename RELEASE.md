@@ -5,9 +5,10 @@
 3. Regenerate documentation:
    ```bash
    pip3 install -r requirements-docs.txt   # once
-   make docs                               # markdown + docs/pdf/
+   make docs                               # markdown + docs/pdf/ + AGENT-QUICKREF.md
    ```
-4. Run quality gates:
+4. For agent/Cursor work, keep [AGENTS.md](AGENTS.md) and [docs/agents/training.md](docs/agents/training.md) in sync with behavior changes.
+5. Run quality gates:
    ```bash
    make lint
    make test-smoke

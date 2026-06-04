@@ -1,6 +1,6 @@
 # Hypercluster Documentation Hub
 
-End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** paths. Version **0.1.0** · generated 2026-06-04T16:28:10Z.
+End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** paths. Version **0.1.0** · generated 2026-06-04T17:29:45Z.
 
 ---
 
@@ -10,10 +10,33 @@ End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** p
 - **k3s E2E** — `preflight → deploy → test` with `test --json` / `status --json`
 - **Hypercluster Desktop** — Tauri app; all actions via CLI ([guide](guides/desktop-ux-guide.md))
 - **Doc generator** — `make docs` · `make docs-serve` (port 8080)
+- **Agent training** — [AGENTS.md](../AGENTS.md) · [training.md](agents/training.md)
 
 ---
 
 ## Documentation structure
+
+### Agent training (AI / Cursor)
+
+| Document | Description |
+|----------|-------------|
+| [AGENTS.md](../AGENTS.md) | Root agent instructions (start here) |
+| [Agent training guide](agents/training.md) | Full architecture, workflows, pitfalls |
+| [Agent quickref](generated/AGENT-QUICKREF.md) | Auto-generated from repo (python3 -m venv .docs-venv
+.docs-venv/bin/pip install -q --upgrade pip
+.docs-venv/bin/pip install -q -r requirements-docs.txt
+chmod +x scripts/generate-docs.sh scripts/generate-doc-pdfs.py
+./scripts/generate-docs.sh
+Generating hypercluster docs (v0.1.0)…
+  wrote docs/_build/cli-reference.txt
+  wrote docs/generated/CLI.md
+  wrote docs/generated/CONFIG-REFERENCE.md
+  wrote docs/generated/MAKE-TARGETS.md
+  wrote docs/generated/AGENT-QUICKREF.md
+  wrote docs/index.md
+  wrote docs/README.md) |
+| [AGENT-TRAINING.pdf](pdf/AGENT-TRAINING.pdf) | Printable training PDF |
+| [.cursor/rules/](../.cursor/rules/) | Cursor rules (auto-applied) |
 
 ### Getting started
 
@@ -49,6 +72,7 @@ End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** p
 | [Desktop UX guide](pdf/DESKTOP-UX-GUIDE.pdf) | Full desktop UI reference |
 | [CLI guide](pdf/CLI-GUIDE.pdf) | Commands and k3s workflow |
 | [CLI reference](pdf/CLI-REFERENCE.pdf) | Generated help text |
+| [Agent training](pdf/AGENT-TRAINING.pdf) | AI agent training guide |
 | [Presentations](pdf/) | Client deck PDFs (when Chrome available) |
 
 ### Client presentations
@@ -77,4 +101,36 @@ npm run desktop        # Hypercluster Desktop
 
 ---
 
-**Regenerate:** `make docs` · **Last generated:** 2026-06-04T16:28:10Z
+**Regenerate:** `make docs` · **Last generated:** 2026-06-04T17:29:45Z
+UIDE.pdf) | Commands and k3s workflow |
+| [CLI reference](pdf/CLI-REFERENCE.pdf) | Generated help text |
+| [Agent training](pdf/AGENT-TRAINING.pdf) | AI agent training guide |
+| [Presentations](pdf/) | Client deck PDFs (when Chrome available) |
+
+### Client presentations
+
+| Document | Description |
+|----------|-------------|
+| [Presentation index](client-presentations/README.md) | A4 HTML decks (offline / print PDF) |
+
+### Release
+
+| Document | Description |
+|----------|-------------|
+| [RELEASE.md](../RELEASE.md) | Version bump checklist |
+| [desktop/README.md](../desktop/README.md) | Desktop install & npm CLI |
+
+---
+
+## Quick commands
+
+```bash
+make docs              # regenerate this tree
+make docs-serve        # http://localhost:8080
+make test-platform-json
+npm run desktop        # Hypercluster Desktop
+```
+
+---
+
+**Regenerate:** `make docs` · **Last generated:** 2026-06-04T17:29:58Z
