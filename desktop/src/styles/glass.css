@@ -1,0 +1,73 @@
+:root {
+  --glass-bg: #0b0b0f;
+  --glass-panel: rgba(255, 255, 255, 0.06);
+  --glass-panel-elevated: rgba(255, 255, 255, 0.09);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-strong: rgba(255, 255, 255, 0.18);
+  --glass-accent: #0a84ff;
+  --glass-muted: rgba(255, 255, 255, 0.55);
+  --radius-liquid: 22px;
+  --radius-liquid-lg: 28px;
+}
+
+.glass {
+  background: var(--glass-panel);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-liquid);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.glass-elevated {
+  background: var(--glass-panel-elevated);
+  border-color: var(--glass-border-strong);
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--glass-border-strong);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+}
+
+.glass-hover:hover {
+  border-color: var(--glass-border-strong);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+}
+
+.btn-primary {
+  @apply rounded-full px-5 py-2.5 font-medium text-white transition;
+  background: var(--glass-accent);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.08);
+}
+
+.btn-secondary {
+  @apply rounded-full px-5 py-2.5 font-medium text-white/90 transition;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
+}
+
+.btn-danger {
+  @apply rounded-full px-5 py-2.5 font-medium text-white transition;
+  background: #ff453a;
+}
+
+.input-glass {
+  @apply w-full rounded-2xl px-4 py-2.5 text-white outline-none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border);
+}
+
+.input-glass:focus {
+  border-color: var(--glass-accent);
+}
+
+.log-console {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

@@ -1,8 +1,58 @@
 #!/usr/bin/env bash
 # kubeconfig retrieval and merge helpers — source this file.
 
+kubeconfig::_patch_server() {
+  local output="$1" first_cp_ip="$2"
+  log::info "Patching server address → $first_cp_ip"
+  if [[ "$(uname)" == "Darwin" ]]; then
+    sed -i '' \
+      -e "s|https://127.0.0.1:|https://${first_cp_ip}:|g" \
+      -e "s|https://localhost:|https://${first_cp_ip}:|g" \
+      "$output"
+  else
+    sed -i.bak \
+      -e "s|https://127.0.0.1:|https://${first_cp_ip}:|g" \
+      -e "s|https://localhost:|https://${first_cp_ip}:|g" \
+      "$output"
+    rm -f "${output}.bak"
+  fi
+}
+
+kubeconfig::fetch_k3s() {
+  local first_cp_ip
+  first_cp_ip=$(echo "$CONTROL_PLANE_IPS" | awk '{print $1}')
+  local key="${SSH_KEY/#\~/$HOME}"
+  local output="${KUBECONFIG_OUTPUT/#\~/$HOME}"
+  local scp_opts=(-i "$key" -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15)
+  [[ -n "${SSH_PORT:-}" && "${SSH_PORT}" != "22" ]] && scp_opts+=(-P "$SSH_PORT")
+  [[ -n "${SSH_EXTRA_ARGS:-}" ]] && scp_opts+=(${SSH_EXTRA_ARGS})
+
+  log::section "Fetching k3s kubeconfig"
+  mkdir -p "$(dirname "$output")"
+
+  if [[ "${DRY_RUN:-0}" == "1" ]]; then
+    log::warn "DRY RUN — skipping kubeconfig fetch."
+    return 0
+  fi
+
+  log::info "Reading /etc/rancher/k3s/k3s.yaml from $first_cp_ip …"
+  # shellcheck disable=SC2086,SC2029
+  ssh "${scp_opts[@]}" "$SSH_USER@$first_cp_ip" "sudo cat /etc/rancher/k3s/k3s.yaml" > "$output"
+  chmod 600 "$output"
+  kubeconfig::_patch_server "$output" "$first_cp_ip"
+
+  log::ok "kubeconfig saved → $output"
+  log::info "To use:"
+  printf "    export KUBECONFIG=%s\n    kubectl get nodes\n\n" "$output"
+}
+
 kubeconfig::fetch() {
   local kubespray_dir="$1"
+  if [[ "${K8S_DISTRO:-kubespray}" == "k3s" ]]; then
+    kubeconfig::fetch_k3s
+    return
+  fi
+
   local first_cp_ip
   first_cp_ip=$(echo "$CONTROL_PLANE_IPS" | awk '{print $1}')
   local key="${SSH_KEY/#\~/$HOME}"
@@ -31,13 +81,7 @@ kubeconfig::fetch() {
         "$output"
   fi
 
-  # Rewrite the server address if it resolves to 127.0.0.1 / localhost
-  log::info "Patching server address → $first_cp_ip"
-  sed -i.bak \
-    -e "s|https://127.0.0.1:|https://${first_cp_ip}:|g" \
-    -e "s|https://localhost:|https://${first_cp_ip}:|g" \
-    "$output"
-  rm -f "${output}.bak"
+  kubeconfig::_patch_server "$output" "$first_cp_ip"
 
   log::ok "kubeconfig saved → $output"
   log::info "To use:"

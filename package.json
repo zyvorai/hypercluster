@@ -1,0 +1,15 @@
+{
+  "name": "hypercluster",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Kubernetes cluster lifecycle wrapper with optional desktop UI",
+  "workspaces": [
+    "desktop"
+  ],
+  "scripts": {
+    "desktop": "hypercluster-desktop dev",
+    "desktop:dev": "hypercluster-desktop dev",
+    "desktop:build": "hypercluster-desktop build",
+    "desktop:run": "hypercluster-desktop run"
+  }
+}

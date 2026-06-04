@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-glass-bg text-white font-sans antialiased;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply rounded-glass border border-glass-border bg-glass-panel backdrop-blur-xl;
+  }
+  .glass-panel-lg {
+    @apply rounded-glass-lg border border-glass-border bg-glass-panel backdrop-blur-xl;
+  }
+  .btn-primary {
+    @apply rounded-xl bg-glass-accent px-4 py-2 font-medium text-white transition hover:brightness-110;
+  }
+  .btn-ghost {
+    @apply rounded-xl border border-glass-border bg-white/5 px-4 py-2 transition hover:bg-white/10;
+  }
+}

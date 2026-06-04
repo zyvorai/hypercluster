@@ -11,6 +11,7 @@ Usage: remote-k3s-deploy.sh [options] user@host
 
 Options:
   -h, --help     Show this help
+  -i, --identity PATH   SSH private key (or set SSH_IDENTITY)
   -y, --yes      Accept host SSH key non-interactively (default: yes)
   -k, --strict   Require SSH host key verification (more secure)
 
@@ -27,11 +28,17 @@ USAGE
 
 STRICT_HOSTKEY=0
 ACCEPT_HOSTKEY=1
+SSH_IDENTITY="${SSH_IDENTITY:-}"
 TARGET=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help) usage; exit 0 ;;
+    -i|--identity)
+      [[ $# -ge 2 ]] || { echo "Missing argument for $1" >&2; exit 1; }
+      SSH_IDENTITY="$2"
+      shift 2
+      ;;
     -y|--yes) ACCEPT_HOSTKEY=1; shift ;;
     -k|--strict) STRICT_HOSTKEY=1; ACCEPT_HOSTKEY=0; shift ;;
     *)
@@ -53,6 +60,9 @@ if [[ -z "${TARGET}" ]]; then
 fi
 
 SSH_OPTS=( -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 )
+if [[ -n "$SSH_IDENTITY" ]]; then
+  SSH_OPTS+=( -i "$SSH_IDENTITY" -o IdentitiesOnly=yes )
+fi
 if [[ "$STRICT_HOSTKEY" -eq 1 ]]; then
   SSH_OPTS+=( -o StrictHostKeyChecking=yes )
 elif [[ "$ACCEPT_HOSTKEY" -eq 1 ]]; then
@@ -230,13 +240,13 @@ log "3 — kubectl client (latest stable, SHA256 verified)"
 KUBECTL_VERSION="$(install_kubectl_release)"
 
 # --- 4. Wait for API ---------------------------------------------------------
-log "4 — Wait for API server and Ready node"
+log "4 — Wait for API server (node Ready comes after Cilium — flannel is disabled)"
 
 for _ in $(seq 1 60); do
   if kube_admin "$KUBECTL" get nodes &>/dev/null; then break; fi
   sleep 2
 done
-kube_admin "$KUBECTL" wait --for=condition=Ready node --all --timeout=240s
+kube_admin "$KUBECTL" get nodes &>/dev/null || die "API server not reachable after 120s"
 
 sudo mkdir -p /root/.kube
 sudo cp -f "$KCFG" /root/.kube/config
@@ -292,6 +302,9 @@ else
 fi
 
 kube_admin "$CILIUM_BIN" status --wait --wait-duration 25m --ignore-warnings
+
+log "8b — Wait for Ready node (CNI now installed)"
+kube_admin "$KUBECTL" wait --for=condition=Ready node --all --timeout=600s
 
 # --- 9. KubeVirt + virtctl ----------------------------------------------------
 log "9 — KubeVirt operator / CR + virtctl"

@@ -1,0 +1,9 @@
+configuration:
+  developerConfiguration:
+    useEmulation: false
+  vmStateStorageClass: local-path
+  network:
+    permitBridgeInterfaceOnPodNetwork: true
+  migrations:
+    parallelMigrationsPerCluster: 10
+    parallelOutboundMigrationsPerNode: 5

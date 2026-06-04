@@ -23,3 +23,9 @@ jobs:
 
       - name: Run inventory tests
         run: make test-inventory
+
+      - name: Run platform config tests
+        run: make test-platform-config
+
+      - name: Build desktop frontend
+        run: make desktop-build

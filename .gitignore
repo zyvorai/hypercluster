@@ -3,6 +3,10 @@
 cluster.conf
 cluster-test.conf
 cluster-podman.conf
+node_modules/
+desktop/node_modules/
+desktop/dist/
+desktop/src-tauri/target/
 *.bak
 
 # Local AI caches

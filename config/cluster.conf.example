@@ -13,13 +13,51 @@ KUBESPRAY_VERSION="v2.30.0"
 KUBESPRAY_DIR=".kubespray"          # relative to this repo root
 
 # ---------------------------------------------------------------------------
-# Kubernetes
+# Kubernetes distribution
+# kubespray — upstream kubeadm via Kubespray (default, HA-capable)
+# k3s         — lightweight k3s over SSH + Helm platform stack from deployer
+# ---------------------------------------------------------------------------
+K8S_DISTRO="kubespray"              # kubespray | k3s
+
+# k3s-only settings (ignored when K8S_DISTRO=kubespray)
+K3S_DATA_DIR="/data/k3s"
+K3S_EXEC_ARGS="--flannel-backend=none --disable-network-policy --disable traefik --disable servicelb --disable-kube-proxy"
+CILIUM_HUBBLE_ENABLED="true"
+CILIUM_KUBE_PROXY_REPLACEMENT="true"
+CILIUM_K8S_SERVICE_HOST="127.0.0.1"
+
+# k3s platform stack (Helm) — auto-installed on deploy when K8S_DISTRO=k3s
+PLATFORM_STACK_ENABLED="true"
+CERT_MANAGER_ENABLED="true"
+METALLB_ENABLED="true"
+METALLB_IP_POOL=""                    # required when METALLB_ENABLED=true, e.g. "192.168.1.240-192.168.1.250"
+CDI_ENABLED="true"
+KUBEVIRT_CSI_ENABLED="true"
+KUBEVIRT_DISKS_PROVIDER="true"
+SNAPSHOT_CONTROLLER_ENABLED="true"
+CNAO_ENABLED="true"
+SSP_ENABLED="true"
+LONGHORN_ENABLED="false"
+DESCHEDULER_ENABLED="false"
+NFD_ENABLED="false"
+GPU_OPERATOR_ENABLED="false"
+
+# Optional Helm chart version pins (leave empty for latest)
+# CERT_MANAGER_VERSION=""
+# CILIUM_CHART_VERSION=""
+# METALLB_CHART_VERSION=""
+# KUBEVIRT_CHART_VERSION=""
+# CDI_CHART_VERSION=""
+
+# ---------------------------------------------------------------------------
+# Kubernetes (Kubespray path)
 # ---------------------------------------------------------------------------
 KUBE_VERSION="v1.32.0"
 CONTAINER_MANAGER="podman"          # podman | containerd | docker
 CNI_PLUGIN="cilium"                 # cilium | calico | flannel | kube-ovn
 
 # Pod / service CIDRs (must not overlap with node network)
+# k3s defaults: 10.42.0.0/16 pods, 10.43.0.0/16 services
 KUBE_PODS_SUBNET="10.233.64.0/18"
 KUBE_SERVICE_ADDRESSES="10.233.0.0/18"
 
@@ -56,3 +94,4 @@ CDI_VERSION="v1.59.0"              # Containerized Data Importer
 # kubeconfig output
 # ---------------------------------------------------------------------------
 KUBECONFIG_OUTPUT="$HOME/.kube/${CLUSTER_NAME}.yaml"
+KUBECONFIG_MERGE_DEFAULT="false"    # merge into ~/.kube/config after deploy (k3s)

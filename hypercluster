@@ -21,6 +21,7 @@ fi
 #   fetch-kubeconfig  Copy admin.conf from the first control-plane node
 #   merge-kubeconfig  Merge the cluster kubeconfig into ~/.kube/config
 #   install-kubevirt  Install KubeVirt operator + CDI (also runs after deploy if KUBEVIRT_ENABLED=true)
+#   test              Run platform smoke tests (k3s path; optional --full)
 #   destroy           Tear down the cluster (reset.yml)
 #   status            Run 'kubectl get nodes' against the cluster
 #   unlock            Remove stale per-cluster lock after a crash
@@ -96,6 +97,14 @@ source "$SCRIPT_DIR/lib/inventory.sh"
 source "$SCRIPT_DIR/lib/kubespray.sh"
 # shellcheck source=lib/kubeconfig.sh
 source "$SCRIPT_DIR/lib/kubeconfig.sh"
+# shellcheck source=lib/k3s.sh
+source "$SCRIPT_DIR/lib/k3s.sh"
+# shellcheck source=lib/platform-stack.sh
+source "$SCRIPT_DIR/lib/platform-stack.sh"
+# shellcheck source=lib/platform-tools.sh
+source "$SCRIPT_DIR/lib/platform-tools.sh"
+# shellcheck source=lib/platform-test.sh
+source "$SCRIPT_DIR/lib/platform-test.sh"
 
 # ── wizard (no cluster.conf required) ─────────────────────────────────────────
 if [[ "$COMMAND" == "wizard" ]]; then
@@ -118,7 +127,11 @@ fi
 source "$CONFIG_FILE"
 
 # Validate required config variables
-_required_vars=(CLUSTER_NAME KUBESPRAY_VERSION KUBE_VERSION SSH_USER SSH_KEY CONTROL_PLANE_IPS)
+_distro="${K8S_DISTRO:-kubespray}"
+_required_vars=(CLUSTER_NAME SSH_USER SSH_KEY CONTROL_PLANE_IPS)
+if [[ "$_distro" == "kubespray" ]]; then
+  _required_vars+=(KUBESPRAY_VERSION KUBE_VERSION)
+fi
 _missing=()
 for _v in "${_required_vars[@]}"; do
   [[ -n "${!_v:-}" ]] || _missing+=("$_v")
@@ -198,6 +211,11 @@ INV_DIR="$KUBESPRAY_DIR/inventory/$CLUSTER_NAME"
 
 # ── commands ─────────────────────────────────────────────────────────────────
 cmd_init() {
+  if [[ "${K8S_DISTRO:-kubespray}" == "k3s" ]]; then
+    log::section "Init: k3s (no Kubespray inventory)"
+    log::ok "k3s mode — config validated, ready to deploy."
+    return 0
+  fi
   log::section "Init: Kubespray source + inventory"
   kubespray::ensure_source "$KUBESPRAY_DIR" "$KUBESPRAY_VERSION"
   inventory::init "$KUBESPRAY_DIR"
@@ -208,7 +226,30 @@ cmd_preflight() {
 }
 
 cmd_deploy() {
-  log::section "Deploy cluster: $CLUSTER_NAME"
+  log::section "Deploy cluster: $CLUSTER_NAME (${K8S_DISTRO:-kubespray})"
+
+  if [[ "${K8S_DISTRO:-kubespray}" == "k3s" ]]; then
+    progress::stage 1 7 "Preflight checks"
+    cmd_preflight
+    progress::stage 2 7 "Init — validate k3s config"
+    cmd_init
+    progress::stage 3 7 "k3s install (server + workers, no Flannel/Traefik)"
+    k3s::deploy
+    progress::stage 4 7 "Fetch kubeconfig (laptop + remote user)"
+    cmd_fetch_kubeconfig
+    k3s::wait_api
+    k3s::install_remote_kubeconfig
+    progress::stage 5 7 "Platform stack (Cilium, MetalLB, KubeVirt, CDI, …)"
+    [[ "${PLATFORM_STACK_ENABLED:-true}" == "true" ]] && platform::install_stack
+    progress::stage 6 7 "Remote CLI tools + kubeconfig merge"
+    platform_tools::install_remote
+    platform_tools::merge_laptop_kubeconfig
+    progress::stage 7 7 "Done"
+    log::ok "k3s virtualization platform deployed! 🎉"
+    postdeploy::print_hints
+    return 0
+  fi
+
   progress::stage 1 4 "Preflight checks"
   cmd_preflight
   progress::stage 2 4 "Init — Kubespray + inventory"
@@ -298,11 +339,18 @@ cmd_destroy() {
     read -r -p "Type the cluster name to confirm destruction ($CLUSTER_NAME): " confirm
     [[ "$confirm" == "$CLUSTER_NAME" ]] || die "Aborted."
   fi
+  if [[ "${K8S_DISTRO:-kubespray}" == "k3s" ]]; then
+    k3s::destroy
+    log::ok "k3s cluster destroyed."
+    return 0
+  fi
   kubespray::run_playbook "$KUBESPRAY_DIR" reset.yml -e "reset_confirmation=yes"
   log::ok "Cluster destroyed."
 }
 
 cmd_status() {
+  local json=0
+  [[ "${1:-}" == "--json" ]] && json=1
   local kc="${KUBECONFIG_OUTPUT/#\~/$HOME}"
   if [[ ! -f "$kc" ]]; then
     local artifacts_kc="$INV_DIR/artifacts/admin.conf"
@@ -313,8 +361,44 @@ cmd_status() {
       die "kubeconfig not found: $kc — run 'fetch-kubeconfig' first."
     fi
   fi
+  if [[ "$json" == "1" ]]; then
+    KUBECONFIG="$kc" kubectl get nodes -o json | python3 -c '
+import json, sys
+data = json.load(sys.stdin)
+nodes = []
+ready = 0
+for item in data.get("items", []):
+    name = item["metadata"]["name"]
+    conds = item.get("status", {}).get("conditions", [])
+    is_ready = any(c.get("type") == "Ready" and c.get("status") == "True" for c in conds)
+    if is_ready:
+        ready += 1
+    roles = item["metadata"].get("labels", {}).get("node-role.kubernetes.io/control-plane", "")
+    nodes.append({"name": name, "ready": is_ready, "roles": roles or "worker"})
+print(json.dumps({"ready": ready, "total": len(nodes), "nodes": nodes}))
+'
+    return 0
+  fi
   log::section "Cluster status: $CLUSTER_NAME"
   KUBECONFIG="$kc" kubectl get nodes -o wide
+}
+
+cmd_test() {
+  if [[ "${K8S_DISTRO:-kubespray}" != "k3s" ]]; then
+    die "test command is for K8S_DISTRO=k3s only. Use kubectl checks for Kubespray clusters."
+  fi
+  local json=0 full=""
+  for arg in "$@"; do
+    case "$arg" in
+      --json) json=1 ;;
+      --full) full="--full" ;;
+    esac
+  done
+  if [[ "$json" == "1" ]]; then
+    HC_JSON=1 platform_test::run "$full"
+    return $?
+  fi
+  platform_test::run "$full"
 }
 
 # ── dispatch ─────────────────────────────────────────────────────────────────
@@ -328,6 +412,7 @@ case "$COMMAND" in
   fetch-kubeconfig)   cmd_fetch_kubeconfig ;;
   merge-kubeconfig)   cmd_merge_kubeconfig ;;
   install-kubevirt)   KUBEVIRT_REQUIRED=1; cmd_install_kubevirt ;;
+  test)               cmd_test "${1:-}" ;;
   destroy)            cmd_destroy ;;
   status)             cmd_status ;;
   unlock)             cmd_unlock ;;

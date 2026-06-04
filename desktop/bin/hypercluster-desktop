@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# Hypercluster Desktop — npm-style CLI launcher (like `agent` / `cursor agent`)
+set -euo pipefail
+
+export HC_DESKTOP_INVOKED_AS="${HC_DESKTOP_INVOKED_AS:-$(basename "$0")}"
+
+if command -v realpath >/dev/null 2>&1; then
+  SCRIPT_DIR="$(dirname "$(realpath "$0")")"
+else
+  SCRIPT_DIR="$(dirname "$(readlink "$0" 2>/dev/null || echo "$0")")"
+fi
+
+DESKTOP_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+TAURI_DIR="$DESKTOP_ROOT/src-tauri"
+CMD="${1:-dev}"
+
+usage() {
+  cat <<EOF
+Usage: ${HC_DESKTOP_INVOKED_AS} [command] [options]
+
+Commands:
+  dev      Start Tauri dev server (default)
+  build    Build production frontend + native app bundle
+  run      Launch the built .app (macOS) or binary
+  help     Show this help
+
+Examples:
+  ${HC_DESKTOP_INVOKED_AS}              # same as dev
+  ${HC_DESKTOP_INVOKED_AS} dev
+  ${HC_DESKTOP_INVOKED_AS} build
+  npm install -g ./desktop && ${HC_DESKTOP_INVOKED_AS}
+EOF
+}
+
+ensure_deps() {
+  if [[ ! -d "$DESKTOP_ROOT/node_modules" ]]; then
+    echo "→ Installing desktop dependencies…" >&2
+    (cd "$DESKTOP_ROOT" && npm install)
+  fi
+}
+
+tauri() {
+  ensure_deps
+  (cd "$DESKTOP_ROOT" && npm run tauri -- "$@")
+}
+
+launch_built() {
+  local app=""
+  if [[ "$OSTYPE" == darwin* ]]; then
+    app="$(find "$TAURI_DIR/target" -path '*/bundle/macos/*.app' -type d 2>/dev/null | head -1 || true)"
+    if [[ -n "$app" ]]; then
+      exec open "$app"
+    fi
+  fi
+
+  local bin="$TAURI_DIR/target/release/hypercluster-desktop"
+  if [[ -x "$bin" ]]; then
+    exec "$bin" "${@:2}"
+  fi
+
+  bin="$TAURI_DIR/target/debug/hypercluster-desktop"
+  if [[ -x "$bin" ]]; then
+    exec "$bin" "${@:2}"
+  fi
+
+  echo "❌  No built Hypercluster Desktop app found." >&2
+  echo "    Run: ${HC_DESKTOP_INVOKED_AS} build" >&2
+  exit 1
+}
+
+case "$CMD" in
+  -h|--help|help)
+    usage
+    ;;
+  dev)
+    shift || true
+    tauri dev "$@"
+    ;;
+  build)
+    shift || true
+    tauri build "$@"
+    ;;
+  run|open|start)
+    shift || true
+    launch_built "$@"
+    ;;
+  *)
+    # Unknown first arg — pass through to tauri dev (e.g. extra flags)
+    tauri dev "$@"
+    ;;
+esac

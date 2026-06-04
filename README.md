@@ -10,24 +10,29 @@ Deploys upstream Kubernetes with **Podman** as the container runtime, entirely o
 1. [How it works](#how-it-works)
 2. [Prerequisites](#prerequisites)
 3. [macOS setup & local testing](#macos-setup--local-testing)
-4. [Installation](#installation)
-5. [Configuration](#configuration)
-6. [Tutorial: first cluster](#tutorial-first-cluster)
+4. [Remote k3s platform quickstart](#remote-k3s-platform-quickstart)
+5. [Installation](#installation)
+6. [Configuration](#configuration)
+7. [Tutorial: first cluster](#tutorial-first-cluster)
    - [Step 1 — Prepare your nodes](#step-1--prepare-your-nodes)
    - [Step 2 — Create your config](#step-2--create-your-config)
    - [Step 3 — Run preflight checks](#step-3--run-preflight-checks)
    - [Step 4 — Deploy](#step-4--deploy)
    - [Step 5 — Access the cluster](#step-5--access-the-cluster)
-7. [Day-2 operations](#day-2-operations)
-8. [Standalone script](#standalone-script)
-9. [Command reference](#command-reference)
-10. [Project layout](#project-layout)
-11. [Podman notes](#podman-notes)
-12. [Troubleshooting](#troubleshooting)
+8. [Day-2 operations](#day-2-operations)
+9. [Standalone scripts (legacy)](#standalone-scripts-legacy)
+10. [Command reference](#command-reference)
+11. [Project layout](#project-layout)
+12. [Podman notes](#podman-notes)
+13. [Troubleshooting](#troubleshooting)
 
 ---
 
 ## How it works
+
+hypercluster supports two deployment paths, selected by `K8S_DISTRO` in `cluster.conf`:
+
+**Kubespray (default)** — upstream Kubernetes via Ansible:
 
 ```
 cluster.conf  ──►  hypercluster  ──►  Kubespray (Ansible)  ──►  nodes via SSH
@@ -38,7 +43,18 @@ cluster.conf  ──►  hypercluster  ──►  Kubespray (Ansible)  ──►
                         └─ fetches kubeconfig to your workstation
 ```
 
-hypercluster is a **thin shell wrapper** — it does no Kubernetes work itself. Every cluster operation delegates to a Kubespray Ansible playbook; hypercluster just handles the surrounding lifecycle (config → inventory generation → playbook execution → kubeconfig retrieval).
+**k3s** — lightweight remote platform with virtualization stack (Cilium, MetalLB, KubeVirt, CDI, …):
+
+```
+cluster.conf  ──►  hypercluster  ──►  SSH to remote host
+                        │
+                        ├─ installs k3s (no Flannel / Traefik / servicelb)
+                        ├─ fetches kubeconfig (laptop + remote ~/.kube/config)
+                        ├─ Helm from laptop: cert-manager → Cilium → MetalLB → KubeVirt …
+                        └─ ./hypercluster test  — automated smoke tests
+```
+
+For Kubespray, hypercluster is a **thin shell wrapper** — it delegates cluster operations to Ansible playbooks. For k3s, it orchestrates SSH bootstrap plus Helm-based platform installs from your laptop.
 
 ---
 
@@ -103,12 +119,12 @@ kubectl get nodes -o wide
 
 ### Fast integration test with Podman
 
-`scripts/test-podman.sh` is a **lighter-weight** test that uses Podman containers as SSH nodes and deploys via `remote-k8s-deploy.sh` (k3s path). It does **not** exercise the full Kubespray/hypercluster workflow.
+`scripts/test-podman.sh` uses Podman containers as SSH nodes and deploys via the **hypercluster k3s path** (`preflight` → `deploy` → `test`). No sudo required on the deployer.
 
 | Test script | What it validates | Runtime |
 |-------------|-------------------|---------|
 | `scripts/test-local.sh` | Full Kubespray path via `hypercluster deploy` | 20–30 min |
-| `scripts/test-podman.sh` | k3s path via `remote-k8s-deploy.sh` | ~10 min |
+| `scripts/test-podman.sh` | k3s platform path via `hypercluster deploy` + `test` | ~15–25 min |
 
 ```bash
 # Fast k3s integration test (Podman containers, no sudo)
@@ -125,25 +141,83 @@ chmod +x scripts/test-podman.sh
 ### Automated checks (no VMs required)
 
 ```bash
-make lint            # shellcheck on all scripts
-make test-smoke      # CLI help, version, config validation
-make test-inventory  # inventory generation unit tests
+make lint                  # shellcheck on all scripts
+make test-smoke            # CLI help, version, config validation
+make test-inventory        # inventory generation unit tests
+make test-platform-config  # k3s platform config generation (Cilium values, etc.)
 ```
 
 These run automatically in CI on every push/PR.
 
-### Deploying to real remote nodes from macOS
+---
 
-Once `setup-macos.sh` has run, the full workflow is identical to Linux:
+## Remote k3s platform quickstart
+
+Deploy a full virtualization stack on a remote Linux host (AlmaLinux, Rocky, Ubuntu) from your laptop in three commands.
+
+### Prerequisites
+
+| Where | Requirements |
+|-------|--------------|
+| **Laptop** | `bash` 4+, `ssh`, `scp`, `curl`, `kubectl`, `helm` (optional: `cilium` CLI for Hubble) |
+| **Remote host** | Linux with KVM (`/dev/kvm`), passwordless `sudo` for `SSH_USER`, port 6443 reachable |
+
+### Configure
 
 ```bash
 cp config/cluster.conf.example cluster.conf
-$EDITOR cluster.conf           # set real node IPs, SSH key
-make preflight                 # verify connectivity
-make deploy                    # deploy
+$EDITOR cluster.conf
 ```
 
-The only macOS-specific requirement is that `hypercluster` is invoked through the Homebrew bash (`/opt/homebrew/bin/bash`) rather than the system bash. The `#!/usr/bin/env bash` shebang will pick up the correct one as long as `$(brew --prefix)/bin` is early in your `PATH` (which `setup-macos.sh` ensures).
+Key settings for a single-node remote host:
+
+```bash
+K8S_DISTRO="k3s"
+CONTROL_PLANE_IPS="192.168.1.100"
+SSH_USER="admin"
+SSH_KEY="$HOME/.ssh/id_ed25519"
+METALLB_ENABLED="true"
+METALLB_IP_POOL="192.168.1.240-192.168.1.250"   # required when MetalLB enabled
+PLATFORM_STACK_ENABLED="true"
+KUBEVIRT_ENABLED="true"
+KUBEVIRT_DISKS_PROVIDER="true"
+KUBECONFIG_OUTPUT="$HOME/.kube/k3s-remote.yaml"
+KUBECONFIG_MERGE_DEFAULT="false"   # set true to merge into ~/.kube/config
+```
+
+Run `./hypercluster wizard` for an interactive generator (supports k3s vs Kubespray, MetalLB pool, KubeVirt).
+
+### Deploy and verify
+
+```bash
+./hypercluster -c cluster.conf preflight   # SSH, sudo, tools, MetalLB pool
+./hypercluster -c cluster.conf deploy      # full install (~20–40 min)
+./hypercluster -c cluster.conf test        # automated smoke (~5 min)
+./hypercluster -c cluster.conf status      # day-2 node status
+```
+
+Makefile aliases:
+
+```bash
+make deploy-remote CONFIG=cluster.conf
+make test-remote CONFIG=cluster.conf
+```
+
+After deploy:
+
+- Laptop kubeconfig at `KUBECONFIG_OUTPUT`
+- Remote user gets `~/.kube/config`, `kubectl`, `virtctl`, and `/usr/local/bin/cluster-info`
+- Stack includes cert-manager, Cilium (KubeVirt-aware), MetalLB, snapshot-controller, metrics-server, KubeVirt, CDI, CSI, CNAO, SSP (when charts available)
+
+Extended snapshot smoke: `./hypercluster -c cluster.conf test --full`
+
+Destroy (with `-f` to also helm-uninstall platform releases first):
+
+```bash
+./hypercluster -c cluster.conf -f destroy
+```
+
+On macOS, run `./scripts/setup-macos.sh` first (installs bash 5, helm, kubectl). The `hypercluster` shebang re-execs with Homebrew bash automatically.
 
 ---
 
@@ -188,7 +262,35 @@ cd hypercluster
 chmod +x hypercluster
 ```
 
-Optionally add it to your `PATH`:
+### Desktop app (optional)
+
+A Tauri-based Liquid Glass UI lives in [`desktop/`](desktop/). It runs **all** cluster operations through the `hypercluster` CLI.
+
+Install once from the repo root (npm workspaces, like the Cursor `agent` CLI):
+
+```bash
+npm install
+npm run desktop          # or: npx hypercluster-desktop
+```
+
+Global install (available as `hypercluster-desktop` / `hc-desktop` anywhere):
+
+```bash
+npm install -g ./desktop
+hypercluster-desktop
+```
+
+Commands:
+
+| Command | Action |
+|---------|--------|
+| `hypercluster-desktop` | Start dev app (default) |
+| `hypercluster-desktop build` | Build native bundle |
+| `hypercluster-desktop run` | Open built `.app` |
+
+See [`desktop/README.md`](desktop/README.md) for details.
+
+Optionally add the CLI to your `PATH`:
 
 ```bash
 export PATH="$PATH:$(pwd)"
@@ -584,7 +686,9 @@ Skip the prompt (for CI pipelines):
 | `init` | `make init` | Clone Kubespray + generate inventory |
 | `wizard` | `make wizard` | Interactive cluster.conf generator |
 | `preflight` | `make preflight` | Check local tools + SSH connectivity |
-| `deploy` | `make deploy` | Full deployment (preflight + init + cluster.yml + fetch kubeconfig) |
+| `deploy` | `make deploy` | Full deployment (Kubespray or k3s platform) |
+| `deploy` | `make deploy-remote` | Alias for deploy (k3s remote platform) |
+| `test` | `make test-remote` | Platform smoke tests (k3s only; optional `--full`) |
 | `scale` | `make scale` | Add nodes from updated config |
 | `upgrade` | `make upgrade` | Upgrade to `KUBE_VERSION` |
 | `remove-node <name>` | `make remove-node NODE=<name>` | Drain and remove one node |
@@ -629,21 +733,27 @@ hypercluster/
 ├── cluster.conf                  ← your config (gitignored)
 ├── .gitignore
 ├── config/
-│   └── cluster.conf.example      ← template — copy and edit
+│   ├── cluster.conf.example      ← template — copy and edit
+│   └── k3s/                      ← Helm values templates (Cilium, KubeVirt, CDI)
 ├── lib/
 │   ├── log.sh                    ← emoji logging (info/ok/warn/error/section/debug)
 │   ├── preflight.sh              ← dependency + SSH key + connectivity checks
 │   ├── inventory.sh              ← hosts.yaml + group_vars generation
 │   ├── kubespray.sh              ← Kubespray clone + playbook runner
+│   ├── k3s.sh                    ← k3s SSH install, remote kubeconfig, destroy
+│   ├── platform-stack.sh         ← Helm platform stack (Cilium, KubeVirt, …)
+│   ├── platform-tools.sh         ← remote kubectl/virtctl/cluster-info
+│   ├── platform-test.sh          ← k3s platform smoke tests
 │   ├── kubeconfig.sh             ← kubeconfig fetch + merge
 │   ├── wizard.sh                 ← interactive cluster.conf generator
 │   ├── progress.sh               ← deploy stage + spinner (TTY)
 │   └── postdeploy.sh             ← post-deploy next-step hints
 ├── tests/
-│   └── test-inventory.sh         ← unit tests for inventory generation
+│   ├── test-inventory.sh         ← unit tests for inventory generation
+│   └── test-platform-config.sh   ← k3s platform config unit tests
 └── scripts/
-    ├── remote-k8s-deploy.sh      ← standalone k3s/kubeadm deployer (config-in-script)
-    ├── remote-k3s-deploy.sh      ← single-host SSH: k3s + Cilium + KubeVirt + CDI
+    ├── remote-k8s-deploy.sh      ← legacy standalone k3s/kubeadm deployer
+    ├── remote-k3s-deploy.sh      ← legacy single-host k3s + Cilium + KubeVirt
     ├── install-deps.sh           ← KVM/virt host dependency installer (hyper2kvm)
     ├── setup-macos.sh            ← install all deployer-side deps on macOS
     ├── test-local.sh             ← Kubespray E2E test using Multipass VMs
@@ -784,9 +894,11 @@ VERBOSE=1 ./hypercluster deploy   # also enables log::debug messages in lib/
 
 ---
 
-## Standalone script
+## Standalone scripts (legacy)
 
-`scripts/remote-k8s-deploy.sh` is a self-contained single-file alternative to the full Kubespray workflow. Use it when you want a quick deployment without Ansible or when you need k3s instead of upstream Kubernetes.
+> **Prefer `./hypercluster` with `K8S_DISTRO=k3s`** for remote k3s platform deploys. The scripts below are kept for reference and one-off use; they are not the canonical path.
+
+`scripts/remote-k3s-deploy.sh` and `scripts/remote-k8s-deploy.sh` are self-contained alternatives that predate the integrated k3s workflow in hypercluster.
 
 ### What it does
 
@@ -857,22 +969,22 @@ DRY_RUN=true sudo ./scripts/install-deps.sh
 
 | Path | Best for |
 |------|----------|
-| **`hypercluster` + Kubespray** | Production clusters, HA control plane, day-2 ops (scale/upgrade/remove-node) |
-| **`remote-k8s-deploy.sh`** | Quick k3s or kubeadm deploy without Ansible; multi-node with config-in-script |
-| **`remote-k3s-deploy.sh`** | Single-node k3s + Cilium + KubeVirt + CDI on one remote host |
+| **`hypercluster` + Kubespray** | Production upstream Kubernetes, HA control plane, day-2 ops (scale/upgrade/remove-node) |
+| **`hypercluster` + k3s** | Remote virtualization platform (Cilium, MetalLB, KubeVirt, CDI, automated `test`) — **preferred over legacy scripts** |
+| **`remote-k8s-deploy.sh`** *(legacy)* | Quick k3s or kubeadm without Ansible; config-in-script |
+| **`remote-k3s-deploy.sh`** *(legacy)* | Single-node k3s + Cilium + KubeVirt + CDI (superseded by hypercluster k3s) |
 
-### Comparison: standalone vs hypercluster
+### Comparison: deploy paths
 
-| | `remote-k8s-deploy.sh` | `remote-k3s-deploy.sh` | `hypercluster` + Kubespray |
+| | `hypercluster` k3s | `remote-k3s-deploy.sh` | `hypercluster` Kubespray |
 |---|---|---|---|
-| Setup time | ~5 min | ~10 min | ~15 min (first run) |
-| Kubernetes flavour | k3s or kubeadm | k3s only | Upstream only (kubeadm) |
-| HA control plane | ❌ | ❌ | ✅ |
-| Podman support | ✅ (via runtime install) | ❌ (k3s containerd) | ✅ (via Kubespray CRI) |
-| Host dep install | ✅ (`install-deps.sh`) | ❌ | ❌ (separate step) |
-| Idempotent re-runs | ⚠️ partial | ⚠️ partial | ✅ full |
-| Day-2 operations | ❌ manual | ❌ manual | ✅ scale / upgrade / remove-node |
-| KubeVirt + CDI | ❌ | ✅ | ✅ (when `KUBEVIRT_ENABLED=true`) |
+| Setup time | ~20–40 min | ~10 min | ~15–30 min (first run) |
+| Kubernetes flavour | k3s | k3s only | Upstream (kubeadm) |
+| Full platform stack | ✅ Helm + smoke `test` | ⚠️ partial | ✅ optional KubeVirt |
+| MetalLB + snapshots | ✅ | ❌ | via add-ons |
+| Remote CLI tools | ✅ kubectl/virtctl/cluster-info | ❌ | ❌ |
+| Idempotent re-runs | ✅ | ⚠️ partial | ✅ full |
+| Day-2 operations | status / test / destroy | ❌ manual | scale / upgrade / remove-node |
 
 ---
 

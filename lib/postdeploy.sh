@@ -47,16 +47,30 @@ postdeploy::print_hints() {
   esac
 
   if [[ "${KUBEVIRT_ENABLED:-false}" == "true" ]]; then
-    printf "  \033[1mKubeVirt\033[0m\n"
+    printf "  \033[1mKubeVirt platform\033[0m\n"
     printf "    kubectl get kubevirt -n kubevirt\n"
     printf "    kubectl get cdi -n cdi\n"
+    printf "    kubectl api-resources | grep -E 'VirtualMachineSnapshot|VolumeSnapshot'\n"
     if command -v virtctl &>/dev/null; then
       printf "    virtctl version\n"
-      printf "    virtctl create vm -n default --help\n"
-    else
-      printf "    # Install virtctl: https://github.com/kubevirt/kubevirt/releases\n"
     fi
     echo ""
+  fi
+
+  if [[ "${K8S_DISTRO:-kubespray}" == "k3s" ]]; then
+    printf "  \033[1mRemote node\033[0m\n"
+    printf "    ssh %s@%s\n" "${SSH_USER:-root}" "$cp_ip"
+    printf "    cluster-info        # kubectl summary on the server\n"
+    printf "    kubectl get nodes   # uses ~/.kube/config on the server\n"
+    echo ""
+    printf "  \033[1mVerify platform\033[0m\n"
+    printf "    ./hypercluster -c %s test\n" "${CONFIG_FILE:-./cluster.conf}"
+    echo ""
+    if [[ "${METALLB_ENABLED:-true}" == "true" && -z "${METALLB_IP_POOL:-}" ]]; then
+      printf "  \033[1mMetalLB\033[0m\n"
+      printf "    # Set METALLB_IP_POOL in cluster.conf and re-run deploy for LoadBalancer IPs\n"
+      echo ""
+    fi
   fi
 
   if [[ "${DASHBOARD_ENABLED:-false}" == "true" ]]; then

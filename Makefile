@@ -7,9 +7,10 @@ FLAGS   ?=
 
 # Pass CONFIG / FLAGS from make env:  make deploy CONFIG=my.conf FLAGS=-v
 
-.PHONY: help init preflight deploy scale upgrade remove-node \
+.PHONY: help init preflight deploy deploy-remote scale upgrade remove-node \
         fetch-kubeconfig merge-kubeconfig install-kubevirt status destroy check-deps \
-        lint test-smoke test-inventory test-local test-podman dry-deploy unlock wizard
+        lint test-smoke test-inventory test-platform-config test-local test-podman \
+        test-remote dry-deploy unlock wizard desktop-dev desktop-build desktop-check
 
 help: ## 📖  Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -33,6 +34,12 @@ preflight: check-deps ## 🩺  Check local tools + SSH connectivity
 
 deploy: check-deps ## 🚀  Full end-to-end cluster deployment
 	$(HC) -c $(CONFIG) $(FLAGS) deploy
+
+deploy-remote: check-deps ## 🚀  Alias for deploy (remote k3s platform)
+	$(HC) -c $(CONFIG) $(FLAGS) deploy
+
+test-remote: check-deps ## 🧪  Platform smoke tests (k3s)
+	$(HC) -c $(CONFIG) $(FLAGS) test
 
 scale: check-deps ## ➕  Add nodes from cluster.conf to the cluster
 	$(HC) -c $(CONFIG) $(FLAGS) scale
@@ -81,6 +88,10 @@ test-inventory: ## 🧪  Run inventory generation unit tests
 	chmod +x tests/test-inventory.sh
 	./tests/test-inventory.sh
 
+test-platform-config: ## 🧪  Run k3s platform config unit tests
+	chmod +x tests/test-platform-config.sh
+	./tests/test-platform-config.sh
+
 test-local: ## 🧪  End-to-end test via Multipass VMs (20–30 min)
 	chmod +x scripts/test-local.sh
 	./scripts/test-local.sh
@@ -88,3 +99,13 @@ test-local: ## 🧪  End-to-end test via Multipass VMs (20–30 min)
 test-podman: ## 🧪  Fast integration test via Podman containers + k3s
 	chmod +x scripts/test-podman.sh
 	./scripts/test-podman.sh
+
+desktop-dev: ## 🖥️  Run Hypercluster Desktop (Tauri dev)
+	npm install && npm run desktop:dev
+
+desktop-build: ## 🖥️  Build Hypercluster Desktop frontend
+	npm install && npm run desktop:build
+
+desktop-check: ## 🖥️  Typecheck + cargo check desktop app
+	cd desktop && npm install && npm run build
+	cd desktop/src-tauri && cargo check
