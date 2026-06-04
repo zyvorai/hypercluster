@@ -4,8 +4,9 @@ mod log_parser;
 mod paths;
 
 use config::{
-    create_cluster, delete_cluster, load_settings, read_cluster_conf, save_settings,
-    write_cluster_conf, AppSettings, ClusterEntry, Registry,
+    auto_import_repo_cluster, create_cluster, delete_cluster, import_cluster_from_path,
+    load_settings, read_cluster_conf, save_settings, write_cluster_conf, AppSettings, ClusterEntry,
+    Registry,
 };
 use hypercluster::{
     cancel_run, get_run_status, resolve_binary_path, run_hypercluster, run_sync, ProcessManager,
@@ -14,7 +15,7 @@ use hypercluster::{
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Manager,
+    AppHandle, Emitter, Manager,
 };
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_notification::NotificationExt;
@@ -56,6 +57,22 @@ fn write_cluster_conf_cmd(path: String, content: String) -> Result<(), String> {
 #[tauri::command]
 fn delete_cluster_cmd(name: String) -> Result<(), String> {
     delete_cluster(&name)
+}
+
+#[tauri::command]
+fn import_cluster_cmd(path: String) -> Result<ClusterEntry, String> {
+    import_cluster_from_path(&path, None)
+}
+
+#[tauri::command]
+async fn pick_cluster_conf(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let file = app
+        .dialog()
+        .file()
+        .add_filter("cluster.conf", &["conf"])
+        .set_title("Import cluster.conf")
+        .blocking_pick_file();
+    Ok(file.map(|p| p.to_string()))
 }
 
 #[tauri::command]
@@ -210,6 +227,10 @@ pub fn run() {
         .manage(ProcessManager::new())
         .setup(|app| {
             let _ = setup_tray(app.handle());
+            let bin = paths::resolve_hypercluster_bin(load_settings().hypercluster_binary.as_deref());
+            if let Ok(Some(entry)) = auto_import_repo_cluster(&bin) {
+                let _ = app.emit("hc-cluster-imported", entry);
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -220,6 +241,8 @@ pub fn run() {
             read_cluster_conf_cmd,
             write_cluster_conf_cmd,
             delete_cluster_cmd,
+            import_cluster_cmd,
+            pick_cluster_conf,
             resolve_hypercluster_binary,
             run_hypercluster_cmd,
             cancel_run_cmd,

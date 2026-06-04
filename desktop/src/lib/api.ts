@@ -13,6 +13,14 @@ export async function setSettings(settings: AppSettings): Promise<void> {
   return invoke('set_settings', { settings })
 }
 
+export async function importCluster(path: string): Promise<ClusterEntry> {
+  return invoke('import_cluster_cmd', { path })
+}
+
+export async function pickClusterConf(): Promise<string | null> {
+  return invoke('pick_cluster_conf')
+}
+
 export async function resolveBinary(): Promise<string> {
   return invoke('resolve_hypercluster_binary')
 }
@@ -126,18 +134,18 @@ export const defaultWizard = (): WizardForm => ({
   clusterName: 'mycluster',
   k8sDistro: 'k3s',
   kubesprayVersion: 'v2.30.0',
-  kubeVersion: 'v1.32.0',
-  controlPlaneIps: ['192.168.1.100'],
+  kubeVersion: 'v1.35.5',
+  controlPlaneIps: ['175.110.114.93'],
   workerIps: [],
-  sshUser: 'root',
-  sshKey: '$HOME/.ssh/id_rsa',
+  sshUser: 'sus',
+  sshKey: '$HOME/.ssh/id_ed25519_hyper2kvm',
   sshPort: 22,
   kubePodsSubnet: '10.42.0.0/16',
   kubeServiceAddresses: '10.43.0.0/16',
   cniPlugin: 'cilium',
   containerManager: 'podman',
   metallbEnabled: true,
-  metallbIpPool: '192.168.1.240-192.168.1.250',
+  metallbIpPool: '175.110.114.200-175.110.114.210',
   kubevirtEnabled: true,
   kubevirtVersion: 'v1.8.3',
   cdiVersion: 'v1.65.0',

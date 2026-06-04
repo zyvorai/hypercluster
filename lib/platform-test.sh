@@ -11,7 +11,17 @@ platform_test::_export_kc() {
   [[ -f "$KUBECONFIG" ]] || die "kubeconfig not found: $KUBECONFIG — run deploy first"
 }
 
-platform_test::_pass() { echo "  PASS: $*"; PLATFORM_TEST_PASS=$(( PLATFORM_TEST_PASS + 1 )); PLATFORM_TEST_CHECKS+=("pass:$*"); }
+platform_test::_json_mode() { [[ "${HC_JSON:-0}" == "1" ]]; }
+
+platform_test::_pass() {
+  if platform_test::_json_mode; then
+    echo "  PASS: $*" >&2
+  else
+    echo "  PASS: $*"
+  fi
+  PLATFORM_TEST_PASS=$(( PLATFORM_TEST_PASS + 1 ))
+  PLATFORM_TEST_CHECKS+=("pass:$*")
+}
 platform_test::_fail() { echo "  FAIL: $*" >&2; PLATFORM_TEST_FAIL=$(( PLATFORM_TEST_FAIL + 1 )); PLATFORM_TEST_CHECKS+=("fail:$*"); }
 
 platform_test::_check() {
@@ -30,6 +40,11 @@ platform_test::run() {
   PLATFORM_TEST_FAIL=0
   PLATFORM_TEST_CHECKS=()
   platform_test::_export_kc
+
+  if platform_test::_json_mode; then
+    exec 3>&1
+    exec 1>&2
+  fi
 
   log::section "Platform smoke tests"
 
@@ -87,21 +102,31 @@ platform_test::run() {
 
   echo ""
   log::section "Test results: ${PLATFORM_TEST_PASS} passed, ${PLATFORM_TEST_FAIL} failed"
-  if [[ "${HC_JSON:-0}" == "1" ]]; then
-    python3 -c "
-import json, os
-checks = [c for c in os.environ.get('CHECKS','').split('\n') if c]
-out = []
-for c in checks:
-    status, desc = c.split(':', 1)
-    out.append({'name': desc, 'passed': status == 'pass'})
-print(json.dumps({'pass': int(os.environ.get('PASS','0')), 'fail': int(os.environ.get('FAIL','0')), 'checks': out}))
-" CHECKS="$(printf '%s\n' "${PLATFORM_TEST_CHECKS[@]}")" PASS="$PLATFORM_TEST_PASS" FAIL="$PLATFORM_TEST_FAIL"
+  if platform_test::_json_mode; then
+    exec 1>&3
+    exec 3>&-
+    platform_test::emit_json
     [[ "$PLATFORM_TEST_FAIL" -eq 0 ]] || exit 1
     return 0
   fi
   [[ "$PLATFORM_TEST_FAIL" -eq 0 ]] || die "Platform tests failed."
   log::ok "All platform tests passed ✅"
+}
+
+platform_test::emit_json() {
+  CHECKS="$(printf '%s\n' "${PLATFORM_TEST_CHECKS[@]}")" \
+    PASS="$PLATFORM_TEST_PASS" \
+    FAIL="$PLATFORM_TEST_FAIL" \
+    python3 <<'PY'
+import json, os
+checks = []
+for line in os.environ.get("CHECKS", "").splitlines():
+    if not line:
+        continue
+    status, desc = line.split(":", 1)
+    checks.append({"name": desc, "passed": status == "pass"})
+print(json.dumps({"pass": int(os.environ["PASS"]), "fail": int(os.environ["FAIL"]), "checks": checks}))
+PY
 }
 
 platform_test::_vm_smoke() {

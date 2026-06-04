@@ -92,6 +92,10 @@ test-platform-config: ## 🧪  Run k3s platform config unit tests
 	chmod +x tests/test-platform-config.sh
 	./tests/test-platform-config.sh
 
+test-platform-json: ## 🧪  Run platform test JSON output unit tests
+	chmod +x tests/test-platform-test-json.sh
+	./tests/test-platform-test-json.sh
+
 test-local: ## 🧪  End-to-end test via Multipass VMs (20–30 min)
 	chmod +x scripts/test-local.sh
 	./scripts/test-local.sh

@@ -58,6 +58,58 @@ pub fn write_cluster_conf(path: &str, content: &str) -> Result<(), String> {
     fs::write(path, content).map_err(|e| e.to_string())
 }
 
+pub fn parse_cluster_name(conf: &str) -> Option<String> {
+    for line in conf.lines() {
+        let line = line.trim();
+        if let Some(rest) = line.strip_prefix("CLUSTER_NAME=") {
+            let val = rest.trim().trim_matches('"').trim_matches('\'');
+            if !val.is_empty() {
+                return Some(val.to_string());
+            }
+        }
+    }
+    None
+}
+
+fn parse_distro(conf: &str) -> String {
+    for line in conf.lines() {
+        let line = line.trim();
+        if let Some(rest) = line.strip_prefix("K8S_DISTRO=") {
+            let val = rest.trim().trim_matches('"').trim_matches('\'');
+            return val.to_string();
+        }
+    }
+    "k3s".to_string()
+}
+
+pub fn import_cluster_from_path(source: &str, name_override: Option<&str>) -> Result<ClusterEntry, String> {
+    let content = fs::read_to_string(source).map_err(|e| format!("read {source}: {e}"))?;
+    let name = name_override
+        .map(|s| s.to_string())
+        .or_else(|| parse_cluster_name(&content))
+        .ok_or_else(|| "CLUSTER_NAME not found in cluster.conf".to_string())?;
+    let distro = parse_distro(&content);
+    create_cluster(&name, &content, &distro)
+}
+
+pub fn auto_import_repo_cluster(bin: &std::path::Path) -> Result<Option<ClusterEntry>, String> {
+    let repo = bin.parent().ok_or("invalid hypercluster binary path")?;
+    let conf = repo.join("cluster.conf");
+    if !conf.is_file() {
+        return Ok(None);
+    }
+    let content = fs::read_to_string(&conf).map_err(|e| e.to_string())?;
+    let name = parse_cluster_name(&content).ok_or("CLUSTER_NAME missing in repo cluster.conf")?;
+    let reg = Registry::load()?;
+    if reg.clusters.iter().any(|c| c.name == name) {
+        return Ok(None);
+    }
+    Ok(Some(import_cluster_from_path(
+        conf.to_str().ok_or("invalid cluster.conf path")?,
+        None,
+    )?))
+}
+
 pub fn create_cluster(name: &str, conf_content: &str, distro: &str) -> Result<ClusterEntry, String> {
     let cluster_dir = paths::clusters_dir().join(name);
     fs::create_dir_all(&cluster_dir).map_err(|e| e.to_string())?;

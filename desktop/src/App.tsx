@@ -8,7 +8,9 @@ import {
   buildClusterConf,
   createCluster,
   defaultWizard,
+  importCluster,
   listClusters,
+  pickClusterConf,
   resolveBinary,
   statusJson,
   getSettings,
@@ -77,6 +79,7 @@ export default function App() {
   const [destroyConfirm, setDestroyConfirm] = useState('')
   const [removeNode, setRemoveNode] = useState('')
   const [settingsBin, setSettingsBin] = useState('')
+  const [deployAfterWizard, setDeployAfterWizard] = useState(false)
 
   const refresh = useCallback(async () => {
     setClusters(await listClusters())
@@ -86,6 +89,16 @@ export default function App() {
   useEffect(() => {
     refresh()
     getSettings().then((s) => setSettingsBin(s.hypercluster_binary ?? ''))
+  }, [refresh])
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined
+    ;(async () => {
+      unlisten = await listen<ClusterEntry>('hc-cluster-imported', () => {
+        refresh()
+      })
+    })()
+    return () => unlisten?.()
   }, [refresh])
 
   useEffect(() => {
@@ -163,6 +176,19 @@ export default function App() {
     const entry = await createCluster(wizard.clusterName, conf, wizard.k8sDistro)
     await refresh()
     setActive(entry)
+    if (deployAfterWizard) {
+      await runOn(entry, 'deploy')
+      return
+    }
+    setView('dashboard')
+  }
+
+  const handleImportConf = async () => {
+    const path = await pickClusterConf()
+    if (!path) return
+    const entry = await importCluster(path)
+    await refresh()
+    setActive(entry)
     setView('dashboard')
   }
 
@@ -198,10 +224,23 @@ export default function App() {
                 <h2 className="text-2xl font-semibold">Clusters</h2>
                 <p className="text-sm text-glass-muted">hypercluster @ {binaryPath || '…'}</p>
               </div>
-              <button type="button" className="btn-primary" onClick={() => setView('wizard')}>
-                + New Cluster
-              </button>
+              <div className="flex gap-2">
+                <button type="button" className="btn-ghost" onClick={handleImportConf}>
+                  Import cluster.conf
+                </button>
+                <button type="button" className="btn-primary" onClick={() => setView('wizard')}>
+                  + New Cluster
+                </button>
+              </div>
             </div>
+            {clusters.length === 0 && (
+              <GlassCard className="mb-6">
+                <p className="text-glass-muted">
+                  No clusters in the desktop registry yet. Import an existing{' '}
+                  <code className="text-white">cluster.conf</code> or create one with the wizard.
+                </p>
+              </GlassCard>
+            )}
             <div className="mb-6 grid grid-cols-3 gap-4">
               <GlassCard>
                 <p className="text-sm text-glass-muted">Clusters</p>
@@ -347,9 +386,19 @@ export default function App() {
               </div>
             )}
             {wizardStep === 4 && (
-              <pre className="max-h-64 overflow-auto rounded-xl bg-black/40 p-3 text-xs">
-                {buildClusterConf(wizard)}
-              </pre>
+              <>
+                <pre className="max-h-64 overflow-auto rounded-xl bg-black/40 p-3 text-xs">
+                  {buildClusterConf(wizard)}
+                </pre>
+                <label className="mt-4 flex items-center gap-2 text-sm text-glass-muted">
+                  <input
+                    type="checkbox"
+                    checked={deployAfterWizard}
+                    onChange={(e) => setDeployAfterWizard(e.target.checked)}
+                  />
+                  Deploy immediately after saving
+                </label>
+              </>
             )}
             <div className="mt-6 flex justify-between">
               <button
@@ -521,6 +570,19 @@ export default function App() {
               }}
             >
               Save
+            </button>
+            <button
+              type="button"
+              className="btn-ghost"
+              onClick={async () => {
+                const path = await pickClusterConf()
+                if (path) {
+                  await importCluster(path)
+                  await refresh()
+                }
+              }}
+            >
+              Import cluster.conf…
             </button>
             <button
               type="button"

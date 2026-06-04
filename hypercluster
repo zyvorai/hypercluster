@@ -350,7 +350,11 @@ cmd_destroy() {
 
 cmd_status() {
   local json=0
-  [[ "${1:-}" == "--json" ]] && json=1
+  for arg in "$@"; do
+    case "$arg" in
+      --json) json=1 ;;
+    esac
+  done
   local kc="${KUBECONFIG_OUTPUT/#\~/$HOME}"
   if [[ ! -f "$kc" ]]; then
     local artifacts_kc="$INV_DIR/artifacts/admin.conf"
@@ -412,9 +416,9 @@ case "$COMMAND" in
   fetch-kubeconfig)   cmd_fetch_kubeconfig ;;
   merge-kubeconfig)   cmd_merge_kubeconfig ;;
   install-kubevirt)   KUBEVIRT_REQUIRED=1; cmd_install_kubevirt ;;
-  test)               cmd_test "${1:-}" ;;
+  test)               cmd_test "$@" ;;
   destroy)            cmd_destroy ;;
-  status)             cmd_status ;;
+  status)             cmd_status "$@" ;;
   unlock)             cmd_unlock ;;
   wizard)             ;; # handled before config load
   "")                 usage ;;
