@@ -52,6 +52,14 @@ On first launch, open **Settings** and confirm the resolved hypercluster binary 
 - Registry: `~/Library/Application Support/Hypercluster/clusters.json` (macOS)
 - Per-cluster config: `~/Library/Application Support/Hypercluster/clusters/<name>/cluster.conf`
 
+## Import and wizard
+
+| Action | Behavior |
+|--------|----------|
+| **Import cluster.conf…** | File picker → copies config into registry |
+| **Auto-import on startup** | If the hypercluster binary lives in a repo with `cluster.conf`, imports once when the cluster name is new |
+| **Create Cluster wizard** | Generates `cluster.conf`; optional **Deploy immediately after saving** runs `deploy` |
+
 ## UI → CLI mapping
 
 | Desktop action | hypercluster command |
@@ -59,7 +67,8 @@ On first launch, open **Settings** and confirm the resolved hypercluster binary 
 | Test / Validate | `preflight` |
 | Deploy | `deploy` |
 | Platform smoke (k3s) | `test` / `test --full` |
-| Node status | `status` |
+| Node status (dashboard) | `status --json` |
+| Platform test results | `test --json` |
 | Scale | `scale` (after updating worker IPs in conf) |
 | Upgrade | `upgrade` |
 | Remove node | `remove-node <name>` (optional `-f`) |
@@ -75,3 +84,5 @@ On first launch, open **Settings** and confirm the resolved hypercluster binary 
 ## Design
 
 Machina-inspired Liquid Glass: `#0B0B0F` background, `#0A84FF` accents, 22–28px rounded glass panels, backdrop blur.
+
+See also: [`docs/index.md`](../docs/index.md) · [`docs/guides/desktop-ux-guide.md`](../docs/guides/desktop-ux-guide.md) · [`docs/welcome.html`](../docs/welcome.html)

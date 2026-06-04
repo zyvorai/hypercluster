@@ -21,6 +21,7 @@ K8S_DISTRO="kubespray"              # kubespray | k3s
 
 # k3s-only settings (ignored when K8S_DISTRO=kubespray)
 K3S_DATA_DIR="/data/k3s"
+K3S_VERSION=""                       # e.g. v1.35.5+k3s1 (empty = latest channel)
 K3S_EXEC_ARGS="--flannel-backend=none --disable-network-policy --disable traefik --disable servicelb --disable-kube-proxy"
 CILIUM_HUBBLE_ENABLED="true"
 CILIUM_KUBE_PROXY_REPLACEMENT="true"
@@ -87,8 +88,8 @@ DASHBOARD_ENABLED="false"
 # Set to "true" to install KubeVirt operator + CDI after cluster bootstrap.
 # ---------------------------------------------------------------------------
 KUBEVIRT_ENABLED="true"
-KUBEVIRT_VERSION="v1.3.1"          # see github.com/kubevirt/kubevirt/releases
-CDI_VERSION="v1.59.0"              # Containerized Data Importer
+KUBEVIRT_VERSION="v1.3.1"          # k3s platform: v1.8.x tested on k8s v1.35.x
+CDI_VERSION="v1.59.0"              # k3s platform: v1.65.x tested with KubeVirt 1.8
 
 # ---------------------------------------------------------------------------
 # kubeconfig output

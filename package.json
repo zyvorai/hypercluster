@@ -10,6 +10,7 @@
     "desktop": "hypercluster-desktop dev",
     "desktop:dev": "hypercluster-desktop dev",
     "desktop:build": "hypercluster-desktop build",
-    "desktop:run": "hypercluster-desktop run"
+    "desktop:run": "hypercluster-desktop run",
+    "docs": "make docs"
   }
 }

@@ -11,8 +11,9 @@
   h2 { font-size: 1.8em; margin-bottom: 0.6em; color: #ff8f3f; }
   ul { margin: 1em 0 0 1.4em; }
   li { margin-bottom: 0.5em; }
+  code { background: #1a1d2e; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
 </style></head>
 <body>
-<div class="cover"><h1>Hyper<span>Cluster</span></h1><h2>SSH deploy, scale, upgrade, destroy</h2><p style="opacity:0.7;margin-top:1.5em">zyvor.dev · HyperSDK Platform Suite</p></div>
-<div class="page"><h2>Architecture</h2><ul><li>cluster.conf single-file workflow</li><li>Optional KubeVirt + CDI hooks</li><li>Confidential fabric prep scripts</li></ul></div>
+<div class="cover"><h1>Hyper<span>Cluster</span></h1><h2>SSH orchestration from laptop</h2><p style="opacity:0.7;margin-top:1.5em">hypercluster v0.1.0 · zyvor.dev</p></div>
+<div class="page"><h2>Control plane</h2><ul><li><code>hypercluster</code> bash CLI + <code>lib/*.sh</code></li><li>Kubespray inventory or k3s SSH bootstrap</li><li>Helm from laptop kubeconfig</li></ul></div><div class="page"><h2>k3s stack</h2><ul><li>Cilium first → cert-manager → MetalLB → KubeVirt/CDI</li><li>metrics-server, snapshot-controller, optional CNAO/SSP</li></ul></div>
 </body></html>

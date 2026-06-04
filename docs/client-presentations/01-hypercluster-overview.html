@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><title>HyperCluster overview</title><style>
+<html lang="en"><head><meta charset="UTF-8"><title>Overview</title><style>
   @page { size: A4; margin: 0; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', system-ui, sans-serif; color: #1a1a2e; background: #fff; line-height: 1.6; }
@@ -11,8 +11,9 @@
   h2 { font-size: 1.8em; margin-bottom: 0.6em; color: #ff8f3f; }
   ul { margin: 1em 0 0 1.4em; }
   li { margin-bottom: 0.5em; }
+  code { background: #1a1d2e; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
 </style></head>
 <body>
-<div class="cover"><h1>Hyper<span>Cluster</span></h1><h2>Kubespray cluster lifecycle wrapper</h2><p style="opacity:0.7;margin-top:1.5em">zyvor.dev · HyperSDK Platform Suite</p></div>
-<div class="page"><h2>HyperCluster overview</h2><ul><li>K8s v1.32 · Kubespray v2.30</li><li>12 CLI commands</li><li>4 CNI plugins</li></ul></div>
+<div class="cover"><h1>Hyper<span>Cluster</span></h1><h2>Kubespray + k3s platform lifecycle</h2><p style="opacity:0.7;margin-top:1.5em">hypercluster v0.1.0 · zyvor.dev</p></div>
+<div class="page"><h2>Product scope</h2><ul><li>Single <code>cluster.conf</code> — deploy, scale, upgrade, destroy</li><li>Kubespray: upstream Kubernetes over SSH</li><li>k3s: remote platform + Helm (Cilium, KubeVirt, CDI, MetalLB)</li><li>Hypercluster Desktop — Liquid Glass UI over CLI</li></ul></div><div class="page"><h2>Quality gates</h2><ul><li><code>make lint</code> · <code>test-platform-json</code> · <code>desktop-check</code></li><li>Podman integration test (k3s) · Multipass (Kubespray)</li></ul></div>
 </body></html>

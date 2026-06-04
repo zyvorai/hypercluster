@@ -21,9 +21,9 @@ fi
 #   fetch-kubeconfig  Copy admin.conf from the first control-plane node
 #   merge-kubeconfig  Merge the cluster kubeconfig into ~/.kube/config
 #   install-kubevirt  Install KubeVirt operator + CDI (also runs after deploy if KUBEVIRT_ENABLED=true)
-#   test              Run platform smoke tests (k3s path; optional --full)
-#   destroy           Tear down the cluster (reset.yml)
-#   status            Run 'kubectl get nodes' against the cluster
+#   test              Run platform smoke tests (k3s path; optional --full, --json)
+#   destroy           Tear down the cluster (reset.yml or k3s uninstall)
+#   status            Node status (optional --json for machine-readable output)
 #   unlock            Remove stale per-cluster lock after a crash
 #
 # Options:

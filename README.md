@@ -11,20 +11,21 @@ Deploys upstream Kubernetes with **Podman** as the container runtime, entirely o
 2. [Prerequisites](#prerequisites)
 3. [macOS setup & local testing](#macos-setup--local-testing)
 4. [Remote k3s platform quickstart](#remote-k3s-platform-quickstart)
-5. [Installation](#installation)
-6. [Configuration](#configuration)
-7. [Tutorial: first cluster](#tutorial-first-cluster)
+5. [Documentation](#documentation)
+6. [Installation](#installation)
+7. [Configuration](#configuration)
+8. [Tutorial: first cluster](#tutorial-first-cluster)
    - [Step 1 — Prepare your nodes](#step-1--prepare-your-nodes)
    - [Step 2 — Create your config](#step-2--create-your-config)
    - [Step 3 — Run preflight checks](#step-3--run-preflight-checks)
    - [Step 4 — Deploy](#step-4--deploy)
    - [Step 5 — Access the cluster](#step-5--access-the-cluster)
-8. [Day-2 operations](#day-2-operations)
-9. [Standalone scripts (legacy)](#standalone-scripts-legacy)
-10. [Command reference](#command-reference)
-11. [Project layout](#project-layout)
-12. [Podman notes](#podman-notes)
-13. [Troubleshooting](#troubleshooting)
+9. [Day-2 operations](#day-2-operations)
+10. [Standalone scripts (legacy)](#standalone-scripts-legacy)
+11. [Command reference](#command-reference)
+12. [Project layout](#project-layout)
+13. [Podman notes](#podman-notes)
+14. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -145,9 +146,12 @@ make lint                  # shellcheck on all scripts
 make test-smoke            # CLI help, version, config validation
 make test-inventory        # inventory generation unit tests
 make test-platform-config  # k3s platform config generation (Cilium values, etc.)
+make test-platform-json    # test --json output shape (no cluster)
+make desktop-check         # TypeScript + cargo check for desktop app
+make docs                  # regenerate docs/ from sources
 ```
 
-These run automatically in CI on every push/PR.
+These run automatically in CI on every push/PR (except `make docs`, run before releases).
 
 ---
 
@@ -191,10 +195,20 @@ Run `./hypercluster wizard` for an interactive generator (supports k3s vs Kubesp
 
 ```bash
 ./hypercluster -c cluster.conf preflight   # SSH, sudo, tools, MetalLB pool
-./hypercluster -c cluster.conf deploy      # full install (~20–40 min)
+./hypercluster -c cluster.conf deploy      # full install (skips k3s reinstall if healthy)
 ./hypercluster -c cluster.conf test        # automated smoke (~5 min)
 ./hypercluster -c cluster.conf status      # day-2 node status
 ```
+
+JSON output for automation and the desktop app:
+
+```bash
+./hypercluster -c cluster.conf test --json    # stdout: {"pass", "fail", "checks"}
+./hypercluster -c cluster.conf status --json  # stdout: {"ready", "total", "nodes"}
+./hypercluster -c cluster.conf test --json --full
+```
+
+Human-readable logs from `test --json` go to **stderr**; stdout is JSON only.
 
 Makefile aliases:
 
@@ -207,7 +221,8 @@ After deploy:
 
 - Laptop kubeconfig at `KUBECONFIG_OUTPUT`
 - Remote user gets `~/.kube/config`, `kubectl`, `virtctl`, and `/usr/local/bin/cluster-info`
-- Stack includes cert-manager, Cilium (KubeVirt-aware), MetalLB, snapshot-controller, metrics-server, KubeVirt, CDI, CSI, CNAO, SSP (when charts available)
+- Stack includes Cilium (installed **before** cert-manager), cert-manager, MetalLB, snapshot-controller, metrics-server, KubeVirt, CDI, CSI, CNAO, SSP (when charts available)
+- Re-run `deploy` on a healthy cluster skips k3s reinstall; set `FORCE_K3S_REINSTALL=1` to replace the server
 
 Extended snapshot smoke: `./hypercluster -c cluster.conf test --full`
 
@@ -218,6 +233,29 @@ Destroy (with `-f` to also helm-uninstall platform releases first):
 ```
 
 On macOS, run `./scripts/setup-macos.sh` first (installs bash 5, helm, kubectl). The `hypercluster` shebang re-execs with Homebrew bash automatically.
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [`docs/index.md`](docs/index.md) | Documentation hub (hyper2kvm-style) |
+| [`docs/welcome.html`](docs/welcome.html) | Offline interactive doc browser |
+| [`docs/guides/desktop-ux-guide.md`](docs/guides/desktop-ux-guide.md) | **Desktop UX** — full UI reference |
+| [`docs/guides/cli/hypercluster-guide.md`](docs/guides/cli/hypercluster-guide.md) | CLI commands, JSON, k3s workflow |
+| [`docs/generated/CLI.md`](docs/generated/CLI.md) | Auto-generated CLI help |
+| [`docs/generated/CONFIG-REFERENCE.md`](docs/generated/CONFIG-REFERENCE.md) | `cluster.conf` variables |
+| [`desktop/README.md`](desktop/README.md) | Desktop install |
+| [`docs/client-presentations/`](docs/client-presentations/) | HTML client decks |
+| [`RELEASE.md`](RELEASE.md) | Release checklist |
+
+Regenerate from sources:
+
+```bash
+make docs
+make docs-serve   # http://localhost:8080
+```
 
 ---
 
@@ -688,15 +726,24 @@ Skip the prompt (for CI pipelines):
 | `preflight` | `make preflight` | Check local tools + SSH connectivity |
 | `deploy` | `make deploy` | Full deployment (Kubespray or k3s platform) |
 | `deploy` | `make deploy-remote` | Alias for deploy (k3s remote platform) |
-| `test` | `make test-remote` | Platform smoke tests (k3s only; optional `--full`) |
+| `test` | `make test-remote` | Platform smoke tests (k3s only; `--full`, `--json`) |
 | `scale` | `make scale` | Add nodes from updated config |
 | `upgrade` | `make upgrade` | Upgrade to `KUBE_VERSION` |
 | `remove-node <name>` | `make remove-node NODE=<name>` | Drain and remove one node |
 | `fetch-kubeconfig` | `make fetch-kubeconfig` | Copy admin.conf from first control-plane node |
 | `merge-kubeconfig` | `make merge-kubeconfig` | Merge into `~/.kube/config` |
-| `status` | `make status` | `kubectl get nodes -o wide` |
+| `status` | `make status` | Node status (`--json` for automation) |
 | `destroy` | `make destroy` | Reset the cluster |
 | `unlock` | `make unlock` | Remove stale per-cluster lock after a crash |
+
+### JSON output (`test --json`, `status --json`)
+
+| Field | Command | Meaning |
+|-------|---------|---------|
+| `pass` / `fail` | `test --json` | Count of passed / failed checks |
+| `checks[]` | `test --json` | `{name, passed}` per smoke test |
+| `ready` / `total` | `status --json` | Ready node count / total nodes |
+| `nodes[]` | `status --json` | `{name, ready, roles}` per node |
 
 ### Version
 
@@ -728,10 +775,16 @@ make deploy CONFIG=staging.conf FLAGS=-v
 ```
 hypercluster/
 ├── hypercluster                  ← CLI entrypoint (chmod +x)
-├── Makefile                      ← convenience targets (deploy, lint, test-smoke, …)
+├── Makefile                      ← convenience targets (deploy, lint, test-smoke, docs, …)
+├── package.json                  ← npm workspaces (desktop launcher)
 ├── VERSION                       ← release version (shown by hypercluster -V)
 ├── cluster.conf                  ← your config (gitignored)
 ├── .gitignore
+├── docs/
+│   ├── README.md                 ← documentation index
+│   ├── generated/                ← auto-generated (make docs)
+│   └── client-presentations/     ← HTML client decks
+├── desktop/                      ← Tauri 2 + React desktop app
 ├── config/
 │   ├── cluster.conf.example      ← template — copy and edit
 │   └── k3s/                      ← Helm values templates (Cilium, KubeVirt, CDI)
@@ -743,15 +796,17 @@ hypercluster/
 │   ├── k3s.sh                    ← k3s SSH install, remote kubeconfig, destroy
 │   ├── platform-stack.sh         ← Helm platform stack (Cilium, KubeVirt, …)
 │   ├── platform-tools.sh         ← remote kubectl/virtctl/cluster-info
-│   ├── platform-test.sh          ← k3s platform smoke tests
+│   ├── platform-test.sh          ← k3s platform smoke tests (+ --json)
 │   ├── kubeconfig.sh             ← kubeconfig fetch + merge
 │   ├── wizard.sh                 ← interactive cluster.conf generator
 │   ├── progress.sh               ← deploy stage + spinner (TTY)
 │   └── postdeploy.sh             ← post-deploy next-step hints
 ├── tests/
 │   ├── test-inventory.sh         ← unit tests for inventory generation
-│   └── test-platform-config.sh   ← k3s platform config unit tests
+│   ├── test-platform-config.sh   ← k3s platform config unit tests
+│   └── test-platform-test-json.sh ← test --json output unit tests
 └── scripts/
+    ├── generate-docs.sh          ← regenerate docs/ from sources
     ├── remote-k8s-deploy.sh      ← legacy standalone k3s/kubeadm deployer
     ├── remote-k3s-deploy.sh      ← legacy single-host k3s + Cilium + KubeVirt
     ├── install-deps.sh           ← KVM/virt host dependency installer (hyper2kvm)

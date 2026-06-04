@@ -27,5 +27,11 @@ jobs:
       - name: Run platform config tests
         run: make test-platform-config
 
+      - name: Run platform JSON tests
+        run: make test-platform-json
+
+      - name: Generate documentation
+        run: make docs
+
       - name: Build desktop frontend
         run: make desktop-build

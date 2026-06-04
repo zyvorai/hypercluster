@@ -9,8 +9,8 @@ FLAGS   ?=
 
 .PHONY: help init preflight deploy deploy-remote scale upgrade remove-node \
         fetch-kubeconfig merge-kubeconfig install-kubevirt status destroy check-deps \
-        lint test-smoke test-inventory test-platform-config test-local test-podman \
-        test-remote dry-deploy unlock wizard desktop-dev desktop-build desktop-check
+        lint test-smoke test-inventory test-platform-config test-platform-json test-local test-podman \
+        test-remote dry-deploy unlock wizard desktop-dev desktop-build desktop-check docs
 
 help: ## 📖  Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -113,3 +113,10 @@ desktop-build: ## 🖥️  Build Hypercluster Desktop frontend
 desktop-check: ## 🖥️  Typecheck + cargo check desktop app
 	cd desktop && npm install && npm run build
 	cd desktop/src-tauri && cargo check
+
+docs: ## 📚  Generate docs (_build/, guides, welcome.html, presentations)
+	chmod +x scripts/generate-docs.sh
+	./scripts/generate-docs.sh
+
+docs-serve: docs ## 📚  Serve docs locally on port 8080
+	cd docs && python3 -m http.server 8080

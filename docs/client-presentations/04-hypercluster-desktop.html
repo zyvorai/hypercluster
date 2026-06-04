@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>Desktop UX</title><style>
+  @page { size: A4; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; color: #1a1a2e; background: #fff; line-height: 1.6; }
+  .cover { height: 100vh; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; page-break-after: always; }
+  .cover h1 { font-size: 3em; font-weight: 800; }
+  .cover h1 span { color: #ff8f3f; }
+  .cover h2 { font-size: 1.2em; font-weight: 300; opacity: 0.9; margin: 1em 0; max-width: 640px; }
+  .page { min-height: 100vh; padding: 56px 72px; page-break-after: always; background: #0f111a; color: #e8e6df; }
+  h2 { font-size: 1.8em; margin-bottom: 0.6em; color: #ff8f3f; }
+  ul { margin: 1em 0 0 1.4em; }
+  li { margin-bottom: 0.5em; }
+  code { background: #1a1d2e; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+</style></head>
+<body>
+<div class="cover"><h1>Hyper<span>Cluster</span></h1><h2>Liquid Glass · all via CLI</h2><p style="opacity:0.7;margin-top:1.5em">hypercluster v0.1.0 · zyvor.dev</p></div>
+<div class="page"><h2>Navigation</h2><ul><li>Dashboard · Create Cluster · Operations · Settings</li><li>⌘K command palette</li></ul></div><div class="page"><h2>UX highlights</h2><ul><li>Import / auto-import <code>cluster.conf</code></li><li>5-step wizard + deploy immediately</li><li>Live logs, stage progress, notifications</li><li>Node readiness via <code>status --json</code></li></ul></div>
+</body></html>
