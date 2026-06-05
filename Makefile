@@ -9,7 +9,7 @@ FLAGS   ?=
 
 .PHONY: help init preflight deploy deploy-remote scale upgrade remove-node \
         fetch-kubeconfig merge-kubeconfig install-kubevirt status destroy check-deps \
-        lint test-smoke test-inventory test-platform-config test-platform-json test-preflight-json test-local test-podman \
+        lint test-smoke test-inventory test-platform-config test-platform-json test-preflight-json test-python-pip test-local test-podman \
         test-remote dry-deploy unlock wizard desktop-dev desktop-build desktop-pkg desktop-install desktop-uninstall desktop-check docs docs-venv
 
 help: ## 📖  Show this help
@@ -99,6 +99,10 @@ test-platform-json: ## 🧪  Run platform test JSON output unit tests
 test-preflight-json: ## 🧪  Run preflight JSON output unit tests
 	chmod +x tests/test-preflight-json.sh
 	./tests/test-preflight-json.sh
+
+test-python-pip: ## 🧪  Run pip install fallback helper unit tests
+	chmod +x tests/test-python-pip.sh
+	./tests/test-python-pip.sh
 
 test-discover-json: ## 🧪  Run discover JSON output unit tests
 	chmod +x tests/test-discover-json.sh

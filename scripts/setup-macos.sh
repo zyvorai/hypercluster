@@ -21,8 +21,11 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export HYPERCLUSTER_SCRIPT_DIR="$REPO_DIR"
 # shellcheck source=lib/log.sh
 source "$REPO_DIR/lib/log.sh"
+# shellcheck source=lib/python-pip.sh
+source "$REPO_DIR/lib/python-pip.sh"
 
 # ── Homebrew ──────────────────────────────────────────────────────────────────
 step "Homebrew"
@@ -146,7 +149,7 @@ for mod in jinja2 netaddr; do
     info "$mod already installed."
   else
     info "Installing $mod …"
-    pip3 install --user --break-system-packages "$mod"
+    pip::install --user "$mod"
     info "$mod installed."
   fi
 done

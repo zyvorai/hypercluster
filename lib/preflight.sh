@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Preflight checks — source this file, do not execute directly.
 
+# shellcheck source=lib/python-pip.sh
+source "${HYPERCLUSTER_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}/lib/python-pip.sh"
+
 preflight::_json_mode() { [[ "${HC_JSON:-0}" == "1" ]]; }
 
 preflight::_record() {
@@ -39,7 +42,7 @@ preflight::check_python_module() {
     preflight::_pass "Python module: $mod"
     return 0
   fi
-  preflight::_fail "Python module: $mod" "pip3 install $mod"
+  preflight::_fail "Python module: $mod" "$(pip::module_install_hint "$mod")"
   return 1
 }
 
