@@ -29,15 +29,19 @@ npm install -g ./desktop
 hypercluster-desktop        # alias: hc-desktop
 ```
 
-### macOS app (`.pkg` + Zyvor EULA)
+### macOS app (`.pkg` / `.dmg` + 30-day trial)
 
 ```bash
 make desktop-pkg              # → desktop/distribution/Hypercluster-0.1.0-arm64.pkg
 open desktop/distribution/Hypercluster-0.1.0-arm64.pkg
 
+make desktop-build            # → .app + .dmg (drag to Applications)
 make desktop-install          # script install (type ACCEPT for license)
+open scripts/macos/Uninstall-Hypercluster.command   # GUI uninstall
 make desktop-uninstall        # remove from /Applications
 ```
+
+Includes a **30-day trial per Mac** (survives reinstall). Contact **sales@zyvor.dev** for trial access or a license after expiry.
 
 See [`distribution/README.md`](distribution/README.md).
 

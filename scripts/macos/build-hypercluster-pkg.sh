@@ -64,6 +64,9 @@ cp "${DIST}/Welcome.html" "${STAGE}/"
 cp "${DIST}/Conclusion.html" "${STAGE}/"
 cp "${DIST}/Distribution.xml" "${STAGE}/"
 
+cp "${ROOT}/scripts/lib/hypercluster-trial.sh" "${ROOT}/scripts/macos/pkg-scripts/hypercluster-trial.sh"
+chmod +x "${ROOT}/scripts/macos/pkg-scripts/hypercluster-trial.sh"
+
 echo "→ Building component pkg…"
 pkgbuild \
   --component "$APP" \
@@ -80,7 +83,13 @@ productbuild \
   --package-path "${STAGE}" \
   "$PKG_OUT"
 
+UNINSTALLER="${ROOT}/scripts/macos/Uninstall-Hypercluster.command"
+chmod +x "$UNINSTALLER" 2>/dev/null || true
+cp "$UNINSTALLER" "${DIST}/Uninstall-Hypercluster.command"
+chmod +x "${DIST}/Uninstall-Hypercluster.command"
+
 echo ""
 echo "✅ ${PKG_OUT}"
 echo "   Install: open \"${PKG_OUT}\"  (shows Zyvor EULA in macOS Installer)"
 echo "   Or:      ./scripts/macos/install-hypercluster-app.sh \"${APP}\""
+echo "   Uninstall: open \"${DIST}/Uninstall-Hypercluster.command\""

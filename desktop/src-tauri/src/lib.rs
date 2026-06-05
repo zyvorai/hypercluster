@@ -3,6 +3,7 @@ mod hypercluster;
 mod license;
 mod log_parser;
 mod paths;
+mod trial;
 
 use config::{
     auto_import_repo_cluster, create_cluster, delete_cluster, import_cluster_from_path,
@@ -42,6 +43,7 @@ fn create_cluster_cmd(
     conf_content: String,
     distro: String,
 ) -> Result<ClusterEntry, String> {
+    trial::trial_require_active()?;
     create_cluster(&name, &conf_content, &distro)
 }
 
@@ -52,6 +54,7 @@ fn update_cluster_by_path_cmd(
     name: String,
     distro: String,
 ) -> Result<ClusterEntry, String> {
+    trial::trial_require_active()?;
     update_cluster_by_path(&config_path, &conf_content, &name, &distro)
 }
 
@@ -67,11 +70,13 @@ fn write_cluster_conf_cmd(path: String, content: String) -> Result<(), String> {
 
 #[tauri::command]
 fn delete_cluster_cmd(name: String) -> Result<(), String> {
+    trial::trial_require_active()?;
     delete_cluster(&name)
 }
 
 #[tauri::command]
 fn import_cluster_cmd(path: String) -> Result<ClusterEntry, String> {
+    trial::trial_require_active()?;
     import_cluster_from_path(&path, None)
 }
 
@@ -97,6 +102,7 @@ async fn run_hypercluster_cmd(
     manager: tauri::State<'_, ProcessManager>,
     req: RunRequest,
 ) -> Result<(), String> {
+    trial::trial_require_active()?;
     let cmd = req.command.clone();
     let mgr = manager.inner().clone();
     tokio::spawn(async move {
@@ -226,6 +232,7 @@ async fn hc_vm_create_json(
     name: String,
     namespace: String,
 ) -> Result<String, String> {
+    trial::trial_require_active()?;
     run_sync(
         &config_path,
         "vm",
@@ -306,7 +313,30 @@ fn license_summary_cmd() -> Result<String, String> {
 fn license_accept_cmd(actor: Option<String>) -> Result<(), String> {
     license::license_accept(&actor.unwrap_or_else(|| {
         std::env::var("USER").unwrap_or_else(|_| "unknown".to_string())
-    }))
+    }))?;
+    trial::trial_ensure_started()?;
+    Ok(())
+}
+
+#[tauri::command]
+fn trial_status_cmd() -> Result<trial::TrialStatus, String> {
+    Ok(trial::trial_status())
+}
+
+#[tauri::command]
+fn trial_ensure_started_cmd() -> Result<trial::TrialStatus, String> {
+    trial::trial_ensure_started()?;
+    Ok(trial::trial_status())
+}
+
+#[tauri::command]
+fn trial_is_usable_cmd() -> Result<bool, String> {
+    Ok(trial::trial_is_usable())
+}
+
+#[tauri::command]
+fn activate_commercial_license_cmd(license_id: String, issued_to: String) -> Result<(), String> {
+    trial::activate_commercial_license(license_id, issued_to)
 }
 
 #[tauri::command]
@@ -429,6 +459,10 @@ pub fn run() {
             license_is_accepted_cmd,
             license_summary_cmd,
             license_accept_cmd,
+            trial_status_cmd,
+            trial_ensure_started_cmd,
+            trial_is_usable_cmd,
+            activate_commercial_license_cmd,
             macos_arm64_required_cmd,
             host_cpu_arch_cmd,
             pick_ssh_key,

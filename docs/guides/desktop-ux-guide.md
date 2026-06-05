@@ -46,16 +46,18 @@ hypercluster-desktop    # alias: hc-desktop
 2. **Import** an existing `cluster.conf` or open **Create Cluster Hub** (Quick Deploy or Studio).
 3. Run **preflight** before first **deploy**.
 
-### macOS app install & uninstall (Zyvor license)
+### macOS app install & uninstall (Zyvor license + 30-day trial)
 
 | Action | Command |
 |--------|---------|
 | Build `.pkg` with EULA pane | `make desktop-pkg` |
+| Build `.app` + `.dmg` | `make desktop-build` |
 | Install to `/Applications` | `make desktop-install` or open the `.pkg` |
-| Uninstall app | `make desktop-uninstall` |
+| Uninstall app (GUI) | `open scripts/macos/Uninstall-Hypercluster.command` |
+| Uninstall app (CLI) | `make desktop-uninstall` |
 | Uninstall + app data | `./scripts/macos/uninstall-hypercluster-app.sh --purge` |
 
-First launch (drag-install) shows an in-app **Zyvor License Agreement**. See [`desktop/distribution/README.md`](../desktop/distribution/README.md).
+First launch shows an in-app **Zyvor License Agreement** and starts a **30-day trial** tied to this Mac (Keychain + `~/.hypercluster/trial.json`). Reinstalling after expiry does not reset the trial — contact **sales@zyvor.dev** for a license. See [`desktop/distribution/README.md`](../../desktop/distribution/README.md).
 
 ### Auto-import
 
@@ -305,4 +307,4 @@ Human-readable test output appears in the log console; JSON mode keeps stdout cl
 
 ---
 
-_Doc version: 2026-06-05T00:05:12Z · hypercluster v0.1.0_
+_Doc version: 2026-06-05T09:21:42Z · hypercluster v0.1.0_

@@ -5,6 +5,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 # shellcheck source=../lib/hypercluster-license-accept.sh
 source "${ROOT}/scripts/lib/hypercluster-license-accept.sh"
+# shellcheck source=../lib/hypercluster-trial.sh
+source "${ROOT}/scripts/lib/hypercluster-trial.sh"
 # shellcheck source=arch-check.sh
 source "${ROOT}/scripts/macos/arch-check.sh"
 
@@ -34,6 +36,16 @@ EOF
 fi
 
 require_hypercluster_license_accept "$ROOT"
+hc_trial_ensure_started
+
+if hc_trial_is_expired; then
+  cat >&2 <<EOF
+ERROR: Your $(hc_trial_days)-day Hypercluster Desktop trial on this Mac has expired.
+
+Reinstalling does not start a new trial. Contact $(hc_trial_sales_email) for a license.
+EOF
+  exit 1
+fi
 
 DEST="/Applications/Hypercluster.app"
 
@@ -74,4 +86,5 @@ echo "✅ Installed ${DEST} (Apple Silicon / arm64)"
 echo "   Finder: open /Applications — look for Hypercluster"
 echo "   Launch: open -a Hypercluster   or Spotlight → Hypercluster"
 echo "   Launch: open -a Hypercluster"
-echo "   Uninstall: ${ROOT}/scripts/macos/uninstall-hypercluster-app.sh"
+echo "   Uninstall: open ${ROOT}/scripts/macos/Uninstall-Hypercluster.command"
+echo "   Or: ${ROOT}/scripts/macos/uninstall-hypercluster-app.sh"

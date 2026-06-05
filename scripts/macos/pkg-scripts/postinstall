@@ -1,5 +1,5 @@
 #!/bin/bash
-# Post-install: record Zyvor license acceptance for the console user (pkg EULA already shown).
+# Post-install: record Zyvor license acceptance + start trial for the console user.
 set -euo pipefail
 
 EULA="/Applications/Hypercluster.app/Contents/Resources/HYPERCLUSTER-EULA.txt"
@@ -7,6 +7,9 @@ EULA="/Applications/Hypercluster.app/Contents/Resources/HYPERCLUSTER-EULA.txt"
 
 CONSOLE_USER="$(stat -f '%Su' /dev/console 2>/dev/null || true)"
 [[ -n "$CONSOLE_USER" && "$CONSOLE_USER" != "root" ]] || exit 0
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+TRIAL_SCRIPT="${SCRIPT_DIR}/hypercluster-trial.sh"
 
 sudo -u "$CONSOLE_USER" python3 - "$EULA" "$CONSOLE_USER" <<'PY'
 import json, hashlib, sys
@@ -29,6 +32,10 @@ record.write_text(json.dumps({
     "brand": "zyvor.dev",
 }, indent=2) + "\n")
 PY
+
+if [[ -f "$TRIAL_SCRIPT" ]]; then
+  sudo -u "$CONSOLE_USER" -H bash -lc "source '${TRIAL_SCRIPT}' && hc_trial_ensure_started" 2>/dev/null || true
+fi
 
 APP="/Applications/Hypercluster.app"
 if [[ -d "$APP" ]]; then

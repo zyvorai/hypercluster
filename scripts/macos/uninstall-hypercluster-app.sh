@@ -15,9 +15,12 @@ Usage: $(basename "$0") [--purge]
 
 Removes Hypercluster.app from /Applications.
 
-  --purge   Also delete app data and license acceptance record:
+  --purge   Also delete cluster data and license acceptance record:
             ~/Library/Application Support/Hypercluster
-            ~/.hypercluster/
+            ~/.hypercluster/license-acceptance.json
+
+Trial records are always preserved (Keychain + ~/.hypercluster/trial.json)
+so reinstalling cannot start a new trial.
 EOF
       exit 0
       ;;
@@ -57,16 +60,18 @@ fi
 if $PURGE; then
   DATA="${HOME}/Library/Application Support/Hypercluster"
   META="${HOME}/.hypercluster"
+  LICENSE="${META}/license-acceptance.json"
   if [[ -d "$DATA" ]]; then
     echo "→ Removing ${DATA}…"
     rm -rf "$DATA"
     REMOVED=1
   fi
-  if [[ -d "$META" ]]; then
-    echo "→ Removing ${META}…"
-    rm -rf "$META"
+  if [[ -f "$LICENSE" ]]; then
+    echo "→ Removing ${LICENSE}…"
+    rm -f "$LICENSE"
     REMOVED=1
   fi
+  echo "  Trial record preserved (Keychain + ~/.hypercluster/trial.json)."
 fi
 
 if [[ "$REMOVED" -eq 1 ]]; then
@@ -77,6 +82,8 @@ fi
 
 if ! $PURGE; then
   echo ""
-  echo "App data preserved. To remove clusters registry and license record:"
+  echo "App data preserved. To remove clusters registry and license acceptance:"
   echo "  $0 --purge"
+  echo ""
+  echo "Trial record is never removed by uninstall — contact sales@zyvor.dev for a license."
 fi

@@ -130,7 +130,7 @@ desktop-build: ## 🖥️  Build Hypercluster Desktop .app / .dmg (macOS bundle)
 	npm install && npm run desktop:build
 
 desktop-pkg: ## 🖥️  Build Hypercluster.pkg with Zyvor EULA (macOS)
-	chmod +x scripts/macos/build-hypercluster-pkg.sh scripts/macos/install-hypercluster-app.sh scripts/macos/uninstall-hypercluster-app.sh
+	chmod +x scripts/macos/build-hypercluster-pkg.sh scripts/macos/install-hypercluster-app.sh scripts/macos/uninstall-hypercluster-app.sh scripts/macos/Uninstall-Hypercluster.command scripts/lib/hypercluster-trial.sh
 	./scripts/macos/build-hypercluster-pkg.sh
 
 desktop-install: ## 🖥️  Install Hypercluster.app to /Applications (accept Zyvor license)
