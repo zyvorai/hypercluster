@@ -1,0 +1,42 @@
+#!/bin/bash
+# Post-install: record Zyvor license acceptance for the console user (pkg EULA already shown).
+set -euo pipefail
+
+EULA="/Applications/Hypercluster.app/Contents/Resources/HYPERCLUSTER-EULA.txt"
+[[ -f "$EULA" ]] || exit 0
+
+CONSOLE_USER="$(stat -f '%Su' /dev/console 2>/dev/null || true)"
+[[ -n "$CONSOLE_USER" && "$CONSOLE_USER" != "root" ]] || exit 0
+
+sudo -u "$CONSOLE_USER" python3 - "$EULA" "$CONSOLE_USER" <<'PY'
+import json, hashlib, sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+eula, actor = sys.argv[1], sys.argv[2]
+data = Path(eula).read_bytes()
+h = hashlib.sha256(data).hexdigest()
+record = Path.home() / ".hypercluster" / "license-acceptance.json"
+record.parent.mkdir(parents=True, exist_ok=True)
+record.write_text(json.dumps({
+    "accepted": True,
+    "licenseVersion": "1.0",
+    "licenseHash": h,
+    "acceptedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "acceptedBy": actor,
+    "product": "Hypercluster Desktop",
+    "licensor": "ZyvorAI Labs Private Limited",
+    "brand": "zyvor.dev",
+}, indent=2) + "\n")
+PY
+
+APP="/Applications/Hypercluster.app"
+if [[ -d "$APP" ]]; then
+  LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+  if [[ -x "$LSREGISTER" ]]; then
+    "$LSREGISTER" -f "$APP" 2>/dev/null || true
+  fi
+  touch "$APP" 2>/dev/null || sudo touch "$APP" 2>/dev/null || true
+fi
+
+exit 0

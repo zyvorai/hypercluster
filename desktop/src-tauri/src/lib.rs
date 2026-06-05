@@ -1,16 +1,17 @@
 mod config;
 mod hypercluster;
+mod license;
 mod log_parser;
 mod paths;
 
 use config::{
     auto_import_repo_cluster, create_cluster, delete_cluster, import_cluster_from_path,
-    load_settings, read_cluster_conf, save_settings, write_cluster_conf, AppSettings, ClusterEntry,
-    Registry,
+    load_settings, read_cluster_conf, save_settings, update_cluster_by_path, write_cluster_conf,
+    AppSettings, ClusterEntry, Registry,
 };
 use hypercluster::{
-    cancel_run, get_run_status, resolve_binary_path, run_hypercluster, run_sync, ProcessManager,
-    RunRequest, RunStatus,
+    cancel_run, get_run_status, resolve_binary_path, run_hypercluster, run_sync,
+    run_sync_no_config, ProcessManager, RunRequest, RunStatus,
 };
 use tauri::{
     menu::{Menu, MenuItem},
@@ -42,6 +43,16 @@ fn create_cluster_cmd(
     distro: String,
 ) -> Result<ClusterEntry, String> {
     create_cluster(&name, &conf_content, &distro)
+}
+
+#[tauri::command]
+fn update_cluster_by_path_cmd(
+    config_path: String,
+    conf_content: String,
+    name: String,
+    distro: String,
+) -> Result<ClusterEntry, String> {
+    update_cluster_by_path(&config_path, &conf_content, &name, &distro)
 }
 
 #[tauri::command]
@@ -143,6 +154,96 @@ async fn hc_test_json(config_path: String, full: bool) -> Result<String, String>
 }
 
 #[tauri::command]
+async fn hc_preflight_json(config_path: String) -> Result<String, String> {
+    run_sync(&config_path, "preflight", &[], true).await
+}
+
+#[tauri::command]
+async fn hc_discover_json(
+    source: String,
+    uri: Option<String>,
+    host: Option<String>,
+    cidr: Option<String>,
+    csv: Option<String>,
+    validate: Option<bool>,
+    probe: Option<bool>,
+    ssh_user: Option<String>,
+    ssh_key: Option<String>,
+    ssh_port: Option<u16>,
+) -> Result<String, String> {
+    let mut args = vec!["--json".into(), "--source".into(), source];
+    if validate == Some(true) {
+        args.push("--validate".into());
+    }
+    if probe == Some(true) {
+        args.push("--probe".into());
+    }
+    if let Some(u) = uri {
+        args.push("--uri".into());
+        args.push(u);
+    }
+    if let Some(h) = host {
+        args.push("--host".into());
+        args.push(h);
+    }
+    if let Some(c) = cidr {
+        args.push("--cidr".into());
+        args.push(c);
+    }
+    if let Some(p) = csv {
+        args.push("--csv".into());
+        args.push(p);
+    }
+    if let Some(u) = ssh_user {
+        args.push("--ssh-user".into());
+        args.push(u);
+    }
+    if let Some(k) = ssh_key {
+        args.push("--ssh-key".into());
+        args.push(k);
+    }
+    if let Some(p) = ssh_port {
+        args.push("--ssh-port".into());
+        args.push(p.to_string());
+    }
+    run_sync_no_config("discover", &args).await
+}
+
+#[tauri::command]
+async fn hc_vms_json(config_path: String) -> Result<String, String> {
+    run_sync(&config_path, "vms", &[], true).await
+}
+
+#[tauri::command]
+async fn hc_workloads_json(config_path: String) -> Result<String, String> {
+    run_sync(&config_path, "workloads", &[], true).await
+}
+
+#[tauri::command]
+async fn hc_vm_create_json(
+    config_path: String,
+    template: String,
+    name: String,
+    namespace: String,
+) -> Result<String, String> {
+    run_sync(
+        &config_path,
+        "vm",
+        &[
+            "create".into(),
+            "--template".into(),
+            template,
+            "--name".into(),
+            name,
+            "--namespace".into(),
+            namespace,
+        ],
+        true,
+    )
+    .await
+}
+
+#[tauri::command]
 async fn pick_ssh_key(app: tauri::AppHandle) -> Result<Option<String>, String> {
     let file = app
         .dialog()
@@ -155,6 +256,10 @@ async fn pick_ssh_key(app: tauri::AppHandle) -> Result<Option<String>, String> {
 
 #[tauri::command]
 fn reveal_config(config_path: String) -> Result<(), String> {
+    let path = std::path::PathBuf::from(&config_path);
+    if !path.exists() {
+        return Err(format!("Config not found: {config_path}"));
+    }
     #[cfg(target_os = "macos")]
     {
         std::process::Command::new("open")
@@ -163,7 +268,55 @@ fn reveal_config(config_path: String) -> Result<(), String> {
             .spawn()
             .map_err(|e| e.to_string())?;
     }
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(format!("/select,{}", path.display()))
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let parent = path
+            .parent()
+            .ok_or_else(|| "invalid config path".to_string())?;
+        std::process::Command::new("xdg-open")
+            .arg(parent)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
+    {
+        return Err("Reveal in file manager is not supported on this OS".to_string());
+    }
     Ok(())
+}
+
+#[tauri::command]
+fn license_is_accepted_cmd() -> Result<bool, String> {
+    Ok(license::license_is_accepted())
+}
+
+#[tauri::command]
+fn license_summary_cmd() -> Result<String, String> {
+    license::license_summary()
+}
+
+#[tauri::command]
+fn license_accept_cmd(actor: Option<String>) -> Result<(), String> {
+    license::license_accept(&actor.unwrap_or_else(|| {
+        std::env::var("USER").unwrap_or_else(|_| "unknown".to_string())
+    }))
+}
+
+#[tauri::command]
+fn macos_arm64_required_cmd() -> bool {
+    license::macos_arm64_required()
+}
+
+#[tauri::command]
+fn host_cpu_arch_cmd() -> String {
+    license::host_cpu_arch()
 }
 
 #[tauri::command]
@@ -173,9 +326,27 @@ fn open_data_dir() -> Result<(), String> {
     #[cfg(target_os = "macos")]
     {
         std::process::Command::new("open")
+            .arg(&dir)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
             .arg(dir)
             .spawn()
             .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(dir)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
+    {
+        return Err("Open data directory is not supported on this OS".to_string());
     }
     Ok(())
 }
@@ -238,6 +409,7 @@ pub fn run() {
             get_settings,
             set_settings,
             create_cluster_cmd,
+            update_cluster_by_path_cmd,
             read_cluster_conf_cmd,
             write_cluster_conf_cmd,
             delete_cluster_cmd,
@@ -249,6 +421,16 @@ pub fn run() {
             get_run_status_cmd,
             hc_status_json,
             hc_test_json,
+            hc_preflight_json,
+            hc_discover_json,
+            hc_vms_json,
+            hc_workloads_json,
+            hc_vm_create_json,
+            license_is_accepted_cmd,
+            license_summary_cmd,
+            license_accept_cmd,
+            macos_arm64_required_cmd,
+            host_cpu_arch_cmd,
             pick_ssh_key,
             reveal_config,
             open_data_dir,

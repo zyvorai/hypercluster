@@ -8,8 +8,12 @@ export default {
           bg: '#0B0B0F',
           panel: 'rgba(255,255,255,0.06)',
           border: 'rgba(255,255,255,0.12)',
-          accent: '#0A84FF',
+          accent: '#f97316',
           muted: 'rgba(255,255,255,0.55)',
+        },
+        zyvor: {
+          orange: '#f97316',
+          'orange-light': '#fb923c',
         },
       },
       borderRadius: {

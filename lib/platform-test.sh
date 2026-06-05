@@ -51,6 +51,8 @@ platform_test::run() {
   platform_test::_check "All nodes Ready" \
     kubectl wait --for=condition=Ready node --all --timeout=120s
 
+  platform_test::_check "Node count matches cluster.conf" platform_test::_node_count_match
+
   if [[ "${CNI_PLUGIN:-cilium}" == "cilium" ]]; then
     if command -v cilium &>/dev/null; then
       platform_test::_check "Cilium healthy" \
@@ -87,6 +89,11 @@ platform_test::run() {
   if [[ "${METRICS_SERVER_ENABLED:-true}" == "true" ]]; then
     platform_test::_check "metrics-server (kubectl top nodes)" \
       bash -c 'timeout 45 kubectl top nodes &>/dev/null'
+  fi
+
+  if [[ "${LONGHORN_ENABLED:-false}" == "true" ]]; then
+    platform_test::_check "Longhorn pods Running" \
+      bash -c 'kubectl get ns longhorn-system &>/dev/null && out=$(kubectl get pods -n longhorn-system --no-headers 2>/dev/null); [[ -n "$out" ]] && ! echo "$out" | awk "{print \$3}" | grep -qvE "Running|Completed"'
   fi
 
   if [[ "${KUBEVIRT_ENABLED:-false}" == "true" ]]; then
@@ -165,6 +172,14 @@ spec:
 YAML
   kubectl wait --for=condition=Ready vm/hc-smoke-testvm --timeout=180s
   kubectl delete vm hc-smoke-testvm --wait=true
+}
+
+platform_test::_node_count_match() {
+  local expected=0 actual
+  expected=$(( $(echo "$CONTROL_PLANE_IPS" | wc -w | tr -d ' ') + $(echo "$WORKER_IPS" | wc -w | tr -d ' ') ))
+  [[ "$expected" -gt 0 ]] || return 0
+  actual=$(kubectl get nodes --no-headers 2>/dev/null | wc -l | tr -d ' ')
+  [[ "$actual" -eq "$expected" ]]
 }
 
 platform_test::_remote_kubectl() {

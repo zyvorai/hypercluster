@@ -1,0 +1,13 @@
+#!/bin/bash
+# Block Intel Mac installs — Hypercluster Desktop is Apple Silicon (arm64) only.
+set -euo pipefail
+
+ARCH="$(uname -m)"
+if [[ "$ARCH" != "arm64" ]]; then
+  echo "Hypercluster Desktop requires Apple Silicon (M1/M2/M3/M4 or later)." >&2
+  echo "Intel-based Mac (x86_64) is not supported as of Hypercluster 0.1.0." >&2
+  echo "Install aborted." >&2
+  exit 1
+fi
+
+exit 0

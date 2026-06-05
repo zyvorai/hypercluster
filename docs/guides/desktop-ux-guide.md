@@ -10,12 +10,12 @@ Liquid Glass desktop UI for the [hypercluster](../../hypercluster) CLI. Every cl
 
 1. [Getting Started](#1-getting-started)
 2. [Navigation](#2-navigation)
-3. [Dashboard](#3-dashboard)
-4. [Create Cluster Wizard](#4-create-cluster-wizard)
-5. [Day-2 Operations](#5-day-2-operations)
+3. [Dashboard & cluster detail](#3-dashboard)
+4. [Cluster Creation Studio](#4-cluster-creation-studio)
+5. [Advanced operations](#5-advanced-operations)
 6. [Deploy & Log Console](#6-deploy--log-console)
 7. [Settings](#7-settings)
-8. [Command Palette](#8-command-palette)
+8. [Command Palette & global search](#8-command-palette--global-search)
 9. [Keyboard Shortcuts](#9-keyboard-shortcuts)
 10. [Notifications & Tray](#10-notifications--tray)
 11. [Data Storage](#11-data-storage)
@@ -43,8 +43,19 @@ hypercluster-desktop    # alias: hc-desktop
 ### First launch checklist
 
 1. Open **Settings** and confirm the resolved **hypercluster binary** path (repo `./hypercluster` is auto-detected in dev).
-2. **Import** an existing `cluster.conf` or use **Create Cluster** wizard.
-3. Run **preflight** from Operations before first **deploy**.
+2. **Import** an existing `cluster.conf` or open **Create Cluster Hub** (Quick Deploy or Studio).
+3. Run **preflight** before first **deploy**.
+
+### macOS app install & uninstall (Zyvor license)
+
+| Action | Command |
+|--------|---------|
+| Build `.pkg` with EULA pane | `make desktop-pkg` |
+| Install to `/Applications` | `make desktop-install` or open the `.pkg` |
+| Uninstall app | `make desktop-uninstall` |
+| Uninstall + app data | `./scripts/macos/uninstall-hypercluster-app.sh --purge` |
+
+First launch (drag-install) shows an in-app **Zyvor License Agreement**. See [`desktop/distribution/README.md`](../desktop/distribution/README.md).
 
 ### Auto-import
 
@@ -59,21 +70,22 @@ The left sidebar has four views:
 | View | Purpose |
 |------|---------|
 | **Dashboard** | Cluster cards, stats, import, quick deploy |
-| **Create Cluster** | 5-step wizard → `cluster.conf` |
-| **Operations** | Day-2 commands for selected cluster |
-| **Settings** | Binary path, import, data directory |
+| **Cluster detail** | Sidebar entry for the selected cluster (nodes, tests, preflight) |
+| **Create Cluster** | Intent hub → Quick Deploy or Cluster Studio (`ClusterSpec` → `cluster.conf`) |
+| **Advanced ops** | Destroy, remove-node, dry-run deploy |
+| **Settings** | Binary path, registry list with config paths, import |
 
 The footer shows **⌘K command palette** hint (Ctrl+K on Windows/Linux).
 
 ---
 
-## 3. Dashboard
+## 3. Dashboard & cluster detail
 
-### Header
+### Dashboard
 
 - Shows resolved **hypercluster binary** path.
 - **Import cluster.conf** — native file picker; copies config into app registry.
-- **+ New Cluster** — opens the wizard.
+- **+ New Cluster** — opens the **Create Cluster Hub** (intent cards → Quick Deploy or Studio).
 
 ### Stat cards
 
@@ -88,61 +100,94 @@ The footer shows **⌘K command palette** hint (Ctrl+K on Windows/Linux).
 Each card shows:
 
 - Cluster **name** and **distro** (`k3s` or `kubespray`)
-- **Status pill** — unknown / ready / deploying (from last action)
+- **Status pill** — `unknown` / `ready` / `running` (active job) / `error` (last command failed)
+- **Config path** — truncated registry path
+- **Reveal cluster.conf** — opens config in Finder (macOS), Explorer (Windows), or file manager (Linux)
 - **Nodes ready** — e.g. `1/1 nodes ready` when kubeconfig exists
-- **Open** → Operations view for that cluster
+- **Open** → **Cluster detail** view (nodes, smoke tests, preflight panel)
 - **Deploy** → runs `hypercluster deploy` with live logs
+
+---
+
+## 3.1 Cluster detail (cockpit)
+
+Opened from a cluster card **Open** button or the command palette.
+
+The left sidebar lists **14 cockpit sections**: Overview, Nodes, Workloads, Networking, Storage, Platform, VMs, Templates, GPU, Security, Observability, Backups, Upgrades, Settings.
+
+| Section | Source | Notes |
+|---------|--------|-------|
+| **Overview** | Registry + `status --json` | Install plan from `ClusterSpec` |
+| **Nodes** | `status --json` | Ready counts, roles |
+| **Workloads** | `workloads --json` | Pods and services (requires kubeconfig) |
+| **Platform smoke** | `test --json` | Run test / test --full |
+| **Preflight** | `preflight --json` | SSH and tool checks |
+| **VMs / Templates** | `vms --json` | KubeVirt VMIs + catalog; template create is preview stub |
+| **Settings** | — | **Open Cluster Studio** (single edit path on `ClusterSpec`) |
+
+Toolbar: `preflight`, `deploy`, `test`, `test --full`, **Edit conf** (Monaco).
+
+**Remove from registry** deletes the desktop entry only (does not run `destroy`). Type the cluster name to confirm.
+
+---
+
+## 3.2 Monaco cluster.conf editor
+
+**Edit conf** (detail view or Operations) opens the Monaco editor for the registry `cluster.conf`.
+
+- **Save** writes via the Tauri backend and refreshes the registry.
+- **Cancel** returns to the previous view (detail or Operations).
+
+After saving, a prompt offers **Run preflight** to validate changes.
+
+Keyboard: **⌘S** / **Ctrl+S** save · **Esc** cancel.
+
+---
 
 ### Empty state
 
-When no clusters are registered, a glass panel prompts you to import `cluster.conf` or use the wizard.
+When no clusters are registered, a glass panel prompts you to import `cluster.conf` or open the Create Cluster Hub.
 
 ---
 
-## 4. Create Cluster Wizard
+## 4. Cluster Creation Studio
 
-Five steps; generates `cluster.conf` under Application Support.
+The typed **`ClusterSpec`** model (`desktop/src/lib/clusterSpec.ts`) is the single edit path. Generated `cluster.conf` is written on save/deploy.
 
-| Step | Fields |
-|------|--------|
-| **1 — Identity** | Cluster name, distro (k3s / Kubespray), Kubernetes version |
-| **2 — Nodes & SSH** | Control plane IPs, worker IPs (tag input), SSH user, SSH key (browse) |
-| **3 — Network** | Pod CIDR, CNI plugin |
-| **4 — Platform** | MetalLB toggle + IP pool, KubeVirt + CDI toggle |
-| **5 — Review** | Full generated config preview |
+| Flow | Steps | Use when |
+|------|-------|----------|
+| **Quick Deploy** | Name → Infrastructure → Deploy | Fast path with template defaults |
+| **Cluster Studio** | Intent → Nodes → Network → Platform → Validate | Basic / Advanced / Expert tiers |
+| **Import** | File picker | Existing external config |
 
-On step 5:
+**Save:** new clusters register under app data; **editing** updates the same `config_path` (registry UUID preserved).
 
-- **Deploy immediately after saving** — runs `deploy` after registry write.
-- **Save & Create** — writes config and returns to dashboard (or starts deploy if checked).
+**Settings search (Studio):** wired fields only — catalog items (Kyverno, Velero, …) are read-only.
 
-Defaults match the k3s remote platform path (Cilium, cert-manager, KubeVirt v1.8.x pins in generated conf).
+**Per-node SSH** overrides persist as `NODE_SSH_OVERRIDES_JSON` in `cluster.conf` (k3s deploy path).
+
+### Related CLI (JSON for Desktop)
+
+| Command | Purpose |
+|---------|---------|
+| `discover --json --source …` | Node discovery (libvirt, Proxmox, CSV, …) |
+| `vms --json` | KubeVirt VMIs + templates |
+| `vm create --template … --name … --json` | Template validation (create stub) |
+| `workloads --json` | Pod/service inventory in cockpit |
 
 ---
 
-## 5. Day-2 Operations
+## 5. Advanced operations
 
-Select a cluster from the dropdown, then run commands:
+Infrequent or destructive commands. Common tasks (preflight, deploy, test, edit conf) are on **cluster detail**.
 
 | Button | hypercluster command |
 |--------|---------------------|
-| preflight | `preflight` |
-| deploy | `deploy` |
-| test | `test` |
-| status | `status` |
-| scale | `scale` |
-| upgrade | `upgrade` |
-| fetch-kubeconfig | `fetch-kubeconfig` |
-| merge-kubeconfig | `merge-kubeconfig` |
-| unlock | `unlock` |
-| test --full | `test --full` |
 | dry-run deploy | `deploy -n` |
 | remove-node | `remove-node <name> -f` |
 | Destroy cluster | `destroy -f` (type cluster name to confirm) |
 
-**Reveal cluster.conf in Finder** opens the config file location in macOS Finder.
-
-Destroy requires typing the exact cluster name in the confirmation field.
+Use **Open cluster detail** for day-to-day work.
 
 ---
 
@@ -154,6 +199,8 @@ When any command runs, the view switches to **Deploy** (log console):
 - **Stage card** — parsed deploy stage (`current/total` + label) when hypercluster emits stage lines
 - **Log console** — streaming stdout/stderr (ANSI stripped for display)
 - **Cancel job** — sends SIGTERM to the running subprocess
+- **Back to cluster detail** — after a job started from detail finishes; panels refresh automatically (Esc also works)
+- **Success/failed** badge in the log view title when the job completes
 
 On completion, a native **notification** shows success or failure.
 
@@ -167,20 +214,25 @@ The dashboard **Active job** stat reflects running state.
 |---------|--------|
 | **Custom hypercluster binary path** | Override auto-detected binary |
 | **Save** | Persists to registry settings |
-| **Import cluster.conf…** | Same as dashboard import |
-| **Open data directory** | Opens `~/Library/Application Support/Hypercluster` in Finder |
+| **Import cluster.conf…** | Same as dashboard import (lands on cluster detail) |
+| **Open data directory** | Opens app data folder in the system file manager |
+| **Registered clusters** | List with distro, config path, status pill, **Reveal conf** |
 
 ---
 
-## 8. Command Palette
+## 8. Command Palette & global search
 
-Open with **⌘K** (macOS) or **Ctrl+K**.
+### Command palette (⌘K / Ctrl+K)
 
-- Search filters clusters by name.
-- Per cluster, quick actions: `preflight`, `deploy`, `test`, `status`, `fetch-kubeconfig`.
+- Search filters clusters by name, distro, or config path; filters commands and navigation actions.
+- Per cluster: **Open cluster detail**, **Edit cluster.conf**, **Open Cluster Studio**, plus run commands (`preflight`, `deploy`, `test`, `test --full`, `status`, `fetch-kubeconfig`, `merge-kubeconfig`, `unlock`).
 - **Escape** or **⌘K** again closes the palette.
 
 Selecting a command starts the job and opens the log console.
+
+### Global search (⌘⇧F / Ctrl+Shift+F)
+
+Cross-view search for clusters, navigation targets, and studio actions. Complements the command palette for discovery when you know a feature name but not which cluster owns it.
 
 ---
 
@@ -189,7 +241,9 @@ Selecting a command starts the job and opens the log console.
 | Shortcut | Action |
 |----------|--------|
 | **⌘K** / **Ctrl+K** | Toggle command palette |
-| **Escape** | Close command palette |
+| **⌘⇧F** / **Ctrl+Shift+F** | Global search |
+| **⌘S** / **Ctrl+S** | Save in Monaco editor |
+| **Escape** | Close palette / settings search; from log view return to cluster detail when job finished |
 
 ---
 
@@ -222,10 +276,23 @@ exec "<hypercluster>" -c "<config_path>" [-n] [-v] [-f] <command> [args...]
 
 JSON used internally (not shown in log view):
 
-- Dashboard node counts → `status --json`
-- Future test result panels → `test --json`
+| Desktop surface | hypercluster command |
+|-----------------|----------------------|
+| Dashboard node counts | `status --json` |
+| Cluster detail smoke | `test --json` / `test --full --json` |
+| Cluster detail preflight | `preflight --json` |
+| Workloads cockpit | `workloads --json` |
+| KubeVirt VMs / templates | `vms --json` |
+| Template create (preview) | `vm create --template … --name … --json` |
+| Node discovery (Studio) | `discover --json --source …` |
 
 Human-readable test output appears in the log console; JSON mode keeps stdout clean for parsers.
+
+### ClusterSpec and save behavior
+
+- **New cluster:** `create_cluster_cmd` writes `clusters/<name>/cluster.conf` under app data.
+- **Edit existing:** `update_cluster_by_path_cmd` merges via `mergeClusterSpec` (preserves comments and registry UUID).
+- **Per-node SSH:** optional `NODE_SSH_OVERRIDES_JSON` in `cluster.conf` (k3s deploy honors per-IP user/key/port).
 
 ---
 
@@ -238,4 +305,4 @@ Human-readable test output appears in the log console; JSON mode keeps stdout cl
 
 ---
 
-_Doc version: 2026-06-04T17:43:57Z · hypercluster v0.1.0_
+_Doc version: 2026-06-05T00:05:12Z · hypercluster v0.1.0_

@@ -1,0 +1,10 @@
+id: airgap-stub
+label: Air-Gapped
+description: Offline mirror workflow flags (preview).
+intent: Air-Gapped Cluster
+icon: lock
+defaults:
+  clusterName: airgap
+  k8sDistro: k3s
+  controlPlaneIps:
+    - 10.0.0.100

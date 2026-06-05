@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "description": "Kubernetes cluster lifecycle wrapper with optional desktop UI",
+  "bin": {
+    "hypercluster": "./bin/hypercluster"
+  },
   "workspaces": [
     "desktop"
   ],

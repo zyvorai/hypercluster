@@ -32,6 +32,7 @@ EOF
     echo
     echo "| Command | Flag | Output |"
     echo "|---------|------|--------|"
+    echo "| \`preflight\` | \`--json\` | Preflight checks JSON |"
     echo "| \`test\` | \`--json\` | JSON on stdout (logs on stderr) |"
     echo "| \`test\` | \`--full\` | Extended snapshot API checks |"
     echo "| \`status\` | \`--json\` | Node readiness JSON |"
@@ -198,7 +199,7 @@ End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** p
 
 ## Latest
 
-- **Desktop UX guide** — [desktop-ux-guide.md](guides/desktop-ux-guide.md) (Dashboard, wizard, operations, ⌘K palette)
+- **Desktop UX guide** — [desktop-ux-guide.md](guides/desktop-ux-guide.md) (Cluster Studio, cockpit, ⌘K / ⌘⇧F)
 - **k3s E2E** — \`preflight → deploy → test\` with \`test --json\` / \`status --json\`
 - **Hypercluster Desktop** — Tauri app; all actions via CLI ([guide](guides/desktop-ux-guide.md))
 - **Doc generator** — \`make docs\` · \`make docs-serve\` (port 8080)
@@ -478,16 +479,20 @@ decks = [
          ]),
          ("UX highlights", [
              "Import / auto-import <code>cluster.conf</code>",
-             "5-step wizard + deploy immediately",
-             "Live logs, stage progress, notifications",
-             "Node readiness via <code>status --json</code>",
+             "Cluster Studio + Quick Deploy (<code>ClusterSpec</code>)",
+             "Live logs, stage progress, deploy ops center",
+             "Cockpit: workloads, VMs, <code>status --json</code>",
          ]),
      ]),
     ("05-hypercluster-desktop-ux.html", "Desktop UX deep dive", "Full operator guide",
      [
          ("Dashboard", [
-             "Cluster cards · ready node counts · quick deploy",
-             "Import cluster.conf · empty-state guidance",
+             "Cluster cards · ready node counts · Create Cluster Hub",
+             "Import cluster.conf · Quick Deploy / Studio",
+         ]),
+         ("Cockpit", [
+             "14 sections: nodes, workloads, VMs, platform tests",
+             "<code>workloads --json</code> · <code>vms --json</code>",
          ]),
          ("Operations", [
              "preflight, deploy, test, test --full, dry-run",
@@ -557,6 +562,20 @@ gen_pdfs() {
   "$(docs_python)" "${ROOT}/scripts/generate-doc-pdfs.py"
 }
 
+validate_index() {
+  local index="${DOCS}/index.md"
+  [[ -f "$index" ]] || return 0
+  if grep -qE '^(Generating hypercluster docs|Done\.)' "$index"; then
+    echo "ERROR: docs/index.md looks corrupted (shell noise detected)" >&2
+    exit 1
+  fi
+  if grep -qE '^  wrote docs/' "$index"; then
+    echo "ERROR: docs/index.md looks corrupted (generator log lines detected)" >&2
+    exit 1
+  fi
+  echo "  validated docs/index.md"
+}
+
 echo "Generating hypercluster docs (v${VERSION})…"
 gen_cli_txt
 gen_cli_md
@@ -564,6 +583,7 @@ gen_config
 gen_make
 gen_agent_quickref
 gen_index
+validate_index
 gen_welcome_html
 DOCS="${DOCS}" gen_presentations
 gen_presentations_readme

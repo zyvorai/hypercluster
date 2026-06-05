@@ -147,7 +147,7 @@ make test-smoke            # CLI help, version, config validation
 make test-inventory        # inventory generation unit tests
 make test-platform-config  # k3s platform config generation (Cilium values, etc.)
 make test-platform-json    # test --json output shape (no cluster)
-make desktop-check         # TypeScript + cargo check for desktop app
+make desktop-check         # TypeScript + cargo check + JSON/spec tests
 make docs                  # regenerate docs/ from sources
 ```
 
@@ -203,8 +203,12 @@ Run `./hypercluster wizard` for an interactive generator (supports k3s vs Kubesp
 JSON output for automation and the desktop app:
 
 ```bash
-./hypercluster -c cluster.conf test --json    # stdout: {"pass", "fail", "checks"}
-./hypercluster -c cluster.conf status --json  # stdout: {"ready", "total", "nodes"}
+./hypercluster -c cluster.conf test --json       # stdout: {"pass", "fail", "checks"}
+./hypercluster -c cluster.conf status --json     # stdout: {"ready", "total", "nodes"}
+./hypercluster -c cluster.conf preflight --json
+./hypercluster -c cluster.conf workloads --json  # pods + services
+./hypercluster -c cluster.conf vms --json        # KubeVirt VMIs + templates
+./hypercluster discover --json --source csv --csv tests/fixtures/discover-nodes.csv
 ./hypercluster -c cluster.conf test --json --full
 ```
 
@@ -304,11 +308,22 @@ python3 -c "import jinja2, netaddr; print('ok')"
 git clone https://github.com/ssahani/hypercluster.git
 cd hypercluster
 chmod +x hypercluster
+./hypercluster -h
 ```
+
+From the repo root you can also use the npm shim:
+
+```bash
+npm install
+npx hypercluster preflight --json
+npx hypercluster init --profile k3s-remote
+```
+
+Cluster profiles live in [`config/profiles/`](config/profiles/) (`k3s-remote`, `kubespray-ha`).
 
 ### Desktop app (optional)
 
-A Tauri-based Liquid Glass UI lives in [`desktop/`](desktop/). It runs **all** cluster operations through the `hypercluster` CLI.
+A Tauri-based Liquid Glass UI lives in [`desktop/`](desktop/). It runs **all** cluster operations through the `hypercluster` CLI — **Cluster Creation Studio** (`ClusterSpec` → `cluster.conf`), Quick Deploy, and a 14-section cluster cockpit (workloads, VMs, platform tests).
 
 Install once from the repo root (npm workspaces, like the Cursor `agent` CLI):
 

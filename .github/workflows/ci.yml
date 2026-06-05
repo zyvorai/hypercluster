@@ -30,8 +30,14 @@ jobs:
       - name: Run platform JSON tests
         run: make test-platform-json
 
+      - name: Run preflight JSON tests
+        run: make test-preflight-json
+
       - name: Generate documentation
         run: make docs
+
+      - name: Desktop typecheck and cargo check
+        run: make desktop-check
 
       - name: Build desktop frontend
         run: make desktop-build

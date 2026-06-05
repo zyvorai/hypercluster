@@ -12,8 +12,9 @@ fi
 # Commands:
 #   init              Clone Kubespray and generate inventory + group_vars
 #                     Use init --wizard to create cluster.conf interactively first
+#                     Use init --profile <name> to copy config/profiles/<name>.conf.example
 #   wizard            Interactive cluster.conf generator (no existing config required)
-#   preflight         Verify local tools and SSH connectivity to all nodes
+#   preflight         Verify local tools and SSH connectivity to all nodes (--json)
 #   deploy            Full cluster deployment (preflight + init + cluster.yml)
 #   scale             Add worker nodes listed in cluster.conf (scale.yml)
 #   upgrade           Upgrade Kubernetes to the version in cluster.conf
@@ -23,6 +24,10 @@ fi
 #   install-kubevirt  Install KubeVirt operator + CDI (also runs after deploy if KUBEVIRT_ENABLED=true)
 #   test              Run platform smoke tests (k3s path; optional --full, --json)
 #   destroy           Tear down the cluster (reset.yml or k3s uninstall)
+#   vms               List KubeVirt VMs + template catalog (--json)
+#   vm create         Validate template and preview VM create (--template, --name, --json)
+#   workloads         List pods and services (--json)
+#   discover          Discover VMs/hosts (libvirt, Proxmox, VMware, ssh-scan, csv) (--json)
 #   status            Node status (optional --json for machine-readable output)
 #   unlock            Remove stale per-cluster lock after a crash
 #
@@ -105,6 +110,24 @@ source "$SCRIPT_DIR/lib/platform-stack.sh"
 source "$SCRIPT_DIR/lib/platform-tools.sh"
 # shellcheck source=lib/platform-test.sh
 source "$SCRIPT_DIR/lib/platform-test.sh"
+# shellcheck source=lib/discover.sh
+source "$SCRIPT_DIR/lib/discover.sh"
+# shellcheck source=lib/rke2.sh
+source "$SCRIPT_DIR/lib/rke2.sh"
+# shellcheck source=lib/microk8s.sh
+source "$SCRIPT_DIR/lib/microk8s.sh"
+# shellcheck source=lib/talos.sh
+source "$SCRIPT_DIR/lib/talos.sh"
+# shellcheck source=lib/vms.sh
+source "$SCRIPT_DIR/lib/vms.sh"
+# shellcheck source=lib/workloads.sh
+source "$SCRIPT_DIR/lib/workloads.sh"
+
+# ── discover (no cluster.conf required) ───────────────────────────────────────
+if [[ "$COMMAND" == "discover" ]]; then
+  discover::run "$@"
+  exit $?
+fi
 
 # ── wizard (no cluster.conf required) ─────────────────────────────────────────
 if [[ "$COMMAND" == "wizard" ]]; then
@@ -128,9 +151,14 @@ source "$CONFIG_FILE"
 
 # Validate required config variables
 _distro="${K8S_DISTRO:-kubespray}"
+# kubeadm maps to Kubespray path
+[[ "$_distro" == "kubeadm" ]] && K8S_DISTRO="kubespray" && _distro="kubespray"
 _required_vars=(CLUSTER_NAME SSH_USER SSH_KEY CONTROL_PLANE_IPS)
 if [[ "$_distro" == "kubespray" ]]; then
   _required_vars+=(KUBESPRAY_VERSION KUBE_VERSION)
+fi
+if [[ "$_distro" == "talos" ]]; then
+  _required_vars=(CLUSTER_NAME CONTROL_PLANE_IPS)
 fi
 _missing=()
 for _v in "${_required_vars[@]}"; do
@@ -211,9 +239,33 @@ INV_DIR="$KUBESPRAY_DIR/inventory/$CLUSTER_NAME"
 
 # ── commands ─────────────────────────────────────────────────────────────────
 cmd_init() {
-  if [[ "${K8S_DISTRO:-kubespray}" == "k3s" ]]; then
-    log::section "Init: k3s (no Kubespray inventory)"
-    log::ok "k3s mode — config validated, ready to deploy."
+  local profile=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --profile)
+        profile="${2:-}"
+        shift 2
+        ;;
+      --profile=*)
+        profile="${1#*=}"
+        shift
+        ;;
+      *)
+        shift
+        ;;
+    esac
+  done
+  if [[ -n "$profile" ]]; then
+    local tpl="${SCRIPT_DIR}/config/profiles/${profile}.conf.example"
+    [[ -f "$tpl" ]] || die "Unknown profile: $profile (expected $tpl)"
+    cp "$tpl" "$CLUSTER_CONF"
+    log::ok "Copied profile $profile → $CLUSTER_CONF"
+    # shellcheck source=/dev/null
+    source "$CLUSTER_CONF"
+  fi
+  if [[ "${K8S_DISTRO:-kubespray}" == "k3s" || "${K8S_DISTRO:-}" == "rke2" || "${K8S_DISTRO:-}" == "microk8s" || "${K8S_DISTRO:-}" == "talos" ]]; then
+    log::section "Init: ${K8S_DISTRO} (no Kubespray inventory)"
+    log::ok "${K8S_DISTRO} mode — config validated, ready to deploy."
     return 0
   fi
   log::section "Init: Kubespray source + inventory"
@@ -222,6 +274,16 @@ cmd_init() {
 }
 
 cmd_preflight() {
+  local json=0
+  for arg in "$@"; do
+    case "$arg" in
+      --json) json=1 ;;
+    esac
+  done
+  if [[ "$json" == "1" ]]; then
+    HC_JSON=1 preflight::run
+    return $?
+  fi
   preflight::run
 }
 
@@ -248,6 +310,38 @@ cmd_deploy() {
     log::ok "k3s virtualization platform deployed! 🎉"
     postdeploy::print_hints
     return 0
+  fi
+
+  if [[ "${K8S_DISTRO:-}" == "rke2" ]]; then
+    progress::stage 1 5 "Preflight checks"
+    cmd_preflight
+    progress::stage 2 5 "RKE2 install (servers + agents)"
+    rke2::deploy
+    progress::stage 3 5 "Fetch kubeconfig"
+    rke2::fetch_kubeconfig
+    progress::stage 4 5 "Platform stack (optional)"
+    [[ "${PLATFORM_STACK_ENABLED:-false}" == "true" ]] && platform::install_stack
+    progress::stage 5 5 "Done"
+    log::ok "RKE2 cluster deployed! 🎉"
+    postdeploy::print_hints
+    return 0
+  fi
+
+  if [[ "${K8S_DISTRO:-}" == "microk8s" ]]; then
+    progress::stage 1 4 "Preflight checks"
+    cmd_preflight
+    progress::stage 2 4 "MicroK8s snap install + join"
+    microk8s::deploy
+    progress::stage 3 4 "Fetch kubeconfig"
+    microk8s::fetch_kubeconfig
+    progress::stage 4 4 "Done"
+    log::ok "MicroK8s cluster deployed! 🎉"
+    postdeploy::print_hints
+    return 0
+  fi
+
+  if [[ "${K8S_DISTRO:-}" == "talos" ]]; then
+    talos::deploy
   fi
 
   progress::stage 1 4 "Preflight checks"
@@ -405,9 +499,94 @@ cmd_test() {
   platform_test::run "$full"
 }
 
+cmd_vms() {
+  local json=0
+  for arg in "$@"; do
+    case "$arg" in
+      --json) json=1 ;;
+    esac
+  done
+  if [[ "$json" == "1" ]]; then
+    vms::list_json
+    return $?
+  fi
+  log::section "KubeVirt VMs: $CLUSTER_NAME"
+  vms::list_json | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+for vm in d.get("vms", []):
+    ns = vm.get("namespace", "default")
+    name = vm.get("name", "?")
+    phase = vm.get("phase", "?")
+    ip = vm.get("ip", "")
+    print(f"{ns}/{name}  {phase}  {ip}")
+if not d.get("vms"):
+    print("(no running VMIs — enable KubeVirt and create VMs)")
+'
+}
+
+cmd_vm_create() {
+  local json=0 template="" name="" namespace="default"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --json) json=1; shift ;;
+      --template) template="$2"; shift 2 ;;
+      --name) name="$2"; shift 2 ;;
+      --namespace) namespace="$2"; shift 2 ;;
+      *) log::error "Unknown arg: $1"; return 1 ;;
+    esac
+  done
+  if [[ "$json" == "1" ]]; then
+    vms::create_json "$template" "$name" "$namespace"
+    return $?
+  fi
+  vms::create_json "$template" "$name" "$namespace" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+print(d.get("message", d))
+'
+}
+
+cmd_vm() {
+  local sub="${1:-}"
+  shift || true
+  case "$sub" in
+    create) cmd_vm_create "$@" ;;
+    *)
+      log::error "Usage: hypercluster vm create --template <id> --name <name> [--namespace ns] [--json]"
+      return 1
+      ;;
+  esac
+}
+
+cmd_workloads() {
+  local json=0
+  for arg in "$@"; do
+    case "$arg" in
+      --json) json=1 ;;
+    esac
+  done
+  if [[ "$json" == "1" ]]; then
+    workloads::json
+    return $?
+  fi
+  log::section "Workloads: $CLUSTER_NAME"
+  workloads::json | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+pods = d.get("pods", [])
+svcs = d.get("services", [])
+print(f"Pods: {len(pods)}  Services: {len(svcs)}")
+for p in pods[:20]:
+    print(f"{p['namespace']}/{p['name']}  {p['phase']}")
+if len(pods) > 20:
+    print(f"... and {len(pods) - 20} more pods")
+'
+}
+
 # ── dispatch ─────────────────────────────────────────────────────────────────
 case "$COMMAND" in
-  init)               cmd_init ;;
+  init)               cmd_init "$@" ;;
   preflight)          cmd_preflight ;;
   deploy)             cmd_deploy ;;
   scale)              cmd_scale ;;
@@ -419,6 +598,9 @@ case "$COMMAND" in
   test)               cmd_test "$@" ;;
   destroy)            cmd_destroy ;;
   status)             cmd_status "$@" ;;
+  vms)                cmd_vms "$@" ;;
+  vm)                 cmd_vm "$@" ;;
+  workloads)          cmd_workloads "$@" ;;
   unlock)             cmd_unlock ;;
   wizard)             ;; # handled before config load
   "")                 usage ;;

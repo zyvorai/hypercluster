@@ -1,0 +1,42 @@
+# hypercluster cluster configuration — k3s remote platform profile
+# Copy via: ./hypercluster init --profile k3s-remote
+
+CLUSTER_NAME="k3s-remote"
+
+K8S_DISTRO="k3s"
+K3S_DATA_DIR="/data/k3s"
+K3S_VERSION=""
+K3S_EXEC_ARGS="--flannel-backend=none --disable-network-policy --disable traefik --disable servicelb --disable-kube-proxy"
+CILIUM_HUBBLE_ENABLED="true"
+CILIUM_K8S_SERVICE_HOST="127.0.0.1"
+
+PLATFORM_STACK_ENABLED="true"
+CERT_MANAGER_ENABLED="true"
+METALLB_ENABLED="true"
+METALLB_IP_POOL="192.168.1.240-192.168.1.250"
+CDI_ENABLED="true"
+KUBEVIRT_CSI_ENABLED="true"
+KUBEVIRT_DISKS_PROVIDER="true"
+SNAPSHOT_CONTROLLER_ENABLED="true"
+CNAO_ENABLED="true"
+SSP_ENABLED="true"
+LONGHORN_ENABLED="false"
+
+KUBE_PODS_SUBNET="10.42.0.0/16"
+KUBE_SERVICE_ADDRESSES="10.43.0.0/16"
+
+SSH_USER="ubuntu"
+SSH_KEY="$HOME/.ssh/id_ed25519"
+SSH_PORT=22
+SSH_EXTRA_ARGS="-o StrictHostKeyChecking=accept-new"
+
+CONTROL_PLANE_IPS="10.0.0.10"
+WORKER_IPS=""
+
+KUBEVIRT_ENABLED="true"
+KUBEVIRT_VERSION="v1.8.3"
+CDI_VERSION="v1.65.0"
+METRICS_SERVER_ENABLED="true"
+
+KUBECONFIG_OUTPUT="$HOME/.kube/k3s-remote.yaml"
+KUBECONFIG_MERGE_DEFAULT="false"

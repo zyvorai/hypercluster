@@ -57,7 +57,11 @@ After cert-manager / KubeVirt / CDI installs, **recycle pods** that started with
 React UI → Tauri invoke → hypercluster.rs → bash exec hypercluster -c <conf> <cmd>
 ```
 
-JSON for dashboard: `status --json`, `test --json` via `run_sync()` in `hypercluster.rs`.
+JSON for dashboard: `status --json`, `test --json`, `preflight --json` via `run_sync()` in `hypercluster.rs`.
+
+Cluster **detail view**: node table (`status --json`), smoke panel (`test --json`), preflight panel (`preflight --json`). **ConfEditor** (Monaco) uses `read_cluster_conf_cmd` / `write_cluster_conf_cmd`; registry delete uses `delete_cluster_cmd` (not `destroy`).
+
+Profiles: `./hypercluster init --profile k3s-remote` copies `config/profiles/*.conf.example`.
 
 Registry: `~/Library/Application Support/Hypercluster/clusters.json`.
 
@@ -90,7 +94,7 @@ Template: `config/cluster.conf.example` · Generated ref: `docs/generated/CONFIG
 | Command | Notes |
 |---------|-------|
 | `wizard` | Interactive conf generator |
-| `preflight` | Tools + SSH + MetalLB pool validation |
+| `preflight` | Tools + SSH + MetalLB pool validation; `--json` |
 | `deploy` | Full install; k3s skips reinstall if healthy |
 | `test` | k3s smoke only; `--json`, `--full` |
 | `status` | `--json` for automation |
@@ -102,6 +106,14 @@ Flags: `-c` config, `-f` force, `-n` dry-run, `-v` verbose.
 ---
 
 ## 5. JSON automation
+
+### `preflight --json`
+
+Stdout:
+
+```json
+{"ok": true, "checks": [{"name": "Command ssh", "passed": true, "detail": "/usr/bin/ssh"}]}
+```
 
 ### `test --json`
 
@@ -119,7 +131,7 @@ Human PASS/FAIL lines on **stderr** only.
 {"ready": 1, "total": 1, "nodes": [{"name": "node1", "ready": true, "roles": "true"}]}
 ```
 
-Desktop `hc_test_json` / `hc_status_json` parse stdout as JSON.
+Desktop `hc_preflight_json` / `hc_test_json` / `hc_status_json` parse stdout as JSON.
 
 ---
 
@@ -146,7 +158,7 @@ Expect `fail: 0` and 10 checks for full platform.
 1. Extend `config/cluster.conf.example` with toggle/version vars.
 2. Add install function in `lib/platform-stack.sh` in correct order.
 3. Add smoke check in `lib/platform-test.sh`.
-4. Update wizard if user-facing (`lib/wizard.sh`, `desktop/src/lib/api.ts`).
+4. Update wizard or Desktop `ClusterSpec` if user-facing (`lib/wizard.sh`, `desktop/src/lib/clusterSpec.ts`, `desktop/src/lib/api.ts`).
 5. Run `make test-platform-config`, `make docs`.
 
 ### Change Desktop behavior
@@ -166,7 +178,7 @@ Expect `fail: 0` and 10 checks for full platform.
 | inventory | `make test-inventory` | No |
 | platform config | `make test-platform-config` | No |
 | JSON shape | `make test-platform-json` | No |
-| desktop | `make desktop-check` | No |
+| desktop | `make desktop-check` | No (includes spec roundtrip + discover/vms/workloads JSON) |
 | Podman k3s | `scripts/test-podman.sh` | Containers |
 | Remote k3s | `deploy` + `test` | Remote host |
 

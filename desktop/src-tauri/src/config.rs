@@ -16,6 +16,8 @@ pub struct ClusterEntry {
     pub created_at: DateTime<Utc>,
     pub last_action: Option<String>,
     pub last_action_at: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub last_action_ok: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -124,6 +126,7 @@ pub fn create_cluster(name: &str, conf_content: &str, distro: &str) -> Result<Cl
         created_at: Utc::now(),
         last_action: None,
         last_action_at: None,
+        last_action_ok: None,
     };
 
     let mut reg = Registry::load()?;
@@ -133,11 +136,33 @@ pub fn create_cluster(name: &str, conf_content: &str, distro: &str) -> Result<Cl
     Ok(entry)
 }
 
-pub fn update_cluster_action(name: &str, action: &str) -> Result<(), String> {
+/// Update an existing registry cluster in place (preserves id and created_at).
+pub fn update_cluster_by_path(
+    config_path: &str,
+    conf_content: &str,
+    name: &str,
+    distro: &str,
+) -> Result<ClusterEntry, String> {
+    write_cluster_conf(config_path, conf_content)?;
+    let mut reg = Registry::load()?;
+    let entry = reg
+        .clusters
+        .iter_mut()
+        .find(|c| c.config_path == config_path)
+        .ok_or_else(|| format!("No registry entry for config: {config_path}"))?;
+    entry.name = name.to_string();
+    entry.distro = distro.to_string();
+    let out = entry.clone();
+    reg.save()?;
+    Ok(out)
+}
+
+pub fn update_cluster_action(name: &str, action: &str, ok: bool) -> Result<(), String> {
     let mut reg = Registry::load()?;
     if let Some(c) = reg.clusters.iter_mut().find(|c| c.name == name) {
         c.last_action = Some(action.to_string());
         c.last_action_at = Some(Utc::now());
+        c.last_action_ok = Some(ok);
     }
     reg.save()
 }

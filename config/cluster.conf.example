@@ -69,6 +69,10 @@ SSH_USER="root"
 SSH_KEY="$HOME/.ssh/id_rsa"
 SSH_PORT=22                         # set to e.g. 2222 when nodes are containers with port forwarding
 SSH_EXTRA_ARGS=""                   # e.g. "-o StrictHostKeyChecking=no"
+# Optional per-node SSH overrides (JSON array) — used by k3s deploy and Cluster Studio
+# NODE_SSH_OVERRIDES_JSON='[{"ip":"10.0.0.11","sshUser":"ubuntu","sshKey":"$HOME/.ssh/id_ed25519"}]'
+# Optional topology canvas positions (JSON array) — Desktop Studio only
+# NODE_LAYOUT_JSON='[{"id":"cp-0","ip":"10.0.0.10","x":120,"y":80}]'
 
 # ---------------------------------------------------------------------------
 # Nodes  (space-separated IPv4 addresses)

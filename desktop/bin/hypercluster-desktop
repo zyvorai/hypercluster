@@ -78,7 +78,19 @@ case "$CMD" in
     ;;
   build)
     shift || true
-    tauri build "$@"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      # shellcheck source=../scripts/macos/arch-check.sh
+      source "$(cd "$DESKTOP_ROOT/.." && pwd)/scripts/macos/arch-check.sh"
+      TARGET="$(hc_macos_tauri_release_target)"
+      if hc_macos_is_arm64_host; then
+        tauri build --bundles app --target "$TARGET" "$@"
+      else
+        echo "→ Intel Mac: building local x86_64 dev app (release .pkg is arm64-only)." >&2
+        tauri build --bundles app "$@"
+      fi
+    else
+      tauri build --bundles none "$@"
+    fi
     ;;
   run|open|start)
     shift || true

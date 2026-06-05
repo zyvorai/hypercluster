@@ -9,8 +9,8 @@ FLAGS   ?=
 
 .PHONY: help init preflight deploy deploy-remote scale upgrade remove-node \
         fetch-kubeconfig merge-kubeconfig install-kubevirt status destroy check-deps \
-        lint test-smoke test-inventory test-platform-config test-platform-json test-local test-podman \
-        test-remote dry-deploy unlock wizard desktop-dev desktop-build desktop-check docs docs-venv
+        lint test-smoke test-inventory test-platform-config test-platform-json test-preflight-json test-local test-podman \
+        test-remote dry-deploy unlock wizard desktop-dev desktop-build desktop-pkg desktop-install desktop-uninstall desktop-check docs docs-venv
 
 help: ## 📖  Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -96,6 +96,25 @@ test-platform-json: ## 🧪  Run platform test JSON output unit tests
 	chmod +x tests/test-platform-test-json.sh
 	./tests/test-platform-test-json.sh
 
+test-preflight-json: ## 🧪  Run preflight JSON output unit tests
+	chmod +x tests/test-preflight-json.sh
+	./tests/test-preflight-json.sh
+
+test-discover-json: ## 🧪  Run discover JSON output unit tests
+	chmod +x tests/test-discover-json.sh
+	./tests/test-discover-json.sh
+
+test-vms-json: ## 🧪  Run vms JSON output unit tests
+	chmod +x tests/test-vms-json.sh
+	./tests/test-vms-json.sh
+
+test-workloads-json: ## 🧪  Run workloads + vm create JSON unit tests
+	chmod +x tests/test-workloads-json.sh
+	./tests/test-workloads-json.sh
+
+test-spec-roundtrip: ## 🧪  ClusterSpec ↔ cluster.conf roundtrip
+	cd desktop && npx --yes tsx scripts/test-spec-roundtrip.ts
+
 test-local: ## 🧪  End-to-end test via Multipass VMs (20–30 min)
 	chmod +x scripts/test-local.sh
 	./scripts/test-local.sh
@@ -107,12 +126,29 @@ test-podman: ## 🧪  Fast integration test via Podman containers + k3s
 desktop-dev: ## 🖥️  Run Hypercluster Desktop (Tauri dev)
 	npm install && npm run desktop:dev
 
-desktop-build: ## 🖥️  Build Hypercluster Desktop frontend
+desktop-build: ## 🖥️  Build Hypercluster Desktop .app / .dmg (macOS bundle)
 	npm install && npm run desktop:build
+
+desktop-pkg: ## 🖥️  Build Hypercluster.pkg with Zyvor EULA (macOS)
+	chmod +x scripts/macos/build-hypercluster-pkg.sh scripts/macos/install-hypercluster-app.sh scripts/macos/uninstall-hypercluster-app.sh
+	./scripts/macos/build-hypercluster-pkg.sh
+
+desktop-install: ## 🖥️  Install Hypercluster.app to /Applications (accept Zyvor license)
+	chmod +x scripts/macos/install-hypercluster-app.sh
+	./scripts/macos/install-hypercluster-app.sh
+
+desktop-uninstall: ## 🖥️  Remove Hypercluster.app from /Applications
+	chmod +x scripts/macos/uninstall-hypercluster-app.sh
+	./scripts/macos/uninstall-hypercluster-app.sh
 
 desktop-check: ## 🖥️  Typecheck + cargo check desktop app
 	cd desktop && npm install && npm run build
 	cd desktop/src-tauri && cargo check
+	$(MAKE) test-spec-roundtrip test-discover-json test-vms-json test-workloads-json
+
+test-desktop-ux-remote: ## 🧪  UX smoke: CLI JSON + remote libvirt/machina host
+	chmod +x scripts/test-desktop-ux-remote.sh scripts/test-remote-libvirt-vm.sh
+	./scripts/test-desktop-ux-remote.sh
 
 docs-venv: ## 📚  Create Python venv for doc PDF generation
 	python3 -m venv .docs-venv

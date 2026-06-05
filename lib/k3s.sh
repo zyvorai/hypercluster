@@ -3,25 +3,57 @@
 
 k3s::_key() { echo "${SSH_KEY/#\~/$HOME}"; }
 
+k3s::_resolve_ssh() {
+  local ip="$1"
+  local user="${SSH_USER:-root}" key port="${SSH_PORT:-22}"
+  key="$(k3s::_key)"
+  if [[ -n "${NODE_SSH_OVERRIDES_JSON:-}" ]]; then
+    local override
+    override="$(python3 - <<PY
+import json, os
+try:
+    overrides = json.loads(os.environ.get("NODE_SSH_OVERRIDES_JSON", "[]"))
+except json.JSONDecodeError:
+    overrides = []
+for o in overrides:
+    if o.get("ip") == "$ip":
+        print(json.dumps(o))
+        break
+PY
+)"
+    if [[ -n "$override" ]]; then
+      user="$(python3 -c "import json,sys; o=json.load(sys.stdin); print(o.get('sshUser') or '$user')" <<< "$override")"
+      key="$(python3 -c "import json,sys; o=json.load(sys.stdin); k=o.get('sshKey'); print(k if k else '$key')" <<< "$override")"
+      port="$(python3 -c "import json,sys; o=json.load(sys.stdin); p=o.get('sshPort'); print(p if p else '$port')" <<< "$override")"
+      key="${key/#\~/$HOME}"
+    fi
+  fi
+  printf '%s\t%s\t%s\n' "$user" "$key" "$port"
+}
+
 k3s::_ssh_opts() {
   local -n _ref="$1"
+  local key="$2"
+  local port="$3"
   _ref=(
-    -i "$(k3s::_key)"
+    -i "$key"
     -o BatchMode=yes
     -o ConnectTimeout=20
     -o ServerAliveInterval=15
     -o StrictHostKeyChecking=accept-new
   )
-  [[ -n "${SSH_PORT:-}" && "${SSH_PORT}" != "22" ]] && _ref+=(-p "$SSH_PORT")
+  [[ -n "$port" && "$port" != "22" ]] && _ref+=(-p "$port")
   [[ -n "${SSH_EXTRA_ARGS:-}" ]] && _ref+=(${SSH_EXTRA_ARGS})
 }
 
 k3s::_ssh() {
   local ip="$1" cmd="$2"
+  local user key port
+  IFS=$'\t' read -r user key port < <(k3s::_resolve_ssh "$ip")
   local opts=()
-  k3s::_ssh_opts opts
+  k3s::_ssh_opts opts "$key" "$port"
   # shellcheck disable=SC2086,SC2029
-  ssh "${opts[@]}" "$SSH_USER@$ip" "$cmd"
+  ssh "${opts[@]}" "$user@$ip" "$cmd"
 }
 
 k3s::_first_cp_ip() {

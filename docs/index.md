@@ -1,12 +1,12 @@
 # Hypercluster Documentation Hub
 
-End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** paths. Version **0.1.0** · generated 2026-06-04T17:43:57Z.
+End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** paths. Version **0.1.0** · generated 2026-06-05T00:05:12Z.
 
 ---
 
 ## Latest
 
-- **Desktop UX guide** — [desktop-ux-guide.md](guides/desktop-ux-guide.md) (Dashboard, wizard, operations, ⌘K palette)
+- **Desktop UX guide** — [desktop-ux-guide.md](guides/desktop-ux-guide.md) (Cluster Studio, cockpit, ⌘K / ⌘⇧F)
 - **k3s E2E** — `preflight → deploy → test` with `test --json` / `status --json`
 - **Hypercluster Desktop** — Tauri app; all actions via CLI ([guide](guides/desktop-ux-guide.md))
 - **Doc generator** — `make docs` · `make docs-serve` (port 8080)
@@ -89,4 +89,4 @@ npm run desktop        # Hypercluster Desktop
 
 ---
 
-**Regenerate:** `make docs` · **Last generated:** 2026-06-04T17:43:57Z
+**Regenerate:** `make docs` · **Last generated:** 2026-06-05T00:05:12Z

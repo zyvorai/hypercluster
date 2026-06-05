@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  // Relative base so /brand/... and other public assets resolve in the Tauri webview.
+  base: './',
   clearScreen: false,
   server: {
     port: 1420,

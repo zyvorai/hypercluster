@@ -27,11 +27,27 @@ pub fn settings_path() -> PathBuf {
     app_data_dir().join("settings.json")
 }
 
+pub fn bundled_hypercluster_bin() -> Option<PathBuf> {
+    let exe = env::current_exe().ok()?;
+    let candidate = exe
+        .parent()?
+        .parent()?
+        .join("Resources/hypercluster-runtime/hypercluster");
+    if candidate.is_file() {
+        Some(candidate)
+    } else {
+        None
+    }
+}
+
 pub fn resolve_hypercluster_bin(settings_bin: Option<&str>) -> PathBuf {
     if let Some(b) = settings_bin {
         if !b.is_empty() && Path::new(b).exists() {
             return PathBuf::from(b);
         }
+    }
+    if let Some(b) = bundled_hypercluster_bin() {
+        return b;
     }
     if let Ok(b) = env::var("HYPERCLUSTER_BIN") {
         if Path::new(&b).exists() {

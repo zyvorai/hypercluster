@@ -19,8 +19,8 @@ Guidance for AI coding agents (Cursor, Claude, etc.) working in this repository.
 2. **k3s platform stack order:** Cilium → cert-manager → MetalLB → KubeVirt/CDI → metrics-server (`lib/platform-stack.sh`).
 3. **k3s must use** `--disable-kube-proxy` in `K3S_EXEC_ARGS` when Cilium replaces kube-proxy.
 4. **Re-deploy skips** k3s reinstall if server is healthy; use `FORCE_K3S_REINSTALL=1` to replace.
-5. **`test --json`:** stdout is JSON only; human logs go to stderr (`lib/platform-test.sh`).
-6. **Desktop:** all cluster actions via `hypercluster` subprocess (`desktop/src-tauri/src/hypercluster.rs`).
+5. **`preflight --json` / `test --json`:** stdout is JSON only; human logs go to stderr (`lib/preflight.sh`, `lib/platform-test.sh`).
+6. **Desktop:** all cluster actions via `hypercluster` subprocess (`desktop/src-tauri/src/hypercluster.rs`). Edit flows use **`ClusterSpec`** → `mergeClusterSpec` / `specToClusterConf`; saving an existing cluster calls `update_cluster_by_path` (preserves registry id).
 7. **Do not commit** `cluster.conf`, kubeconfigs, or `.kubespray-venv/` / `.docs-venv/`.
 8. **Minimize scope** — match existing bash/React patterns; no unrelated refactors.
 
@@ -41,11 +41,18 @@ scripts/generate-docs.sh  # doc + PDF pipeline
 ```bash
 make lint                    # shellcheck
 make test-smoke test-inventory test-platform-config test-platform-json
-make desktop-check           # TS build + cargo check
+make desktop-check           # TS build + cargo check + spec/discover/vms/workloads tests
 make docs                    # regenerate all docs + PDFs
+
+# JSON helpers (also used by Desktop)
+./hypercluster discover --json --source csv --csv tests/fixtures/discover-nodes.csv
+./hypercluster -c cluster.conf vms --json
+./hypercluster -c cluster.conf workloads --json
 
 # k3s E2E (requires cluster.conf + remote host)
 ./hypercluster -c cluster.conf preflight
+./hypercluster -c cluster.conf preflight --json
+./hypercluster init --profile k3s-remote
 ./hypercluster -c cluster.conf deploy
 ./hypercluster -c cluster.conf test --json
 ./hypercluster -c cluster.conf status --json

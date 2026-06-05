@@ -1,0 +1,3 @@
+name,ip,roles
+cp-1,10.0.0.1,control-plane
+worker-1,10.0.0.2,worker

@@ -1,0 +1,396 @@
+[
+  {
+    "key": "clusterName",
+    "label": "Cluster name",
+    "description": "ClusterSpec.clusterName \u2192 CLUSTER_NAME",
+    "group": "Identity",
+    "confKey": "CLUSTER_NAME",
+    "type": "string",
+    "specPath": "clusterName",
+    "wired": true
+  },
+  {
+    "key": "environment",
+    "label": "Environment",
+    "description": "ClusterSpec.environment \u2192 ENVIRONMENT",
+    "group": "Identity",
+    "confKey": "ENVIRONMENT",
+    "type": "string",
+    "specPath": "environment",
+    "wired": true
+  },
+  {
+    "key": "description",
+    "label": "Description",
+    "description": "ClusterSpec.description \u2192 DESCRIPTION",
+    "group": "Identity",
+    "confKey": "DESCRIPTION",
+    "type": "string",
+    "specPath": "description",
+    "wired": true
+  },
+  {
+    "key": "k8sDistro",
+    "label": "Kubernetes distro",
+    "description": "ClusterSpec.k8sDistro \u2192 K8S_DISTRO",
+    "group": "Distro",
+    "confKey": "K8S_DISTRO",
+    "type": "string",
+    "specPath": "k8sDistro",
+    "wired": true
+  },
+  {
+    "key": "deployModel",
+    "label": "Deploy model",
+    "description": "ClusterSpec.deployModel \u2192 DEPLOY_MODEL",
+    "group": "Distro",
+    "confKey": "DEPLOY_MODEL",
+    "type": "string",
+    "specPath": "deployModel",
+    "wired": true
+  },
+  {
+    "key": "kubesprayVersion",
+    "label": "Kubespray version",
+    "description": "ClusterSpec.kubesprayVersion \u2192 KUBESPRAY_VERSION",
+    "group": "Distro",
+    "confKey": "KUBESPRAY_VERSION",
+    "type": "string",
+    "specPath": "kubesprayVersion",
+    "wired": true
+  },
+  {
+    "key": "kubeVersion",
+    "label": "Kubernetes version",
+    "description": "ClusterSpec.kubeVersion \u2192 KUBE_VERSION",
+    "group": "Distro",
+    "confKey": "KUBE_VERSION",
+    "type": "string",
+    "specPath": "kubeVersion",
+    "wired": true
+  },
+  {
+    "key": "sshUser",
+    "label": "SSH user",
+    "description": "ClusterSpec.sshUser \u2192 SSH_USER",
+    "group": "SSH",
+    "confKey": "SSH_USER",
+    "type": "string",
+    "specPath": "sshUser",
+    "wired": true
+  },
+  {
+    "key": "sshKey",
+    "label": "SSH private key",
+    "description": "ClusterSpec.sshKey \u2192 SSH_KEY",
+    "group": "SSH",
+    "confKey": "SSH_KEY",
+    "type": "string",
+    "specPath": "sshKey",
+    "wired": true
+  },
+  {
+    "key": "sshPort",
+    "label": "SSH port",
+    "description": "ClusterSpec.sshPort \u2192 SSH_PORT",
+    "group": "SSH",
+    "confKey": "SSH_PORT",
+    "type": "number",
+    "specPath": "sshPort",
+    "wired": true
+  },
+  {
+    "key": "sshProxyJump",
+    "label": "SSH proxy jump",
+    "description": "ClusterSpec.sshProxyJump \u2192 SSH_PROXY_JUMP",
+    "group": "SSH",
+    "confKey": "SSH_PROXY_JUMP",
+    "type": "string",
+    "specPath": "sshProxyJump",
+    "wired": true
+  },
+  {
+    "key": "kubePodsSubnet",
+    "label": "Pod CIDR",
+    "description": "ClusterSpec.kubePodsSubnet \u2192 KUBE_PODS_SUBNET",
+    "group": "Network",
+    "confKey": "KUBE_PODS_SUBNET",
+    "type": "string",
+    "specPath": "kubePodsSubnet",
+    "wired": true
+  },
+  {
+    "key": "kubeServiceAddresses",
+    "label": "Service CIDR",
+    "description": "ClusterSpec.kubeServiceAddresses \u2192 KUBE_SERVICE_ADDRESSES",
+    "group": "Network",
+    "confKey": "KUBE_SERVICE_ADDRESSES",
+    "type": "string",
+    "specPath": "kubeServiceAddresses",
+    "wired": true
+  },
+  {
+    "key": "cniPlugin",
+    "label": "CNI plugin",
+    "description": "ClusterSpec.cniPlugin \u2192 CNI_PLUGIN",
+    "group": "Network",
+    "confKey": "CNI_PLUGIN",
+    "type": "string",
+    "specPath": "cniPlugin",
+    "wired": true
+  },
+  {
+    "key": "containerManager",
+    "label": "Container runtime",
+    "description": "ClusterSpec.containerManager \u2192 CONTAINER_MANAGER",
+    "group": "Distro",
+    "confKey": "CONTAINER_MANAGER",
+    "type": "string",
+    "specPath": "containerManager",
+    "wired": true
+  },
+  {
+    "key": "ciliumHubble",
+    "label": "Cilium Hubble",
+    "description": "ClusterSpec.ciliumHubble \u2192 CILIUM_HUBBLE_ENABLED",
+    "group": "Network",
+    "confKey": "CILIUM_HUBBLE_ENABLED",
+    "type": "boolean",
+    "specPath": "ciliumHubble",
+    "wired": true
+  },
+  {
+    "key": "ciliumBgp",
+    "label": "Cilium BGP",
+    "description": "ClusterSpec.ciliumBgp \u2192 CILIUM_BGP_ENABLED",
+    "group": "Network",
+    "confKey": "CILIUM_BGP_ENABLED",
+    "type": "boolean",
+    "specPath": "ciliumBgp",
+    "wired": true
+  },
+  {
+    "key": "ciliumWireguard",
+    "label": "Cilium WireGuard",
+    "description": "ClusterSpec.ciliumWireguard \u2192 CILIUM_WIREGUARD_ENABLED",
+    "group": "Network",
+    "confKey": "CILIUM_WIREGUARD_ENABLED",
+    "type": "boolean",
+    "specPath": "ciliumWireguard",
+    "wired": true
+  },
+  {
+    "key": "ciliumGatewayApi",
+    "label": "Cilium Gateway API",
+    "description": "ClusterSpec.ciliumGatewayApi \u2192 CILIUM_GATEWAY_API_ENABLED",
+    "group": "Network",
+    "confKey": "CILIUM_GATEWAY_API_ENABLED",
+    "type": "boolean",
+    "specPath": "ciliumGatewayApi",
+    "wired": true
+  },
+  {
+    "key": "platformStackEnabled",
+    "label": "Platform stack",
+    "description": "ClusterSpec.platformStackEnabled \u2192 PLATFORM_STACK_ENABLED",
+    "group": "Platform",
+    "confKey": "PLATFORM_STACK_ENABLED",
+    "type": "boolean",
+    "specPath": "platformStackEnabled",
+    "wired": true
+  },
+  {
+    "key": "metallbEnabled",
+    "label": "MetalLB",
+    "description": "ClusterSpec.metallbEnabled \u2192 METALLB_ENABLED",
+    "group": "Platform",
+    "confKey": "METALLB_ENABLED",
+    "type": "boolean",
+    "specPath": "metallbEnabled",
+    "wired": true
+  },
+  {
+    "key": "metallbIpPool",
+    "label": "MetalLB IP pool",
+    "description": "ClusterSpec.metallbIpPool \u2192 METALLB_IP_POOL",
+    "group": "Platform",
+    "confKey": "METALLB_IP_POOL",
+    "type": "string",
+    "specPath": "metallbIpPool",
+    "wired": true
+  },
+  {
+    "key": "certManagerEnabled",
+    "label": "cert-manager",
+    "description": "ClusterSpec.certManagerEnabled \u2192 CERT_MANAGER_ENABLED",
+    "group": "Platform",
+    "confKey": "CERT_MANAGER_ENABLED",
+    "type": "boolean",
+    "specPath": "certManagerEnabled",
+    "wired": true
+  },
+  {
+    "key": "metricsServerEnabled",
+    "label": "metrics-server",
+    "description": "ClusterSpec.metricsServerEnabled \u2192 METRICS_SERVER_ENABLED",
+    "group": "Platform",
+    "confKey": "METRICS_SERVER_ENABLED",
+    "type": "boolean",
+    "specPath": "metricsServerEnabled",
+    "wired": true
+  },
+  {
+    "key": "kubevirtEnabled",
+    "label": "KubeVirt",
+    "description": "ClusterSpec.kubevirtEnabled \u2192 KUBEVIRT_ENABLED",
+    "group": "Virtualization",
+    "confKey": "KUBEVIRT_ENABLED",
+    "type": "boolean",
+    "specPath": "kubevirtEnabled",
+    "wired": true
+  },
+  {
+    "key": "cnaoEnabled",
+    "label": "CNAO",
+    "description": "ClusterSpec.cnaoEnabled \u2192 CNAO_ENABLED",
+    "group": "Virtualization",
+    "confKey": "CNAO_ENABLED",
+    "type": "boolean",
+    "specPath": "cnaoEnabled",
+    "wired": true
+  },
+  {
+    "key": "sspEnabled",
+    "label": "SSP",
+    "description": "ClusterSpec.sspEnabled \u2192 SSP_ENABLED",
+    "group": "Virtualization",
+    "confKey": "SSP_ENABLED",
+    "type": "boolean",
+    "specPath": "sspEnabled",
+    "wired": true
+  },
+  {
+    "key": "longhornEnabled",
+    "label": "Longhorn",
+    "description": "ClusterSpec.longhornEnabled \u2192 LONGHORN_ENABLED",
+    "group": "Storage",
+    "confKey": "LONGHORN_ENABLED",
+    "type": "boolean",
+    "specPath": "longhornEnabled",
+    "wired": true
+  },
+  {
+    "key": "gpuOperatorEnabled",
+    "label": "GPU Operator",
+    "description": "ClusterSpec.gpuOperatorEnabled \u2192 GPU_OPERATOR_ENABLED",
+    "group": "GPU",
+    "confKey": "GPU_OPERATOR_ENABLED",
+    "type": "boolean",
+    "specPath": "gpuOperatorEnabled",
+    "wired": true
+  },
+  {
+    "key": "nfdEnabled",
+    "label": "Node Feature Discovery",
+    "description": "ClusterSpec.nfdEnabled \u2192 NFD_ENABLED",
+    "group": "GPU",
+    "confKey": "NFD_ENABLED",
+    "type": "boolean",
+    "specPath": "nfdEnabled",
+    "wired": true
+  },
+  {
+    "key": "ingressNginxEnabled",
+    "label": "ingress-nginx",
+    "description": "ClusterSpec.ingressNginxEnabled \u2192 INGRESS_NGINX_ENABLED",
+    "group": "Platform",
+    "confKey": "INGRESS_NGINX_ENABLED",
+    "type": "boolean",
+    "specPath": "ingressNginxEnabled",
+    "wired": true
+  },
+  {
+    "key": "kubevirtVersion",
+    "label": "KubeVirt version",
+    "description": "ClusterSpec.kubevirtVersion \u2192 KUBEVIRT_VERSION",
+    "group": "Virtualization",
+    "confKey": "KUBEVIRT_VERSION",
+    "type": "string",
+    "specPath": "kubevirtVersion",
+    "wired": true
+  },
+  {
+    "key": "cdiVersion",
+    "label": "CDI version",
+    "description": "ClusterSpec.cdiVersion \u2192 CDI_VERSION",
+    "group": "Virtualization",
+    "confKey": "CDI_VERSION",
+    "type": "string",
+    "specPath": "cdiVersion",
+    "wired": true
+  },
+  {
+    "key": "haControlPlane",
+    "label": "HA control plane preset",
+    "description": "ClusterSpec.haControlPlane \u2192 HA_CONTROL_PLANE",
+    "group": "Nodes",
+    "confKey": "HA_CONTROL_PLANE",
+    "type": "string",
+    "specPath": "haControlPlane",
+    "wired": true
+  },
+  {
+    "key": "kyverno_enabled",
+    "label": "Kyverno",
+    "description": "Policy engine \u2014 not wired to ClusterSpec yet",
+    "group": "Security",
+    "confKey": "KYVERNO_ENABLED",
+    "type": "boolean",
+    "wired": false
+  },
+  {
+    "key": "falco_enabled",
+    "label": "Falco",
+    "description": "Runtime security \u2014 coming soon",
+    "group": "Security",
+    "confKey": "FALCO_ENABLED",
+    "type": "boolean",
+    "wired": false
+  },
+  {
+    "key": "velero_enabled",
+    "label": "Velero",
+    "description": "Cluster backup \u2014 coming soon",
+    "group": "Backup",
+    "confKey": "VELERO_ENABLED",
+    "type": "boolean",
+    "wired": false
+  },
+  {
+    "key": "prometheus_enabled",
+    "label": "Prometheus",
+    "description": "Metrics stack \u2014 coming soon",
+    "group": "Observability",
+    "confKey": "PROMETHEUS_ENABLED",
+    "type": "boolean",
+    "wired": false
+  },
+  {
+    "key": "kserve_enabled",
+    "label": "KServe",
+    "description": "Model serving \u2014 coming soon",
+    "group": "AI",
+    "confKey": "KSERVE_ENABLED",
+    "type": "boolean",
+    "wired": false
+  },
+  {
+    "key": "vllm_enabled",
+    "label": "vLLM",
+    "description": "LLM serving \u2014 coming soon",
+    "group": "AI",
+    "confKey": "VLLM_ENABLED",
+    "type": "boolean",
+    "wired": false
+  }
+]

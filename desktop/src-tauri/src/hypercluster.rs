@@ -214,9 +214,9 @@ pub async fn run_hypercluster(
         }
     }
 
-    let _ = update_cluster_action(&req.cluster_name, &cluster_action);
-
     let success = code == Some(0);
+    let _ = update_cluster_action(&req.cluster_name, &cluster_action, success);
+
     let _ = app.emit(
         "hc-exit",
         serde_json::json!({
@@ -258,6 +258,25 @@ pub async fn get_run_status(
 ) -> Result<Option<RunStatus>, String> {
     let st = manager.statuses.lock().await;
     Ok(st.get(&cluster_name).cloned())
+}
+
+pub async fn run_sync_no_config(command: &str, args: &[String]) -> Result<String, String> {
+    let bin = hypercluster_bin();
+    let bash = paths::resolve_bash();
+    let mut parts = vec![format!("\"{}\"", bin.display()), command.into()];
+    parts.extend(args.iter().cloned());
+    let shell_cmd = format!("exec {}", parts.join(" "));
+    let output = Command::new(&bash)
+        .arg("-lc")
+        .arg(&shell_cmd)
+        .output()
+        .await
+        .map_err(|e| e.to_string())?;
+    if output.status.success() {
+        Ok(String::from_utf8_lossy(&output.stdout).to_string())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).to_string())
+    }
 }
 
 pub async fn run_sync(

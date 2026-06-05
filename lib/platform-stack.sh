@@ -492,33 +492,58 @@ platform::install_cnao() {
   [[ "${CNAO_ENABLED:-true}" == "true" ]] || return 0
   [[ "${KUBEVIRT_ENABLED:-false}" == "true" ]] || return 0
   log::section "CNAO (Multus / advanced VM networking)"
-  local ver_arg
+  local ver_arg chart_ref="kubevirt/cluster-network-addons-operator"
   ver_arg=$(platform::_helm_version_arg CNAO_CHART_VERSION)
-  if ! platform::_helm upgrade --install cnao kubevirt/cluster-network-addons-operator \
+  if [[ -n "${CNAO_HELM_REPO:-}" ]]; then
+    platform::_helm repo add cnao "${CNAO_HELM_REPO}" 2>/dev/null || true
+    chart_ref="cnao/cluster-network-addons-operator"
+  fi
+  if platform::_helm upgrade --install cnao "$chart_ref" \
     --namespace cluster-network-addons \
     --create-namespace \
     ${ver_arg} \
     --wait --timeout 10m 2>/dev/null; then
-    log::warn "CNAO helm chart unavailable — skipping"
+    log::ok "CNAO ready (Helm)"
     return 0
   fi
-  log::ok "CNAO ready"
+  local ver="${CNAO_MANIFEST_VERSION:-v0.102.0}"
+  local base="https://github.com/kubevirt/cluster-network-addons-operator/releases/download/${ver}"
+  log::warn "CNAO helm chart unavailable — applying manifest fallback ($ver)"
+  platform::_kubectl apply -f "${base}/namespace.yaml"
+  platform::_kubectl apply -f "${base}/network-addons-config.crd.yaml"
+  platform::_kubectl apply -f "${base}/operator.yaml"
+  platform::_kubectl apply -f "$(platform::_repo_root)/config/k3s/cnao-network-addons-config.yaml"
+  platform::_kubectl wait --for=condition=Available deployment/cluster-network-addons-operator \
+    -n cluster-network-addons --timeout=600s 2>/dev/null \
+    || platform::_kubectl wait --for=condition=Ready pod -l name=cluster-network-addons-operator \
+    -n cluster-network-addons --timeout=600s 2>/dev/null || true
+  log::ok "CNAO ready (manifests)"
 }
 
 platform::install_ssp() {
   [[ "${SSP_ENABLED:-true}" == "true" ]] || return 0
   [[ "${KUBEVIRT_ENABLED:-false}" == "true" ]] || return 0
   log::section "SSP (KubeVirt templates)"
-  local ver_arg
+  local ver_arg chart_ref="kubevirt/ssp"
   ver_arg=$(platform::_helm_version_arg SSP_CHART_VERSION)
-  if ! platform::_helm upgrade --install ssp kubevirt/ssp \
+  if [[ -n "${SSP_HELM_REPO:-}" ]]; then
+    platform::_helm repo add ssp "${SSP_HELM_REPO}" 2>/dev/null || true
+    chart_ref="ssp/ssp"
+  fi
+  if platform::_helm upgrade --install ssp "$chart_ref" \
     --namespace kubevirt \
     ${ver_arg} \
     --wait --timeout 15m 2>/dev/null; then
-    log::warn "SSP helm chart unavailable — skipping"
+    log::ok "SSP ready (Helm)"
     return 0
   fi
-  log::ok "SSP ready"
+  local ver="${SSP_MANIFEST_VERSION:-v0.25.0}"
+  log::warn "SSP helm chart unavailable — applying manifest fallback ($ver)"
+  platform::_kubectl apply -f "https://github.com/kubevirt/ssp-operator/releases/download/${ver}/ssp-operator.yaml"
+  platform::_kubectl apply -f "$(platform::_repo_root)/config/k3s/ssp-cr.yaml"
+  platform::_kubectl wait --for=condition=Available deployment/ssp-operator-controller-manager \
+    -n kubevirt --timeout=600s 2>/dev/null || true
+  log::ok "SSP ready (manifests)"
 }
 
 platform::install_longhorn() {
