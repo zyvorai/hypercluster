@@ -3,12 +3,24 @@
 # Intel Mac support ended — distributed .pkg / release .app are arm64 only.
 # shellcheck shell=bash
 
+# Hardware check — works when pkg scripts run under Rosetta (uname -m → x86_64 on M-series).
+hc_macos_is_arm64_hardware() {
+  if [[ "$(sysctl -n hw.optional.arm64 2>/dev/null || echo 0)" == "1" ]]; then
+    return 0
+  fi
+  [[ "$(sysctl -n hw.machine 2>/dev/null || true)" == "arm64" ]]
+}
+
 hc_macos_host_arch() {
+  if hc_macos_is_arm64_hardware; then
+    echo "arm64"
+    return 0
+  fi
   uname -m
 }
 
 hc_macos_is_arm64_host() {
-  [[ "$(hc_macos_host_arch)" == "arm64" ]]
+  hc_macos_is_arm64_hardware
 }
 
 hc_macos_require_arm64_host() {

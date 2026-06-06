@@ -102,12 +102,34 @@ pub fn license_summary() -> Result<String, String> {
 
 #[cfg(target_os = "macos")]
 pub fn host_cpu_arch() -> String {
+    if macos_is_arm64_hardware() {
+        return "arm64".to_string();
+    }
     std::process::Command::new("uname")
         .arg("-m")
         .output()
         .ok()
         .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
         .unwrap_or_else(|| "unknown".to_string())
+}
+
+#[cfg(target_os = "macos")]
+fn macos_is_arm64_hardware() -> bool {
+    let arm64_opt = std::process::Command::new("sysctl")
+        .args(["-n", "hw.optional.arm64"])
+        .output()
+        .ok()
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim() == "1")
+        .unwrap_or(false);
+    if arm64_opt {
+        return true;
+    }
+    std::process::Command::new("sysctl")
+        .args(["-n", "hw.machine"])
+        .output()
+        .ok()
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim() == "arm64")
+        .unwrap_or(false)
 }
 
 #[cfg(not(target_os = "macos"))]
@@ -118,7 +140,7 @@ pub fn host_cpu_arch() -> String {
 pub fn macos_arm64_required() -> bool {
     #[cfg(target_os = "macos")]
     {
-        host_cpu_arch() != "arm64"
+        !macos_is_arm64_hardware()
     }
     #[cfg(not(target_os = "macos"))]
     {

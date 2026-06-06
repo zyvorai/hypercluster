@@ -48,6 +48,7 @@ It also forwards `SSH_AUTH_SOCK` and `HOME` so remote deploy over SSH works with
 |-------|-----|
 | Wrong build (Intel x86_64 `.app`) | Reinstall `Hypercluster-*-arm64.pkg` from Zyvor |
 | App forced through Rosetta | Finder → Hypercluster.app → Get Info → **uncheck** “Open using Rosetta” |
+| `.pkg` install failed with Intel message on M1/M2/M3 | Fixed in 0.1.0+ — preinstall uses `sysctl hw.optional.arm64` (Installer runs scripts under Rosetta). Re-download/rebuild pkg and retry. |
 | Dev build on wrong target | `npm run tauri build -- --target aarch64-apple-darwin` |
 
 Verify:
