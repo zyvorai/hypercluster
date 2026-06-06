@@ -23,7 +23,7 @@ export function ClusterCard({
 }) {
   const status = clusterPillStatus(cluster, runningCluster ?? null)
   return (
-    <GlassCard className="flex flex-col gap-3 transition hover:border-glass-accent/40">
+    <GlassCard className="flex flex-col gap-3 shadow-zyvor-card transition hover:border-glass-accent/40 hover:shadow-zyvor-glow">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="text-lg font-semibold">{cluster.name}</h3>

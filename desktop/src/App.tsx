@@ -450,15 +450,17 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen">
-      <aside className="glass-panel m-3 flex w-56 flex-col gap-1 p-3">
+      <aside className="glass-panel app-sidebar m-3 flex w-60 flex-col gap-1 p-3">
         <AppBrandHeader />
         {nav.map((n) => (
           <button
             key={n.id}
             type="button"
             disabled={n.disabled}
-            className={`rounded-xl px-3 py-2 text-left text-sm disabled:opacity-40 ${
-              view === n.id ? 'bg-glass-accent/25 text-white' : 'text-glass-muted hover:bg-white/5'
+            className={`rounded-xl px-3 py-2.5 text-left text-sm transition disabled:opacity-40 ${
+              view === n.id
+                ? 'bg-glass-accent/20 text-white shadow-zyvor-glow ring-1 ring-glass-accent/25'
+                : 'text-glass-muted hover:bg-white/5 hover:text-white'
             }`}
             onClick={() => {
               if (n.id === 'cluster' && active) openCluster(active)
@@ -478,8 +480,11 @@ export default function App() {
           <div>
             <div className="mb-6 flex items-end justify-between">
               <div>
-                <h2 className="text-2xl font-semibold">Clusters</h2>
-                <p className="text-sm text-glass-muted">hypercluster @ {binaryPath || '…'}</p>
+                <p className="mb-1 text-xs font-medium uppercase tracking-[0.2em] text-glass-accent-light">
+                  Zyvor Platform
+                </p>
+                <h2 className="text-gradient-brand text-3xl font-bold tracking-tight">Clusters</h2>
+                <p className="mt-1 text-sm text-glass-muted">hypercluster @ {binaryPath || '…'}</p>
               </div>
               <div className="flex gap-2">
                 <button type="button" className="btn-ghost" onClick={handleImportConf}>
@@ -499,19 +504,19 @@ export default function App() {
               </GlassCard>
             )}
             <div className="mb-6 grid grid-cols-3 gap-4">
-              <GlassCard>
+              <GlassCard className="shadow-zyvor-card">
                 <p className="text-sm text-glass-muted">Clusters</p>
-                <p className="text-3xl font-semibold">{clusters.length}</p>
+                <p className="stat-value text-3xl font-semibold">{clusters.length}</p>
               </GlassCard>
-              <GlassCard>
+              <GlassCard className="shadow-zyvor-card">
                 <p className="text-sm text-glass-muted">Ready nodes</p>
-                <p className="text-3xl font-semibold">
+                <p className="stat-value text-3xl font-semibold">
                   {Object.values(nodeStats).reduce((a, s) => a + s.ready, 0)}
                 </p>
               </GlassCard>
-              <GlassCard>
+              <GlassCard className="shadow-zyvor-card">
                 <p className="text-sm text-glass-muted">Active job</p>
-                <p className="text-3xl font-semibold">{running ? '1' : '0'}</p>
+                <p className="stat-value text-3xl font-semibold">{running ? '1' : '0'}</p>
               </GlassCard>
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">

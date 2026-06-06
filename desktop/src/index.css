@@ -16,9 +16,14 @@
     @apply rounded-glass-lg border border-glass-border bg-glass-panel backdrop-blur-xl;
   }
   .btn-primary {
-    @apply rounded-xl bg-glass-accent px-4 py-2 font-medium text-white transition hover:brightness-110;
+    @apply rounded-full px-4 py-2 font-medium text-white transition;
+    background: var(--gradient-accent-btn);
+    box-shadow: 0 4px 20px rgba(240, 88, 58, 0.28);
+  }
+  .btn-primary:hover {
+    filter: brightness(1.06);
   }
   .btn-ghost {
-    @apply rounded-xl border border-glass-border bg-white/5 px-4 py-2 transition hover:bg-white/10;
+    @apply rounded-full border border-glass-border bg-white/5 px-4 py-2 transition hover:border-glass-accent/30 hover:bg-white/10;
   }
 }

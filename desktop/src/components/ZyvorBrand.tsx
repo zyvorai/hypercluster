@@ -1,8 +1,11 @@
 import type { CSSProperties } from 'react'
 import zavorLogoUrl from '../assets/brand/zavor-logo.webp'
+import appIconUrl from '../assets/brand/app-icon.svg'
 
 export const ZYVOR_URL = 'https://zyvor.dev'
-export const ZYVOR_ORANGE = '#f97316'
+export const ZYVOR_ORANGE = '#f0583a'
+export const ZYVOR_ORANGE_LIGHT = '#ff8a3d'
+export const ZYVOR_PURPLE = '#a78bfa'
 
 type BrandProps = {
   className?: string
@@ -51,7 +54,7 @@ export function ZyvorInline({
         target="_blank"
         rel="noopener noreferrer"
         className="font-semibold transition hover:brightness-110"
-        style={{ color: ZYVOR_ORANGE }}
+        style={{ color: ZYVOR_ORANGE_LIGHT }}
       >
         zyvor.dev
       </a>
@@ -81,12 +84,22 @@ export function AppBrandHeader({
   className?: string
 }) {
   return (
-    <div className={`flex flex-col gap-2 px-2 py-3 ${className}`.trim()}>
-      <ZyvorLogoMark height={26} />
-      <div>
-        <h1 className="text-lg font-bold tracking-tight text-white">{product}</h1>
-        <p className="text-[10px] uppercase tracking-widest text-glass-muted">Cluster Studio</p>
+    <div className={`flex flex-col gap-3 px-1 py-2 ${className}`.trim()}>
+      <div className="flex items-center gap-3">
+        <img
+          src={appIconUrl}
+          alt=""
+          className="h-11 w-11 shrink-0 rounded-[22%] shadow-zyvor-glow ring-1 ring-white/10"
+          draggable={false}
+        />
+        <div className="min-w-0">
+          <h1 className="truncate text-base font-bold tracking-tight text-white">{product}</h1>
+          <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-glass-accent-light">
+            Cluster Studio
+          </p>
+        </div>
       </div>
+      <ZyvorLogoMark height={22} />
     </div>
   )
 }

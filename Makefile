@@ -10,7 +10,7 @@ FLAGS   ?=
 .PHONY: help init preflight deploy deploy-remote scale upgrade remove-node \
         fetch-kubeconfig merge-kubeconfig install-kubevirt status destroy check-deps \
         lint test-smoke test-inventory test-platform-config test-platform-json test-preflight-json test-python-pip test-local test-podman \
-        test-remote dry-deploy unlock wizard desktop-dev desktop-build desktop-pkg desktop-install desktop-uninstall desktop-preflight desktop-check docs docs-venv \
+        test-remote dry-deploy unlock wizard desktop-dev desktop-build desktop-pkg desktop-install desktop-uninstall desktop-brand desktop-icons desktop-preflight desktop-check docs docs-venv \
         lab-setup lab-storage lab-tune lab-storage-status test-lab-config
 
 help: ## 📖  Show this help
@@ -165,6 +165,14 @@ desktop-uninstall: ## 🖥️  Remove Hypercluster.app from /Applications
 desktop-preflight: ## 🖥️  macOS Apple Silicon preflight (bash 5, tools, app arch)
 	chmod +x scripts/macos/desktop-preflight.sh
 	./scripts/macos/desktop-preflight.sh
+
+desktop-brand: ## 🖥️  Sync Zyvor logos from hypersdk-web
+	chmod +x scripts/macos/sync-zyvor-brand.sh
+	./scripts/macos/sync-zyvor-brand.sh
+
+desktop-icons: ## 🖥️  Regenerate app icons from app-icon.svg (Tauri)
+	chmod +x scripts/macos/generate-desktop-icons.sh
+	./scripts/macos/generate-desktop-icons.sh
 
 desktop-check: ## 🖥️  Typecheck + cargo check desktop app
 	cd desktop && npm install && npm run build

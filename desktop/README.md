@@ -11,6 +11,17 @@ Premium macOS/Windows desktop UI for the [hypercluster](../hypercluster) CLI —
 - macOS: Xcode CLT; **Apple Silicon (M-series) for release installs**; [Homebrew bash 5](https://formulae.brew.sh/formula/bash) recommended
 - A working `hypercluster` binary (repo root `../hypercluster` is auto-detected in dev)
 
+## Branding & icons
+
+Visual identity matches [hypersdk-web](https://zyvor.dev) — Zyvor orange (`#f0583a` / `#ff8a3d`) and purple accents.
+
+| Task | Command |
+|------|---------|
+| Sync logos from `../hypersdk-web` | `make desktop-brand` |
+| Regenerate `.icns` / platform icons | `make desktop-icons` |
+
+Source icon: `desktop/src/assets/brand/app-icon.svg` (Zyvor Z + cluster node ring). After changing it, run `make desktop-icons` before `make desktop-pkg`.
+
 ## Run (npm CLI — like `agent`)
 
 From the **repo root**:

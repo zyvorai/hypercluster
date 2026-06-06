@@ -5,15 +5,19 @@ export default {
     extend: {
       colors: {
         glass: {
-          bg: '#0B0B0F',
+          bg: '#050508',
           panel: 'rgba(255,255,255,0.06)',
-          border: 'rgba(255,255,255,0.12)',
-          accent: '#f97316',
-          muted: 'rgba(255,255,255,0.55)',
+          border: 'rgba(255,255,255,0.1)',
+          accent: '#f0583a',
+          'accent-light': '#f47a60',
+          purple: '#a78bfa',
+          muted: 'rgba(255,255,255,0.58)',
         },
         zyvor: {
-          orange: '#f97316',
-          'orange-light': '#fb923c',
+          orange: '#f0583a',
+          'orange-light': '#ff8a3d',
+          purple: '#a78bfa',
+          indigo: '#6366f1',
         },
       },
       borderRadius: {
@@ -29,6 +33,10 @@ export default {
           'system-ui',
           'sans-serif',
         ],
+      },
+      boxShadow: {
+        'zyvor-glow': '0 4px 24px rgba(240, 88, 58, 0.22)',
+        'zyvor-card': '0 16px 50px rgba(0, 0, 0, 0.35)',
       },
     },
   },
