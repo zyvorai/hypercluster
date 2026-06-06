@@ -58,6 +58,12 @@ fn hypercluster_bin() -> PathBuf {
     paths::resolve_hypercluster_bin(settings.hypercluster_binary.as_deref())
 }
 
+fn apply_shell_spawn_env(cmd: &mut Command) {
+    for (key, value) in paths::shell_spawn_env() {
+        cmd.env(key, value);
+    }
+}
+
 fn build_shell_command(req: &RunRequest, bin: &PathBuf) -> String {
     let mut parts = vec![
         format!("\"{}\"", bin.display()),
@@ -104,7 +110,9 @@ pub async fn run_hypercluster(
     let bash = paths::resolve_bash();
     let shell_cmd = build_shell_command(&req, &bin);
 
-    let mut child = Command::new(&bash)
+    let mut child = Command::new(&bash);
+    apply_shell_spawn_env(&mut child);
+    let mut child = child
         .arg("-lc")
         .arg(&shell_cmd)
         .stdout(Stdio::piped())
@@ -266,7 +274,9 @@ pub async fn run_sync_no_config(command: &str, args: &[String]) -> Result<String
     let mut parts = vec![format!("\"{}\"", bin.display()), command.into()];
     parts.extend(args.iter().cloned());
     let shell_cmd = format!("exec {}", parts.join(" "));
-    let output = Command::new(&bash)
+    let mut cmd = Command::new(&bash);
+    apply_shell_spawn_env(&mut cmd);
+    let output = cmd
         .arg("-lc")
         .arg(&shell_cmd)
         .output()
@@ -298,7 +308,9 @@ pub async fn run_sync(
     }
     parts.extend(args.iter().cloned());
     let shell_cmd = format!("exec {}", parts.join(" "));
-    let output = Command::new(&bash)
+    let mut cmd = Command::new(&bash);
+    apply_shell_spawn_env(&mut cmd);
+    let output = cmd
         .arg("-lc")
         .arg(&shell_cmd)
         .output()

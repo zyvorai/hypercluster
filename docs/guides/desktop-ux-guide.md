@@ -59,6 +59,17 @@ hypercluster-desktop    # alias: hc-desktop
 
 First launch shows an in-app **Zyvor License Agreement** and starts a **30-day trial** tied to this Mac (Keychain + `~/.hypercluster/trial.json`). Reinstalling after expiry does not reset the trial — contact **sales@zyvor.dev** for a license. See [`desktop/distribution/README.md`](../../desktop/distribution/README.md).
 
+### Apple Silicon (M1/M2/M3/M4)
+
+Release builds are **arm64-only**. Before first deploy from the GUI app:
+
+```bash
+./scripts/setup-macos.sh
+./scripts/macos/desktop-preflight.sh
+```
+
+If deploy fails with missing `bash`, `ssh`, or `helm`, see the full troubleshooting guide: [desktop-macos-apple-silicon.md](desktop-macos-apple-silicon.md).
+
 ### Auto-import
 
 On startup, if the configured hypercluster binary lives in a repo that contains `cluster.conf`, the app imports that cluster once (when the cluster name is not already in the registry).
@@ -307,4 +318,4 @@ Human-readable test output appears in the log console; JSON mode keeps stdout cl
 
 ---
 
-_Doc version: 2026-06-06T14:21:14Z · hypercluster v0.1.0_
+_Doc version: 2026-06-06T14:34:58Z · hypercluster v0.1.0_

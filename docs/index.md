@@ -1,12 +1,13 @@
 # Hypercluster Documentation Hub
 
-End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** paths. Version **0.1.0** · generated 2026-06-06T14:21:14Z.
+End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** paths. Version **0.1.0** · generated 2026-06-06T14:34:58Z.
 
 ---
 
 ## Latest
 
 - **Desktop UX guide** — [desktop-ux-guide.md](guides/desktop-ux-guide.md) (Cluster Studio, cockpit, ⌘K / ⌘⇧F)
+- **Apple Silicon Desktop** — [desktop-macos-apple-silicon.md](guides/desktop-macos-apple-silicon.md) (M1/M2/M3/M4 PATH, bash 5, SSH)
 - **k3s E2E** — `preflight → deploy → test` with `test --json` / `status --json`
 - **Hypercluster Desktop** — Tauri app; all actions via CLI ([guide](guides/desktop-ux-guide.md))
 - **Doc generator** — `make docs` · `make docs-serve` (port 8080)
@@ -40,6 +41,7 @@ End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** p
 |----------|-------------|
 | [Guides index](guides/README.md) | All task-oriented guides |
 | [Desktop UX guide](guides/desktop-ux-guide.md) | Liquid Glass UI — full UX reference |
+| [Apple Silicon Desktop](guides/desktop-macos-apple-silicon.md) | M-series Mac install and troubleshooting |
 | [CLI guide](guides/cli/hypercluster-guide.md) | Commands, flags, JSON, Make |
 
 ### Generated reference
@@ -89,4 +91,4 @@ npm run desktop        # Hypercluster Desktop
 
 ---
 
-**Regenerate:** `make docs` · **Last generated:** 2026-06-06T14:21:14Z
+**Regenerate:** `make docs` · **Last generated:** 2026-06-06T14:34:58Z

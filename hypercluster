@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Re-exec with Homebrew bash 5 on macOS (system bash is 3.2, missing bash 4+ features)
 if [[ "$(uname)" == "Darwin" && "${BASH_VERSINFO[0]:-3}" -lt 4 ]]; then
-  _b="$(brew --prefix 2>/dev/null)/bin/bash"
-  [[ -x "$_b" ]] && exec "$_b" "$0" "$@"
+  for _b in /opt/homebrew/bin/bash /usr/local/bin/bash "$(brew --prefix 2>/dev/null)/bin/bash"; do
+    [[ -x "$_b" ]] && exec "$_b" "$0" "$@"
+  done
   echo "bash 4+ required — run: brew install bash" >&2; exit 1
 fi
 # hypercluster — end-to-end Kubernetes cluster lifecycle wrapper for Kubespray.

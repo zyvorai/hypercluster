@@ -23,6 +23,15 @@ chmod +x scripts/setup-macos.sh
 
 Requirements: **Apple Silicon (arm64)** for release artifacts, macOS 11+, Node 20+, Rust, Xcode CLT, Homebrew bash 5.
 
+Before first deploy from the installed app:
+
+```bash
+./scripts/setup-macos.sh
+./scripts/macos/desktop-preflight.sh
+```
+
+Troubleshooting (PATH, bash 5, SSH agent, wrong-arch builds): [docs/guides/desktop-macos-apple-silicon.md](../../docs/guides/desktop-macos-apple-silicon.md).
+
 ## Install options
 
 ### Option A — `.pkg` installer (recommended)
@@ -125,4 +134,7 @@ The desktop app auto-detects this path; no separate CLI install required.
 
 Build the release `.pkg` on an Apple Silicon Mac (`make desktop-pkg`). Local dev on Intel Macs still works via `npm run desktop`, but release artifacts are arm64-only.
 
-See also: [Desktop UX guide](../docs/guides/desktop-ux-guide.md)
+See also:
+
+- [Desktop UX guide](../../docs/guides/desktop-ux-guide.md)
+- [Apple Silicon troubleshooting](../../docs/guides/desktop-macos-apple-silicon.md)

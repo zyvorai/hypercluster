@@ -10,7 +10,7 @@ FLAGS   ?=
 .PHONY: help init preflight deploy deploy-remote scale upgrade remove-node \
         fetch-kubeconfig merge-kubeconfig install-kubevirt status destroy check-deps \
         lint test-smoke test-inventory test-platform-config test-platform-json test-preflight-json test-python-pip test-local test-podman \
-        test-remote dry-deploy unlock wizard desktop-dev desktop-build desktop-pkg desktop-install desktop-uninstall desktop-check docs docs-venv \
+        test-remote dry-deploy unlock wizard desktop-dev desktop-build desktop-pkg desktop-install desktop-uninstall desktop-preflight desktop-check docs docs-venv \
         lab-setup lab-storage lab-tune lab-storage-status test-lab-config
 
 help: ## 📖  Show this help
@@ -162,8 +162,13 @@ desktop-uninstall: ## 🖥️  Remove Hypercluster.app from /Applications
 	chmod +x scripts/macos/uninstall-hypercluster-app.sh
 	./scripts/macos/uninstall-hypercluster-app.sh
 
+desktop-preflight: ## 🖥️  macOS Apple Silicon preflight (bash 5, tools, app arch)
+	chmod +x scripts/macos/desktop-preflight.sh
+	./scripts/macos/desktop-preflight.sh
+
 desktop-check: ## 🖥️  Typecheck + cargo check desktop app
 	cd desktop && npm install && npm run build
+	cd desktop/src-tauri && cargo test -- paths::
 	cd desktop/src-tauri && cargo check
 	$(MAKE) test-spec-roundtrip test-discover-json test-vms-json test-workloads-json
 

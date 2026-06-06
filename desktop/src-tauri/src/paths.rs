@@ -74,12 +74,95 @@ pub fn resolve_hypercluster_bin(settings_bin: Option<&str>) -> PathBuf {
     PathBuf::from("hypercluster")
 }
 
+/// Homebrew bash 5 on Apple Silicon, then Intel Homebrew, then system bash.
 pub fn resolve_bash() -> PathBuf {
     if cfg!(target_os = "macos") {
-        let brew = PathBuf::from("/opt/homebrew/bin/bash");
-        if brew.exists() {
-            return brew;
+        for candidate in ["/opt/homebrew/bin/bash", "/usr/local/bin/bash"] {
+            let p = PathBuf::from(candidate);
+            if p.is_file() {
+                return p;
+            }
         }
     }
     PathBuf::from("/bin/bash")
+}
+
+/// PATH for hypercluster subprocesses when launched from the GUI (Finder/Dock).
+/// macOS GUI apps inherit a minimal PATH — Homebrew tools are often missing.
+#[cfg(target_os = "macos")]
+pub fn macos_subprocess_path() -> String {
+    let mut parts: Vec<String> = Vec::new();
+    for p in [
+        "/opt/homebrew/bin",
+        "/opt/homebrew/sbin",
+        "/usr/local/bin",
+        "/usr/local/sbin",
+        "/usr/bin",
+        "/bin",
+        "/usr/sbin",
+        "/sbin",
+    ] {
+        if Path::new(p).is_dir() {
+            parts.push(p.to_string());
+        }
+    }
+    if let Ok(existing) = env::var("PATH") {
+        for seg in existing.split(':').filter(|s| !s.is_empty()) {
+            if !parts.iter().any(|p| p == seg) {
+                parts.push(seg.to_string());
+            }
+        }
+    }
+    parts.join(":")
+}
+
+#[cfg(not(target_os = "macos"))]
+pub fn macos_subprocess_path() -> String {
+    env::var("PATH").unwrap_or_default()
+}
+
+/// Env vars applied to every hypercluster shell spawn (PATH, SSH agent, HOME).
+pub fn shell_spawn_env() -> Vec<(String, String)> {
+    let mut vars = vec![("PATH".into(), macos_subprocess_path())];
+    if let Ok(sock) = env::var("SSH_AUTH_SOCK") {
+        if !sock.is_empty() {
+            vars.push(("SSH_AUTH_SOCK".into(), sock));
+        }
+    }
+    if let Some(home) = dirs::home_dir() {
+        vars.push(("HOME".into(), home.to_string_lossy().into_owned()));
+    }
+    vars
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn macos_path_includes_standard_prefixes() {
+        let p = macos_subprocess_path();
+        assert!(
+            p.contains("/usr/bin") && p.contains("/bin"),
+            "expected standard macOS PATH segments, got: {p}"
+        );
+        #[cfg(target_os = "macos")]
+        assert!(
+            p.contains("/opt/homebrew/bin") || p.contains("/usr/local/bin"),
+            "expected Homebrew prefix in PATH, got: {p}"
+        );
+    }
+
+    #[test]
+    fn resolve_bash_prefers_homebrew_on_macos() {
+        let bash = resolve_bash();
+        #[cfg(target_os = "macos")]
+        {
+            let s = bash.to_string_lossy();
+            assert!(
+                s.contains("homebrew") || s == "/bin/bash",
+                "unexpected bash path: {s}"
+            );
+        }
+    }
 }

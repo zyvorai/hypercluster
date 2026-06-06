@@ -17,6 +17,7 @@ Task-oriented guides for hypercluster CLI and Desktop UX.
 | Guide | Best for |
 |-------|----------|
 | [Desktop UX guide](desktop-ux-guide.md) | Cluster Studio, cockpit, operations, palettes |
+| [Apple Silicon macOS](desktop-macos-apple-silicon.md) | M1/M2/M3/M4 install, PATH, bash 5, SSH from GUI |
 
 ### Agent training (AI / Cursor)
 
