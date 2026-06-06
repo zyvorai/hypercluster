@@ -1,27 +1,35 @@
 import { GlassCard } from './GlassCard'
 import { StatusPill } from './StatusPill'
+import { ClusterLiveStats } from './ClusterLiveStats'
 import { clusterPillStatus } from '../lib/clusterStatus'
+import { summarizeClusterLive } from '../lib/clusterLive'
 import { revealConfig } from '../lib/api'
-import type { ClusterEntry } from '../lib/types'
+import type { ClusterEntry, StatusJson, VmsJson, WorkloadsJson } from '../lib/types'
 
 export function ClusterCard({
   cluster,
-  nodesReady,
-  nodesTotal,
+  liveStatus,
+  workloads,
+  vms,
+  liveLoading,
   runningCluster,
   onOpen,
   onConfigure,
   onDeploy,
 }: {
   cluster: ClusterEntry
-  nodesReady?: number
-  nodesTotal?: number
+  liveStatus?: StatusJson | null
+  workloads?: WorkloadsJson | null
+  vms?: VmsJson | null
+  liveLoading?: boolean
   runningCluster?: string | null
   onOpen: () => void
   onConfigure: () => void
   onDeploy: () => void
 }) {
-  const status = clusterPillStatus(cluster, runningCluster ?? null)
+  const status = clusterPillStatus(cluster, runningCluster ?? null, liveStatus)
+  const summary = summarizeClusterLive(liveStatus, workloads, vms)
+
   return (
     <GlassCard className="flex flex-col gap-3 shadow-zyvor-card transition hover:border-glass-accent/40 hover:shadow-zyvor-glow">
       <div className="flex items-start justify-between gap-2">
@@ -34,25 +42,24 @@ export function ClusterCard({
         </div>
         <StatusPill status={status} />
       </div>
-      {nodesTotal !== undefined && (
-        <p className="text-sm text-glass-muted">
-          {nodesReady ?? 0}/{nodesTotal} nodes ready
-        </p>
-      )}
+
+      <ClusterLiveStats summary={summary} compact loading={liveLoading} />
+
       {cluster.last_action && (
         <p className="text-xs text-glass-muted">
-          Last: {cluster.last_action}
+          Last app action: {cluster.last_action}
           {cluster.last_action_ok === false ? ' (failed)' : cluster.last_action_ok ? ' (ok)' : ''}
         </p>
       )}
+
       <div className="mt-auto flex flex-wrap gap-2">
-        <button type="button" className="btn-ghost flex-1 text-sm" onClick={onOpen}>
-          Open
+        <button type="button" className="btn-primary flex-1 text-sm" onClick={onOpen}>
+          Open cockpit
         </button>
         <button type="button" className="btn-ghost flex-1 text-sm" onClick={onConfigure}>
           Settings
         </button>
-        <button type="button" className="btn-primary flex-1 text-sm" onClick={onDeploy}>
+        <button type="button" className="btn-ghost flex-1 text-sm" onClick={onDeploy}>
           Deploy
         </button>
         <button

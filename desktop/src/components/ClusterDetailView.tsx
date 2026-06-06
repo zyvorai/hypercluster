@@ -3,6 +3,7 @@ import { preflightJson, readClusterConf, revealConfig, statusJson, testJson, vms
 import { parseClusterConf } from '../lib/confParse'
 import { parseClusterSpec, installPlan } from '../lib/clusterSpec'
 import { clusterPillStatus } from '../lib/clusterStatus'
+import { summarizeClusterLive } from '../lib/clusterLive'
 import type {
   ClusterEntry,
   ClusterSpec,
@@ -15,6 +16,7 @@ import type {
   WizardForm,
 } from '../lib/types'
 import { GlassCard } from './GlassCard'
+import { ClusterLiveSnapshot } from './ClusterLiveSnapshot'
 import { KubeVirtStudio } from './KubeVirtStudio'
 import { StatusPill } from './StatusPill'
 import { TestResultsPanel } from './TestResultsPanel'
@@ -56,6 +58,7 @@ export function ClusterDetailView({
   const [vmsLoading, setVmsLoading] = useState(false)
   const [workloads, setWorkloads] = useState<WorkloadsJson | null>(null)
   const [workloadsLoading, setWorkloadsLoading] = useState(false)
+  const [liveRefreshing, setLiveRefreshing] = useState(false)
   const [vmCreateMsg, setVmCreateMsg] = useState('')
   const [removeConfirm, setRemoveConfirm] = useState('')
 
@@ -135,13 +138,21 @@ export function ClusterDetailView({
     loadTests(false)
     loadPreflight()
     loadVms()
-  }, [loadStatus, loadTests, loadPreflight, loadVms, refreshToken])
+    loadWorkloads()
+  }, [loadStatus, loadTests, loadPreflight, loadVms, loadWorkloads, refreshToken])
 
   useEffect(() => {
-    if (section === 'workloads') loadWorkloads()
-  }, [section, loadWorkloads, refreshToken])
+    if (section === 'workloads' && !workloads) loadWorkloads()
+  }, [section, workloads, loadWorkloads, refreshToken])
 
-  const pillStatus = clusterPillStatus(cluster, runningCluster ?? null)
+  const refreshLive = useCallback(async () => {
+    setLiveRefreshing(true)
+    await Promise.all([loadStatus(), loadVms(), loadWorkloads(), loadTests(false)])
+    setLiveRefreshing(false)
+  }, [loadStatus, loadVms, loadWorkloads, loadTests])
+
+  const pillStatus = clusterPillStatus(cluster, runningCluster ?? null, status)
+  const liveSummary = summarizeClusterLive(status, workloads, vms)
   const sections: { id: CockpitSection; label: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'nodes', label: 'Nodes' },
@@ -193,6 +204,9 @@ export function ClusterDetailView({
           )}
         </div>
         <div className="flex flex-wrap gap-2">
+          <button type="button" className="btn-ghost" onClick={() => void refreshLive()} disabled={liveRefreshing}>
+            {liveRefreshing ? 'Refreshing…' : 'Refresh live state'}
+          </button>
           <button type="button" className="btn-ghost" onClick={() => onRun('preflight')}>
             preflight
           </button>
@@ -243,7 +257,18 @@ export function ClusterDetailView({
         ))}
       </div>
 
-      {section === 'overview' && config && (
+      {section === 'overview' && (
+        <>
+          <ClusterLiveSnapshot
+            summary={liveSummary}
+            workloads={workloads}
+            vms={vms}
+            loading={liveRefreshing || workloadsLoading || vmsLoading}
+            onGoNodes={() => setSection('nodes')}
+            onGoWorkloads={() => setSection('workloads')}
+            onGoVms={() => setSection('vms')}
+          />
+          {config && (
         <GlassCard>
           <div className="mb-3 flex items-center justify-between">
             <h3 className="font-medium">Cluster configuration</h3>
@@ -283,6 +308,19 @@ export function ClusterDetailView({
             </p>
           )}
         </GlassCard>
+          )}
+          {tests && (
+            <GlassCard>
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-medium">Platform smoke</h3>
+                <span className="text-sm text-glass-muted">
+                  {tests.pass} pass · {tests.fail} fail
+                </span>
+              </div>
+              <TestResultsPanel results={tests} loading={testLoading} error={testErr} />
+            </GlassCard>
+          )}
+        </>
       )}
 
       {section === 'nodes' && (

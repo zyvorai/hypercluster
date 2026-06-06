@@ -23,6 +23,7 @@ import {
   resolveBinary,
   statusJson,
   vmsJson,
+  workloadsJson,
   getSettings,
 } from './lib/api'
 import { defaultClusterSpec, mergeClusterSpec, parseClusterSpec } from './lib/clusterSpec'
@@ -42,6 +43,7 @@ import type {
   StudioExpertLevel,
   StatusJson,
   VmsJson,
+  WorkloadsJson,
 } from './lib/types'
 
 export default function App() {
@@ -60,6 +62,8 @@ export default function App() {
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false)
   const [statusByCluster, setStatusByCluster] = useState<Record<string, StatusJson | null>>({})
   const [vmsByCluster, setVmsByCluster] = useState<Record<string, VmsJson | null>>({})
+  const [workloadsByCluster, setWorkloadsByCluster] = useState<Record<string, WorkloadsJson | null>>({})
+  const [liveLoading, setLiveLoading] = useState(false)
   const [destroyConfirm, setDestroyConfirm] = useState('')
   const [removeNode, setRemoveNode] = useState('')
   const [settingsBin, setSettingsBin] = useState('')
@@ -153,9 +157,11 @@ export default function App() {
   }, [refresh])
 
   const reloadNodeStats = useCallback(async (list: ClusterEntry[]) => {
+    setLiveLoading(true)
     const stats: Record<string, { ready: number; total: number }> = {}
     const statuses: Record<string, StatusJson | null> = {}
     const vmsMap: Record<string, VmsJson | null> = {}
+    const workloadsMap: Record<string, WorkloadsJson | null> = {}
     for (const c of list) {
       try {
         const s = await statusJson(c.config_path)
@@ -169,15 +175,28 @@ export default function App() {
       } catch {
         vmsMap[c.name] = null
       }
+      try {
+        workloadsMap[c.name] = await workloadsJson(c.config_path)
+      } catch {
+        workloadsMap[c.name] = null
+      }
     }
     setNodeStats(stats)
     setStatusByCluster(statuses)
     setVmsByCluster(vmsMap)
+    setWorkloadsByCluster(workloadsMap)
+    setLiveLoading(false)
   }, [])
 
   useEffect(() => {
     if (clusters.length) reloadNodeStats(clusters)
   }, [clusters, reloadNodeStats, detailRefreshKey])
+
+  useEffect(() => {
+    if (view !== 'dashboard' || !clusters.length) return
+    const id = window.setInterval(() => reloadNodeStats(clusters), 60_000)
+    return () => window.clearInterval(id)
+  }, [view, clusters, reloadNodeStats])
 
   const runOn = async (
     cluster: ClusterEntry,
@@ -436,6 +455,17 @@ export default function App() {
     runOn(selection.cluster, selection.command, { args: selection.args }, { returnView: 'cluster' })
   }
 
+  const dashboardTotals = useMemo(() => {
+    let podsRunning = 0
+    let podsTotal = 0
+    for (const w of Object.values(workloadsByCluster)) {
+      if (!w) continue
+      podsTotal += w.pods.length
+      podsRunning += w.pods.filter((p) => p.phase === 'Running').length
+    }
+    return { podsRunning, podsTotal }
+  }, [workloadsByCluster])
+
   const nav: { id: View; label: string; disabled?: boolean }[] = [
     { id: 'dashboard', label: 'Dashboard' },
     {
@@ -509,9 +539,10 @@ export default function App() {
                 <p className="stat-value text-3xl font-semibold">{clusters.length}</p>
               </GlassCard>
               <GlassCard className="shadow-zyvor-card">
-                <p className="text-sm text-glass-muted">Ready nodes</p>
+                <p className="text-sm text-glass-muted">Pods running</p>
                 <p className="stat-value text-3xl font-semibold">
-                  {Object.values(nodeStats).reduce((a, s) => a + s.ready, 0)}
+                  {dashboardTotals.podsRunning}
+                  <span className="text-lg text-glass-muted">/{dashboardTotals.podsTotal}</span>
                 </p>
               </GlassCard>
               <GlassCard className="shadow-zyvor-card">
@@ -524,8 +555,10 @@ export default function App() {
                 <ClusterCard
                   key={c.id}
                   cluster={c}
-                  nodesReady={nodeStats[c.name]?.ready}
-                  nodesTotal={nodeStats[c.name]?.total}
+                  liveStatus={statusByCluster[c.name]}
+                  workloads={workloadsByCluster[c.name]}
+                  vms={vmsByCluster[c.name]}
+                  liveLoading={liveLoading}
                   runningCluster={runningCluster}
                   onOpen={() => openCluster(c)}
                   onConfigure={() => openClusterSettings(c)}
