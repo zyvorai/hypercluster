@@ -1,14 +1,16 @@
 import { GlassCard } from './GlassCard'
 import { StatusPill } from './StatusPill'
 import { ClusterLiveStats } from './ClusterLiveStats'
+import { ClusterHealthBadge } from './ClusterHealthReport'
 import { clusterPillStatus } from '../lib/clusterStatus'
 import { summarizeClusterLive } from '../lib/clusterLive'
 import { revealConfig } from '../lib/api'
-import type { ClusterEntry, StatusJson, VmsJson, WorkloadsJson } from '../lib/types'
+import type { ClusterEntry, HealthJson, StatusJson, VmsJson, WorkloadsJson } from '../lib/types'
 
 export function ClusterCard({
   cluster,
   liveStatus,
+  health,
   workloads,
   vms,
   liveLoading,
@@ -22,6 +24,7 @@ export function ClusterCard({
 }: {
   cluster: ClusterEntry
   liveStatus?: StatusJson | null
+  health?: HealthJson | null
   workloads?: WorkloadsJson | null
   vms?: VmsJson | null
   liveLoading?: boolean
@@ -36,6 +39,7 @@ export function ClusterCard({
   const status = clusterPillStatus(cluster, runningCluster ?? null, liveStatus)
   const summary = summarizeClusterLive(liveStatus, workloads, vms)
   const isProvisioned = provisioned ?? summary?.reachable
+  const healthState = health?.state
 
   return (
     <GlassCard className="flex flex-col gap-3 shadow-zyvor-card transition hover:border-glass-accent/40 hover:shadow-zyvor-glow">
@@ -48,6 +52,7 @@ export function ClusterCard({
                 Provisioned
               </span>
             ) : null}
+            {healthState ? <ClusterHealthBadge state={healthState} compact /> : null}
           </div>
           <p className="text-sm text-glass-muted">{cluster.distro}</p>
           <p className="truncate text-xs text-glass-muted" title={cluster.config_path}>
@@ -58,6 +63,19 @@ export function ClusterCard({
       </div>
 
       <ClusterLiveStats summary={summary} compact loading={liveLoading} />
+
+      {health?.tests && (
+        <p className="text-xs text-glass-muted">
+          Platform tests:{' '}
+          <span className={health.tests.fail > 0 ? 'text-amber-200' : 'text-emerald-300'}>
+            {health.tests.pass}/{health.tests.pass + health.tests.fail} pass
+          </span>
+        </p>
+      )}
+
+      {health?.issues && health.issues.length > 0 && (
+        <p className="text-xs text-amber-200">{health.issues[0]}</p>
+      )}
 
       {cluster.last_action && (
         <p className="text-xs text-glass-muted">

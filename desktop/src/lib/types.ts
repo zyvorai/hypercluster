@@ -1,3 +1,5 @@
+import type { VmsJson, WorkloadsJson } from './studioTypes'
+
 export type ClusterEntry = {
   id: string
   name: string
@@ -77,6 +79,31 @@ export type WizardForm = {
 export type PreflightJson = {
   ok: boolean
   checks: { name: string; passed: boolean; detail?: string }[]
+}
+
+export type HealthState = 'healthy' | 'degraded' | 'unreachable' | 'unknown'
+
+export type HealthJson = {
+  cluster: string
+  connected: boolean
+  state: HealthState
+  kubeconfig: string
+  issues: string[]
+  status: StatusJson
+  workloads: WorkloadsJson
+  vms: VmsJson
+  summary: {
+    nodes_ready: number
+    nodes_total: number
+    pods_running: number
+    pods_total: number
+    pods_pending: number
+    pods_failed: number
+    services: number
+    vms_running: number
+    vms_total: number
+  }
+  tests: TestJson | null
 }
 
 export type View =

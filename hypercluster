@@ -30,6 +30,7 @@ fi
 #   workloads         List pods and services (--json)
 #   discover          Discover VMs/hosts (libvirt, Proxmox, VMware, ssh-scan, csv) (--json)
 #   status            Node status (optional --json for machine-readable output)
+#   health            Connect + report nodes, pods, services, VMs (--json; --with-test for k3s smoke)
 #   unlock            Remove stale per-cluster lock after a crash
 #   lab setup         Secondary disk + memory tune (from cluster.conf LAB_* vars)
 #   lab storage       Mount LAB_SECONDARY_DISK, patch local-path, StorageClass
@@ -126,6 +127,8 @@ source "$SCRIPT_DIR/lib/talos.sh"
 source "$SCRIPT_DIR/lib/vms.sh"
 # shellcheck source=lib/workloads.sh
 source "$SCRIPT_DIR/lib/workloads.sh"
+# shellcheck source=lib/health.sh
+source "$SCRIPT_DIR/lib/health.sh"
 # shellcheck source=lib/lab.sh
 source "$SCRIPT_DIR/lib/lab.sh"
 
@@ -600,6 +603,10 @@ if len(pods) > 20:
 '
 }
 
+cmd_health() {
+  health::run "$@"
+}
+
 # ── dispatch ─────────────────────────────────────────────────────────────────
 case "$COMMAND" in
   init)               cmd_init "$@" ;;
@@ -614,6 +621,7 @@ case "$COMMAND" in
   test)               cmd_test "$@" ;;
   destroy)            cmd_destroy ;;
   status)             cmd_status "$@" ;;
+  health)             cmd_health "$@" ;;
   vms)                cmd_vms "$@" ;;
   vm)                 cmd_vm "$@" ;;
   workloads)          cmd_workloads "$@" ;;

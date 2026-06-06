@@ -187,6 +187,16 @@ async fn get_run_status_cmd(
 }
 
 #[tauri::command]
+async fn hc_health_json(config_path: String, with_test: bool) -> Result<String, String> {
+    let args = if with_test {
+        vec!["--with-test".into()]
+    } else {
+        vec![]
+    };
+    run_sync(&config_path, "health", &args, true).await
+}
+
+#[tauri::command]
 async fn hc_status_json(config_path: String) -> Result<String, String> {
     run_sync(&config_path, "status", &[], true).await
 }
@@ -499,6 +509,7 @@ pub fn run() {
             auto_import_discovered_cmd,
             cancel_run_cmd,
             get_run_status_cmd,
+            hc_health_json,
             hc_status_json,
             hc_test_json,
             hc_preflight_json,

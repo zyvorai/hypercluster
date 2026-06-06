@@ -22,6 +22,7 @@ Commands:
   workloads         List pods and services (--json)
   discover          Discover VMs/hosts (libvirt, Proxmox, VMware, ssh-scan, csv) (--json)
   status            Node status (optional --json for machine-readable output)
+  health            Connect + report nodes, pods, services, VMs (--json; --with-test for k3s smoke)
   unlock            Remove stale per-cluster lock after a crash
   lab setup         Secondary disk + memory tune (from cluster.conf LAB_* vars)
   lab storage       Mount LAB_SECONDARY_DISK, patch local-path, StorageClass
@@ -55,6 +56,7 @@ shellcheck source=lib/microk8s.sh
 shellcheck source=lib/talos.sh
 shellcheck source=lib/vms.sh
 shellcheck source=lib/workloads.sh
+shellcheck source=lib/health.sh
 shellcheck source=lib/lab.sh
 ── discover (no cluster.conf required) ───────────────────────────────────────
 ── wizard (no cluster.conf required) ─────────────────────────────────────────

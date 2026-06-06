@@ -23,9 +23,7 @@ import {
   pickClusterConf,
   readClusterConf,
   resolveBinary,
-  statusJson,
-  vmsJson,
-  workloadsJson,
+  healthJson,
   getSettings,
 } from './lib/api'
 import { defaultClusterSpec, mergeClusterSpec, parseClusterSpec } from './lib/clusterSpec'
@@ -46,6 +44,7 @@ import type {
   StudioIntentId,
   StudioExpertLevel,
   DiscoveredCluster,
+  HealthJson,
   StatusJson,
   VmsJson,
   WorkloadsJson,
@@ -65,6 +64,7 @@ export default function App() {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false)
   const [statusByCluster, setStatusByCluster] = useState<Record<string, StatusJson | null>>({})
+  const [healthByCluster, setHealthByCluster] = useState<Record<string, HealthJson | null>>({})
   const [vmsByCluster, setVmsByCluster] = useState<Record<string, VmsJson | null>>({})
   const [workloadsByCluster, setWorkloadsByCluster] = useState<Record<string, WorkloadsJson | null>>({})
   const [liveLoading, setLiveLoading] = useState(false)
@@ -174,26 +174,24 @@ export default function App() {
   const reloadNodeStats = useCallback(async (list: ClusterEntry[]) => {
     setLiveLoading(true)
     const statuses: Record<string, StatusJson | null> = {}
+    const healthMap: Record<string, HealthJson | null> = {}
     const vmsMap: Record<string, VmsJson | null> = {}
     const workloadsMap: Record<string, WorkloadsJson | null> = {}
     for (const c of list) {
       try {
-        const s = await statusJson(c.config_path)
-        statuses[c.name] = s
+        const health = await healthJson(c.config_path)
+        healthMap[c.name] = health
+        statuses[c.name] = health.status
+        workloadsMap[c.name] = health.workloads
+        vmsMap[c.name] = health.vms
       } catch {
+        healthMap[c.name] = null
         statuses[c.name] = null
-      }
-      try {
-        vmsMap[c.name] = await vmsJson(c.config_path)
-      } catch {
         vmsMap[c.name] = null
-      }
-      try {
-        workloadsMap[c.name] = await workloadsJson(c.config_path)
-      } catch {
         workloadsMap[c.name] = null
       }
     }
+    setHealthByCluster(healthMap)
     setStatusByCluster(statuses)
     setVmsByCluster(vmsMap)
     setWorkloadsByCluster(workloadsMap)
@@ -539,6 +537,14 @@ export default function App() {
                 <button
                   type="button"
                   className="btn-ghost"
+                  onClick={() => void reloadNodeStats(clusters)}
+                  disabled={liveLoading || clusters.length === 0}
+                >
+                  {liveLoading ? 'Refreshing health…' : 'Refresh health'}
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost"
                   onClick={async () => {
                     const imported = await autoImportDiscovered()
                     await refresh()
@@ -618,6 +624,7 @@ export default function App() {
                   key={c.id}
                   cluster={c}
                   liveStatus={statusByCluster[c.name]}
+                  health={healthByCluster[c.name]}
                   workloads={workloadsByCluster[c.name]}
                   vms={vmsByCluster[c.name]}
                   liveLoading={liveLoading}

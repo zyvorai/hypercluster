@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { preflightJson, readClusterConf, revealConfig, statusJson, testJson, vmsJson, workloadsJson, vmCreateJson } from '../lib/api'
+import { healthJson, preflightJson, readClusterConf, revealConfig, statusJson, testJson, vmsJson, workloadsJson, vmCreateJson } from '../lib/api'
 import { parseClusterConf } from '../lib/confParse'
 import { parseClusterSpec, installPlan } from '../lib/clusterSpec'
 import { clusterPillStatus } from '../lib/clusterStatus'
@@ -9,6 +9,7 @@ import type {
   ClusterSpec,
   CockpitSection,
   PreflightJson,
+  HealthJson,
   StatusJson,
   TestJson,
   VmsJson,
@@ -17,6 +18,7 @@ import type {
 } from '../lib/types'
 import { GlassCard } from './GlassCard'
 import { ClusterLiveSnapshot } from './ClusterLiveSnapshot'
+import { ClusterHealthReport } from './ClusterHealthReport'
 import { ClusterLifecyclePanel } from './ClusterLifecyclePanel'
 import { KubeVirtStudio } from './KubeVirtStudio'
 import { StatusPill } from './StatusPill'
@@ -66,6 +68,8 @@ export function ClusterDetailView({
   const [workloads, setWorkloads] = useState<WorkloadsJson | null>(null)
   const [workloadsLoading, setWorkloadsLoading] = useState(false)
   const [liveRefreshing, setLiveRefreshing] = useState(false)
+  const [healthReport, setHealthReport] = useState<HealthJson | null>(null)
+  const [fullCheckLoading, setFullCheckLoading] = useState(false)
   const [vmCreateMsg, setVmCreateMsg] = useState('')
   const [removeConfirm, setRemoveConfirm] = useState('')
 
@@ -140,23 +144,42 @@ export function ClusterDetailView({
     }
   }, [cluster.config_path])
 
+  const loadHealth = useCallback(
+    async (withTest = false) => {
+      if (withTest) setFullCheckLoading(true)
+      else setLiveRefreshing(true)
+      try {
+        const report = await healthJson(cluster.config_path, withTest)
+        setHealthReport(report)
+        setStatus(report.status)
+        setWorkloads(report.workloads)
+        setVms(report.vms)
+        if (report.tests) setTests(report.tests)
+        setStatusErr('')
+      } catch (e) {
+        setStatusErr(String(e))
+        setHealthReport(null)
+      } finally {
+        setLiveRefreshing(false)
+        setFullCheckLoading(false)
+      }
+    },
+    [cluster.config_path],
+  )
+
   useEffect(() => {
-    loadStatus()
+    loadHealth(false)
     loadTests(false)
     loadPreflight()
-    loadVms()
-    loadWorkloads()
-  }, [loadStatus, loadTests, loadPreflight, loadVms, loadWorkloads, refreshToken])
+  }, [loadHealth, loadTests, loadPreflight, refreshToken])
 
   useEffect(() => {
     if (section === 'workloads' && !workloads) loadWorkloads()
   }, [section, workloads, loadWorkloads, refreshToken])
 
   const refreshLive = useCallback(async () => {
-    setLiveRefreshing(true)
-    await Promise.all([loadStatus(), loadVms(), loadWorkloads(), loadTests(false)])
-    setLiveRefreshing(false)
-  }, [loadStatus, loadVms, loadWorkloads, loadTests])
+    await loadHealth(false)
+  }, [loadHealth])
 
   const pillStatus = clusterPillStatus(cluster, runningCluster ?? null, status)
   const liveSummary = summarizeClusterLive(status, workloads, vms)
@@ -273,6 +296,12 @@ export function ClusterDetailView({
             onFullDeploy={() => onRunFull?.()}
             onDecommission={() => onDecommission?.()}
             onReinstall={() => onReinstall?.()}
+          />
+          <ClusterHealthReport
+            report={healthReport}
+            loading={liveRefreshing}
+            fullCheckLoading={fullCheckLoading}
+            onRunFullCheck={() => void loadHealth(true)}
           />
           <ClusterLiveSnapshot
             summary={liveSummary}

@@ -1,4 +1,4 @@
-import type { StatusJson, VmsJson, WorkloadsJson } from './types'
+import type { StatusJson, VmsJson, WorkloadsJson, HealthJson, HealthState } from './types'
 
 export type ClusterLiveSummary = {
   nodesReady: number
@@ -38,5 +38,34 @@ export function summarizeClusterLive(
     vmsRunning,
     vmsTotal: vmList.length,
     reachable: Boolean(status && status.total > 0),
+  }
+}
+
+export function healthStateLabel(state: HealthState): string {
+  switch (state) {
+    case 'healthy':
+      return 'Healthy'
+    case 'degraded':
+      return 'Degraded'
+    case 'unreachable':
+      return 'Unreachable'
+    default:
+      return 'Unknown'
+  }
+}
+
+export function healthFromReport(report: HealthJson): ClusterLiveSummary {
+  const s = report.summary
+  return {
+    nodesReady: s.nodes_ready,
+    nodesTotal: s.nodes_total,
+    podsRunning: s.pods_running,
+    podsTotal: s.pods_total,
+    podsPending: s.pods_pending,
+    podsFailed: s.pods_failed,
+    services: s.services,
+    vmsRunning: s.vms_running,
+    vmsTotal: s.vms_total,
+    reachable: report.connected && s.nodes_total > 0,
   }
 }

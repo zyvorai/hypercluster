@@ -9,7 +9,7 @@ FLAGS   ?=
 
 .PHONY: help init preflight deploy deploy-remote scale upgrade remove-node \
         fetch-kubeconfig merge-kubeconfig install-kubevirt status destroy check-deps \
-        lint test-smoke test-inventory test-platform-config test-platform-json test-preflight-json test-python-pip test-local test-podman \
+        lint test-smoke test-inventory test-platform-config test-platform-json test-platform-health-json test-preflight-json test-python-pip test-local test-podman \
         test-remote dry-deploy unlock wizard desktop-dev desktop-build desktop-pkg desktop-install desktop-uninstall desktop-brand desktop-icons desktop-preflight desktop-check docs docs-venv \
         lab-setup lab-storage lab-tune lab-storage-status test-lab-config
 
@@ -112,6 +112,10 @@ test-platform-config: ## 🧪  Run k3s platform config unit tests
 test-platform-json: ## 🧪  Run platform test JSON output unit tests
 	chmod +x tests/test-platform-test-json.sh
 	./tests/test-platform-test-json.sh
+
+test-platform-health-json: ## 🧪  Run health report JSON unit tests
+	chmod +x tests/test-platform-health-json.sh
+	./tests/test-platform-health-json.sh
 
 test-preflight-json: ## 🧪  Run preflight JSON output unit tests
 	chmod +x tests/test-preflight-json.sh

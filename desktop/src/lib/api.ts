@@ -10,6 +10,7 @@ import type {
   PreflightJson,
   StatusJson,
   TestJson,
+  HealthJson,
   WizardForm,
   WizardProfileId,
 } from './types'
@@ -114,6 +115,11 @@ export async function runCommand(req: {
 
 export async function cancelRun(clusterName: string): Promise<void> {
   return invoke('cancel_run_cmd', { clusterName })
+}
+
+export async function healthJson(configPath: string, withTest = false): Promise<HealthJson> {
+  const raw = await invoke<string>('hc_health_json', { configPath, withTest })
+  return JSON.parse(raw)
 }
 
 export async function statusJson(configPath: string): Promise<StatusJson> {
