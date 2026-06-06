@@ -131,7 +131,15 @@ Human PASS/FAIL lines on **stderr** only.
 {"ready": 1, "total": 1, "nodes": [{"name": "node1", "ready": true, "roles": "true"}]}
 ```
 
-Desktop `hc_preflight_json` / `hc_test_json` / `hc_status_json` parse stdout as JSON.
+Desktop `hc_preflight_json` / `hc_test_json` / `hc_status_json` / `hc_health_json` parse stdout as JSON. Optional `ai_chat_cmd` for LLM (settings in app registry).
+
+### `health --json`
+
+```json
+{"cluster":"lab","connected":true,"state":"healthy","issues":[],"summary":{"nodes_ready":1,"nodes_total":1,"pods_running":10,"pods_total":10,"pods_pending":0,"pods_failed":0,"services":5,"vms_running":0,"vms_total":0},"status":{},"workloads":{},"vms":{},"tests":null}
+```
+
+Use for dashboard fleet refresh and automation. `--with-test` runs platform smoke (k3s, slower).
 
 ---
 
@@ -140,11 +148,11 @@ Desktop `hc_preflight_json` / `hc_test_json` / `hc_status_json` parse stdout as 
 ### Verify a k3s cluster is healthy
 
 ```bash
-./hypercluster -c cluster.conf status --json
+./hypercluster -c cluster.conf health --json
 ./hypercluster -c cluster.conf test --json 2>/dev/null
 ```
 
-Expect `fail: 0` and 10 checks for full platform.
+Expect `state: "healthy"` (or investigate `issues[]`), and `fail: 0` on full platform test.
 
 ### Fix platform stack after CNI issues
 
@@ -177,8 +185,8 @@ Expect `fail: 0` and 10 checks for full platform.
 | CLI smoke | `make test-smoke` | No |
 | inventory | `make test-inventory` | No |
 | platform config | `make test-platform-config` | No |
-| JSON shape | `make test-platform-json` | No |
-| desktop | `make desktop-check` | No (includes spec roundtrip + discover/vms/workloads JSON) |
+| JSON shape | `make test-platform-json` `make test-platform-health-json` | No |
+| desktop | `make desktop-check` | No (includes spec roundtrip + discover/vms/workloads/ai insights JSON) |
 | Podman k3s | `scripts/test-podman.sh` | Containers |
 | Remote k3s | `deploy` + `test` | Remote host |
 

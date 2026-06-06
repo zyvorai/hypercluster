@@ -204,6 +204,8 @@ JSON output for automation and the desktop app:
 
 ```bash
 ./hypercluster -c cluster.conf test --json       # stdout: {"pass", "fail", "checks"}
+./hypercluster -c cluster.conf health --json     # stdout: unified cluster health report
+./hypercluster -c cluster.conf health --with-test --json  # includes platform smoke
 ./hypercluster -c cluster.conf status --json     # stdout: {"ready", "total", "nodes"}
 ./hypercluster -c cluster.conf preflight --json
 ./hypercluster -c cluster.conf workloads --json  # pods + services
@@ -323,7 +325,9 @@ Cluster profiles live in [`config/profiles/`](config/profiles/) (`k3s-remote`, `
 
 ### Desktop app (optional)
 
-A Tauri-based Liquid Glass UI lives in [`desktop/`](desktop/). It runs **all** cluster operations through the `hypercluster` CLI — **Cluster Creation Studio** (`ClusterSpec` → `cluster.conf`), Quick Deploy, and a 14-section cluster cockpit (workloads, VMs, platform tests).
+A Tauri-based Liquid Glass UI lives in [`desktop/`](desktop/). It runs **all** cluster operations through the `hypercluster` CLI — **Cluster Creation Studio** (`ClusterSpec` → `cluster.conf`), Quick Deploy, live fleet health (`health --json`), and a 14-section cluster cockpit (workloads, VMs, platform tests).
+
+**Zyvor AI Copilot** (⌘J): offline rule-based insights on the dashboard; optional LLM chat (OpenAI-compatible, Anthropic, Ollama) for log analysis and natural-language ⌘K commands. See [Desktop UX guide](docs/guides/desktop-ux-guide.md#8-zyvor-ai-copilot).
 
 Install once from the repo root (npm workspaces, like the Cursor `agent` CLI):
 
@@ -754,10 +758,11 @@ Skip the prompt (for CI pipelines):
 | `fetch-kubeconfig` | `make fetch-kubeconfig` | Copy admin.conf from first control-plane node |
 | `merge-kubeconfig` | `make merge-kubeconfig` | Merge into `~/.kube/config` |
 | `status` | `make status` | Node status (`--json` for automation) |
+| `health` | — | Unified health report (`--json`; `--with-test` on k3s) |
 | `destroy` | `make destroy` | Reset the cluster |
 | `unlock` | `make unlock` | Remove stale per-cluster lock after a crash |
 
-### JSON output (`test --json`, `status --json`)
+### JSON output (`test --json`, `status --json`, `health --json`)
 
 | Field | Command | Meaning |
 |-------|---------|---------|
@@ -765,6 +770,9 @@ Skip the prompt (for CI pipelines):
 | `checks[]` | `test --json` | `{name, passed}` per smoke test |
 | `ready` / `total` | `status --json` | Ready node count / total nodes |
 | `nodes[]` | `status --json` | `{name, ready, roles}` per node |
+| `state` | `health --json` | `healthy`, `degraded`, or `unreachable` |
+| `summary` | `health --json` | Aggregated node/pod/service/VM counts |
+| `workloads` / `vms` | `health --json` | Full pod/service and VM inventory |
 
 ### Version
 

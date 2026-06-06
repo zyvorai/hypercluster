@@ -10,7 +10,7 @@ Task-oriented reference for the bash CLI. Generated CLI help is also at [`docs/_
 |------|----------|
 | **Remote k3s platform** | `preflight` → `deploy` → `test` |
 | **Kubespray HA cluster** | `wizard` or edit conf → `preflight` → `deploy` |
-| **Automation / CI** | `preflight --json`, `test --json`, `status --json` |
+| **Automation / CI** | `preflight --json`, `test --json`, `health --json`, `status --json` |
 | **Desktop / inventory** | `discover --json`, `vms --json`, `workloads --json` |
 | **Day-2 add nodes** | Update `WORKER_IPS` → `scale` |
 | **Upgrade K8s** | Bump `KUBE_VERSION` → `upgrade` |
@@ -45,6 +45,9 @@ Task-oriented reference for the bash CLI. Generated CLI help is also at [`docs/_
 | `test --json` | ✓ | — | Machine-readable results |
 | `status` | ✓ | ✓ | Node status |
 | `status --json` | ✓ | ✓ | Machine-readable node JSON |
+| `health` | ✓ | ✓ | Connect + unified report (nodes, pods, services, VMs) |
+| `health --json` | ✓ | ✓ | Machine-readable health report |
+| `health --with-test --json` | ✓ | — | Include platform smoke in report (k3s) |
 | `discover --json` | — | — | Discover hosts/VMs (no config required) |
 | `vms --json` | ✓ | — | KubeVirt VMIs + template catalog |
 | `vm create --json` | ✓ | — | Validate template; create stub (preview) |
@@ -73,6 +76,7 @@ $EDITOR cluster.conf   # K8S_DISTRO=k3s, METALLB_IP_POOL, SSH_*, CONTROL_PLANE_I
 ./hypercluster -c cluster.conf preflight --json
 ./hypercluster -c cluster.conf deploy
 ./hypercluster -c cluster.conf test
+./hypercluster -c cluster.conf health --json
 ./hypercluster -c cluster.conf status --json
 ./hypercluster -c cluster.conf workloads --json
 ```
@@ -112,6 +116,31 @@ Stdout (stderr has human PASS/FAIL lines):
 ```json
 {"ready": 1, "total": 1, "nodes": [{"name": "node1", "ready": true, "roles": "true"}]}
 ```
+
+### `health --json`
+
+Unified connect + report (stdout JSON only; human summary on stderr without `--json`):
+
+```json
+{
+  "cluster": "k3s-175",
+  "connected": true,
+  "state": "healthy",
+  "issues": [],
+  "status": {"ready": 1, "total": 1, "nodes": []},
+  "workloads": {"pods": [], "services": []},
+  "vms": {"vms": [], "templates": []},
+  "summary": {
+    "nodes_ready": 1, "nodes_total": 1,
+    "pods_running": 66, "pods_total": 67,
+    "pods_pending": 0, "pods_failed": 0,
+    "services": 55, "vms_running": 0, "vms_total": 0
+  },
+  "tests": null
+}
+```
+
+`state` is `healthy`, `degraded`, or `unreachable`. Add `--with-test` on k3s to populate `tests` from platform smoke.
 
 ### `workloads --json`
 
@@ -155,4 +184,4 @@ See [`docs/generated/MAKE-TARGETS.md`](../../generated/MAKE-TARGETS.md) for full
 
 ---
 
-_Doc version: 2026-06-06T18:54:43Z · hypercluster v0.1.0_
+_Doc version: 2026-06-06T19:09:30Z · hypercluster v0.1.0_

@@ -97,6 +97,7 @@ The footer shows **⌘K command palette** hint (Ctrl+K on Windows/Linux).
 ### Dashboard
 
 - Shows resolved **hypercluster binary** path.
+- **Refresh health** — parallel `health --json` for all registered clusters.
 - **Scan for clusters** — auto-discovers `cluster.conf` under `~/tt/`, repo root, and registry; imports new entries on launch.
 - **Import cluster.conf** — native file picker; copies config into app registry.
 - **+ New Cluster** — opens the **Create Cluster Hub** (intent cards → Quick Deploy or Studio).
@@ -106,15 +107,20 @@ The footer shows **⌘K command palette** hint (Ctrl+K on Windows/Linux).
 | Card | Meaning |
 |------|---------|
 | **Clusters** | Count in local registry |
-| **Pods running** | Sum of Running pods (`workloads --json` per cluster) |
+| **Pods running** | Sum of Running pods from `health --json` per cluster |
 | **Active job** | `1` while a hypercluster subprocess is running |
+
+### Fleet AI insights
+
+Glass panel below stat cards: rule-based recommendations per cluster (health state, failed pods, tests, config warnings). Filter **Issues only** / **Show tips**. Actions run hypercluster commands or open **AI Copilot** (⌘J).
 
 ### Cluster cards
 
 Each card shows:
 
 - Cluster **name** and **distro** (`k3s` or `kubespray`)
-- **Provisioned** badge when live `status --json` reaches the cluster
+- **Provisioned** badge when live `health --json` reaches the cluster (`connected` + nodes)
+- **Health badge** — `Healthy` / `Degraded` / `Unreachable` from `health --json`
 - **Status pill** — derived from live node readiness (not only prior app actions)
 - **Live stats** — nodes, pods, services, VMs from CLI JSON
 - **Open cockpit** → cluster detail (overview live snapshot, workloads, VMs)
@@ -138,9 +144,11 @@ Opened from a cluster card **Open** button or the command palette.
 
 The left sidebar lists **14 cockpit sections**: Overview, Nodes, Workloads, Networking, Storage, Platform, VMs, Templates, GPU, Security, Observability, Backups, Upgrades, Settings.
 
+Toolbar includes **Refresh live state** (re-runs `health --json`) and **Full check (+ tests)** (`health --with-test --json` on k3s).
+
 | Section | Source | Notes |
 |---------|--------|-------|
-| **Overview** | Registry + `status --json` | Install plan from `ClusterSpec` |
+| **Overview** | `health --json` + insights | Health report, AI recommendations, live snapshot |
 | **Nodes** | `status --json` | Ready counts, roles |
 | **Workloads** | `workloads --json` | Pods and services (requires kubeconfig) |
 | **Platform smoke** | `test --json` | Run test / test --full |
@@ -316,15 +324,16 @@ Human-readable test output appears in the log console; JSON mode keeps stdout cl
 
 ## 8. Zyvor AI Copilot
 
-Hypercluster Desktop includes **offline AI insights** plus optional **LLM chat** when you configure a provider in **Settings → AI Copilot**.
+Hypercluster Desktop includes **offline AI insights** (always on) plus optional **LLM chat** when you configure a provider in **Settings → AI Copilot**.
 
 ### Offline (no API key)
 
 | Feature | Where |
 |---------|--------|
-| Fleet insights | Dashboard — health, tests, config warnings |
+| Fleet insights | Dashboard — health, failed pods, tests, config warnings; **Issues only** filter |
 | Cluster recommendations | Cockpit → Overview |
-| Log error detection | Deploy log view |
+| Offline analysis in Copilot | ⌘J panel when LLM disabled |
+| Deploy log summary | Deploy view — rule-based before LLM |
 | Natural language hints | ⌘K palette (`deploy k3s-175`, `open lab`, `explain health`) |
 
 ### LLM chat (optional)
@@ -335,11 +344,15 @@ Hypercluster Desktop includes **offline AI insights** plus optional **LLM chat**
 | Ollama (local) | `http://127.0.0.1:11434/v1` |
 | Anthropic | `https://api.anthropic.com` |
 
+Configure in **Settings → AI Copilot**: enable LLM, provider, model, base URL, API key (or `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` env vars). Use **Test connection** after save.
+
 **Shortcuts:** ⌘J — toggle AI Copilot · ⌘K — palette with “Ask AI Copilot”
 
 **Context injected automatically:** cluster name, health summary, recent deploy logs, platform test results (when loaded).
 
 **Quick prompts:** Explain health · Suggest fixes · Deploy plan · Security review · KubeVirt strategy · Analyze logs · Right-size · Upgrade path
+
+Insight actions with **Diagnose** / **Ask AI** open Copilot and auto-send when LLM is enabled.
 
 All lifecycle suggestions from the copilot must use **hypercluster** commands only (never raw `helm`/`kubectl` for deploy/destroy).
 
@@ -360,4 +373,4 @@ All lifecycle suggestions from the copilot must use **hypercluster** commands on
 
 ---
 
-_Doc version: 2026-06-06T18:54:43Z · hypercluster v0.1.0_
+_Doc version: 2026-06-06T19:09:30Z · hypercluster v0.1.0_
