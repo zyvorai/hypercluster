@@ -16,6 +16,8 @@ import {
   buildClusterConfFromSpec,
   createCluster,
   updateClusterByPath,
+  autoImportDiscovered,
+  discoverClusters,
   importCluster,
   listClusters,
   pickClusterConf,
@@ -29,7 +31,9 @@ import {
 import { defaultClusterSpec, mergeClusterSpec, parseClusterSpec } from './lib/clusterSpec'
 import { applyStudioTemplate } from './lib/templates'
 import { intentById } from './lib/studioIntents'
-import { FULL_DEPLOY_PIPELINE, pipelineLabel, executePipeline } from './lib/runPipeline'
+import { FULL_DEPLOY_PIPELINE, DECOMMISSION_PIPELINE, REINSTALL_PIPELINE } from './lib/runPipeline'
+import { runClusterPipeline } from './lib/runClusterPipeline'
+import { summarizeClusterLive } from './lib/clusterLive'
 import { AppBrandHeader, ZyvorFooter } from './components/ZyvorBrand'
 import { ConfEditor } from './components/ConfEditor'
 import type {
@@ -41,6 +45,7 @@ import type {
   StudioStep,
   StudioIntentId,
   StudioExpertLevel,
+  DiscoveredCluster,
   StatusJson,
   VmsJson,
   WorkloadsJson,
@@ -51,7 +56,6 @@ export default function App() {
   const [clusters, setClusters] = useState<ClusterEntry[]>([])
   const [active, setActive] = useState<ClusterEntry | null>(null)
   const [binaryPath, setBinaryPath] = useState('')
-  const [nodeStats, setNodeStats] = useState<Record<string, { ready: number; total: number }>>({})
   const [logs, setLogs] = useState<string[]>([])
   const [stage, setStage] = useState<ParsedStage | null>(null)
   const [running, setRunning] = useState(false)
@@ -79,16 +83,27 @@ export default function App() {
   const [studioSavedPath, setStudioSavedPath] = useState<string | null>(null)
   const [studioIntentId, setStudioIntentId] = useState<StudioIntentId>('kubernetes')
   const [studioExpertLevel, setStudioExpertLevel] = useState<StudioExpertLevel>('advanced')
+  const [discovered, setDiscovered] = useState<DiscoveredCluster[]>([])
   const returnViewRef = useRef<View | null>(null)
 
   const refresh = useCallback(async () => {
     setClusters(await listClusters())
     setBinaryPath(await resolveBinary())
+    try {
+      setDiscovered(await discoverClusters())
+    } catch {
+      setDiscovered([])
+    }
   }, [])
 
   useEffect(() => {
     refresh()
     getSettings().then((s) => setSettingsBin(s.hypercluster_binary ?? ''))
+    autoImportDiscovered()
+      .then((imported) => {
+        if (imported.length) refresh()
+      })
+      .catch(() => {})
   }, [refresh])
 
   useEffect(() => {
@@ -158,14 +173,12 @@ export default function App() {
 
   const reloadNodeStats = useCallback(async (list: ClusterEntry[]) => {
     setLiveLoading(true)
-    const stats: Record<string, { ready: number; total: number }> = {}
     const statuses: Record<string, StatusJson | null> = {}
     const vmsMap: Record<string, VmsJson | null> = {}
     const workloadsMap: Record<string, WorkloadsJson | null> = {}
     for (const c of list) {
       try {
         const s = await statusJson(c.config_path)
-        stats[c.name] = { ready: s.ready, total: s.total }
         statuses[c.name] = s
       } catch {
         statuses[c.name] = null
@@ -181,7 +194,6 @@ export default function App() {
         workloadsMap[c.name] = null
       }
     }
-    setNodeStats(stats)
     setStatusByCluster(statuses)
     setVmsByCluster(vmsMap)
     setWorkloadsByCluster(workloadsMap)
@@ -233,51 +245,47 @@ export default function App() {
     }
   }
 
-  const runFullDeploy = async (
+  const runPipeline = async (
     cluster: ClusterEntry,
+    steps: typeof FULL_DEPLOY_PIPELINE,
     meta?: { returnView?: View | null },
   ) => {
-    const { runCommand } = await import('./lib/api')
     returnViewRef.current = meta?.returnView ?? null
     setReturnViewAfterJob(meta?.returnView ?? null)
     setActive(cluster)
-    setActiveCommand(pipelineLabel(FULL_DEPLOY_PIPELINE))
     setView('deploy')
     setLogs([])
     setStage(null)
     setRunning(true)
     setRunningCluster(cluster.name)
     setLastJobSuccess(null)
-    let ok = true
-    ok = await executePipeline(cluster, FULL_DEPLOY_PIPELINE, async (step, index) => {
-      setRunning(true)
-      setRunningCluster(cluster.name)
-      setActiveCommand(
-        index === 0
-          ? pipelineLabel(FULL_DEPLOY_PIPELINE)
-          : `${pipelineLabel(FULL_DEPLOY_PIPELINE)} · ${step.label}`,
-      )
-      if (index > 0) {
-        setLogs((prev) => [...prev, '', `── ${step.label} ──`, ''])
-      }
-      try {
-        await runCommand({
-          clusterName: cluster.name,
-          configPath: cluster.config_path,
-          command: step.command,
-          args: step.args,
-        })
-      } catch {
-        ok = false
-        throw new Error(`pipeline failed at ${step.label}`)
-      }
+    const ok = await runClusterPipeline(cluster, steps, {
+      onStart: (label) => setActiveCommand(label),
+      onStepStart: (_step, index, label) => {
+        setRunning(true)
+        setRunningCluster(cluster.name)
+        setActiveCommand(label)
+        if (index > 0) {
+          setLogs((prev) => [...prev, '', `── ${_step.label} ──`, ''])
+        }
+      },
     })
     setRunning(false)
     setRunningCluster(null)
     setLastJobSuccess(ok)
     setDetailRefreshKey((k) => k + 1)
     await refresh()
+    return ok
   }
+
+  const runFullDeploy = (cluster: ClusterEntry, meta?: { returnView?: View | null }) =>
+    runPipeline(cluster, FULL_DEPLOY_PIPELINE, meta)
+
+  const runDecommission = (cluster: ClusterEntry, meta?: { returnView?: View | null }) =>
+    runPipeline(cluster, DECOMMISSION_PIPELINE, meta)
+
+  const runReinstall = (cluster: ClusterEntry, meta?: { returnView?: View | null }) =>
+    runPipeline(cluster, REINSTALL_PIPELINE, meta)
 
   const openCluster = (cluster: ClusterEntry) => {
     setActive(cluster)
@@ -434,6 +442,9 @@ export default function App() {
       else if (selection.action === 'quick-virt') startFromIntent('virtualization', 'quick')
       else if (selection.action === 'quick-gpu') startFromIntent('ai-platform', 'quick')
       else if (selection.action === 'import-conf') handleImportConf()
+      else if (selection.action === 'scan-clusters') {
+        void autoImportDiscovered().then(() => refresh())
+      }
       return
     }
     if (selection.kind === 'detail') {
@@ -450,6 +461,14 @@ export default function App() {
     }
     if (selection.command === 'deploy-full') {
       void runFullDeploy(selection.cluster, { returnView: 'cluster' })
+      return
+    }
+    if (selection.command === 'decommission') {
+      void runDecommission(selection.cluster, { returnView: 'cluster' })
+      return
+    }
+    if (selection.command === 'reinstall') {
+      void runReinstall(selection.cluster, { returnView: 'cluster' })
       return
     }
     runOn(selection.cluster, selection.command, { args: selection.args }, { returnView: 'cluster' })
@@ -517,6 +536,22 @@ export default function App() {
                 <p className="mt-1 text-sm text-glass-muted">hypercluster @ {binaryPath || '…'}</p>
               </div>
               <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={async () => {
+                    const imported = await autoImportDiscovered()
+                    await refresh()
+                    if (imported.length) {
+                      setLogs((prev) => [
+                        ...prev,
+                        `Auto-imported: ${imported.map((c) => c.name).join(', ')}`,
+                      ])
+                    }
+                  }}
+                >
+                  Scan for clusters
+                </button>
                 <button type="button" className="btn-ghost" onClick={handleImportConf}>
                   Import cluster.conf
                 </button>
@@ -525,6 +560,33 @@ export default function App() {
                 </button>
               </div>
             </div>
+            {discovered.filter((d) => !d.registered).length > 0 && (
+              <GlassCard className="mb-6 border-glass-accent/30">
+                <p className="mb-2 text-sm font-medium">Discovered cluster.conf files</p>
+                <ul className="space-y-2 text-sm">
+                  {discovered
+                    .filter((d) => !d.registered)
+                    .map((d) => (
+                      <li key={d.path} className="flex flex-wrap items-center justify-between gap-2">
+                        <span>
+                          <strong>{d.name}</strong> · {d.distro} ·{' '}
+                          <span className="text-glass-muted">{d.path}</span>
+                        </span>
+                        <button
+                          type="button"
+                          className="btn-ghost text-xs"
+                          onClick={async () => {
+                            await importCluster(d.path)
+                            await refresh()
+                          }}
+                        >
+                          Import
+                        </button>
+                      </li>
+                    ))}
+                </ul>
+              </GlassCard>
+            )}
             {clusters.length === 0 && (
               <GlassCard className="mb-6">
                 <p className="text-glass-muted">
@@ -560,8 +622,27 @@ export default function App() {
                   vms={vmsByCluster[c.name]}
                   liveLoading={liveLoading}
                   runningCluster={runningCluster}
+                  provisioned={Boolean(
+                    summarizeClusterLive(
+                      statusByCluster[c.name],
+                      workloadsByCluster[c.name],
+                      vmsByCluster[c.name],
+                    )?.reachable,
+                  )}
                   onOpen={() => openCluster(c)}
                   onConfigure={() => openClusterSettings(c)}
+                  onDecommission={() => {
+                    const typed = window.prompt(
+                      `Type "${c.name}" to decommission (hypercluster destroy):`,
+                    )
+                    if (typed === c.name) void runDecommission(c, { returnView: 'dashboard' })
+                  }}
+                  onReinstall={() => {
+                    const typed = window.prompt(
+                      `Type "${c.name}" to reinstall (destroy → preflight → deploy → test):`,
+                    )
+                    if (typed === c.name) void runReinstall(c, { returnView: 'dashboard' })
+                  }}
                   onDeploy={() =>
                     c.distro === 'k3s'
                       ? void runFullDeploy(c, { returnView: 'cluster' })
@@ -633,6 +714,15 @@ export default function App() {
               runOn(active, command, opts, { returnView: 'cluster' })
             }
             onRunFull={() => void runFullDeploy(active, { returnView: 'cluster' })}
+            onDecommission={() => void runDecommission(active, { returnView: 'cluster' })}
+            onReinstall={() => void runReinstall(active, { returnView: 'cluster' })}
+            provisioned={Boolean(
+              summarizeClusterLive(
+                statusByCluster[active.name],
+                workloadsByCluster[active.name],
+                vmsByCluster[active.name],
+              )?.reachable,
+            )}
             onEditConf={() => openEditor(active)}
             onEditSettings={() => openEditStudio(active)}
             onEditStudio={() => openEditStudio(active)}

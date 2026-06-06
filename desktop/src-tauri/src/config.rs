@@ -73,7 +73,7 @@ pub fn parse_cluster_name(conf: &str) -> Option<String> {
     None
 }
 
-fn parse_distro(conf: &str) -> String {
+pub fn parse_distro(conf: &str) -> String {
     for line in conf.lines() {
         let line = line.trim();
         if let Some(rest) = line.strip_prefix("K8S_DISTRO=") {

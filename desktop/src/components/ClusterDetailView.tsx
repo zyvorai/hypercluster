@@ -17,6 +17,7 @@ import type {
 } from '../lib/types'
 import { GlassCard } from './GlassCard'
 import { ClusterLiveSnapshot } from './ClusterLiveSnapshot'
+import { ClusterLifecyclePanel } from './ClusterLifecyclePanel'
 import { KubeVirtStudio } from './KubeVirtStudio'
 import { StatusPill } from './StatusPill'
 import { TestResultsPanel } from './TestResultsPanel'
@@ -28,6 +29,9 @@ export function ClusterDetailView({
   onBack,
   onRun,
   onRunFull,
+  onDecommission,
+  onReinstall,
+  provisioned,
   onEditConf,
   onEditSettings,
   onEditStudio,
@@ -39,6 +43,9 @@ export function ClusterDetailView({
   onBack: () => void
   onRun: (command: string, opts?: { args?: string[]; force?: boolean }) => void
   onRunFull?: () => void
+  onDecommission?: () => void
+  onReinstall?: () => void
+  provisioned?: boolean
   onEditConf: () => void
   onEditSettings: () => void
   onEditStudio?: () => void
@@ -259,6 +266,14 @@ export function ClusterDetailView({
 
       {section === 'overview' && (
         <>
+          <ClusterLifecyclePanel
+            cluster={cluster}
+            provisioned={provisioned ?? liveSummary?.reachable}
+            disabled={runningCluster === cluster.name}
+            onFullDeploy={() => onRunFull?.()}
+            onDecommission={() => onDecommission?.()}
+            onReinstall={() => onReinstall?.()}
+          />
           <ClusterLiveSnapshot
             summary={liveSummary}
             workloads={workloads}

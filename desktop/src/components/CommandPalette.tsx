@@ -4,6 +4,8 @@ import type { ClusterEntry } from '../lib/types'
 const RUN_COMMANDS = [
   { id: 'preflight', label: 'preflight' },
   { id: 'deploy-full', label: 'deploy full (preflight → deploy → test)', command: 'deploy-full' },
+  { id: 'decommission', label: 'decommission (destroy cluster)', command: 'decommission' },
+  { id: 'reinstall', label: 'reinstall (destroy → deploy → test)', command: 'reinstall' },
   { id: 'deploy', label: 'deploy' },
   { id: 'test', label: 'test' },
   { id: 'test --full', label: 'test --full', command: 'test', args: ['--full'] },
@@ -27,6 +29,7 @@ const APP_ACTIONS = [
   { id: 'quick-virt', label: 'Quick Deploy — Virtualization' },
   { id: 'quick-gpu', label: 'Quick Deploy — AI / GPU' },
   { id: 'import-conf', label: 'Import cluster.conf' },
+  { id: 'scan-clusters', label: 'Scan for cluster.conf files' },
 ]
 
 export type PaletteSelection =

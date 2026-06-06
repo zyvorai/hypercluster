@@ -9,6 +9,13 @@ export type ClusterEntry = {
   last_action_ok?: boolean | null
 }
 
+export type DiscoveredCluster = {
+  path: string
+  name: string
+  distro: string
+  registered: boolean
+}
+
 export type JobExitPayload = {
   cluster: string
   exitCode: number | null

@@ -97,6 +97,7 @@ The footer shows **⌘K command palette** hint (Ctrl+K on Windows/Linux).
 ### Dashboard
 
 - Shows resolved **hypercluster binary** path.
+- **Scan for clusters** — auto-discovers `cluster.conf` under `~/tt/`, repo root, and registry; imports new entries on launch.
 - **Import cluster.conf** — native file picker; copies config into app registry.
 - **+ New Cluster** — opens the **Create Cluster Hub** (intent cards → Quick Deploy or Studio).
 
@@ -105,7 +106,7 @@ The footer shows **⌘K command palette** hint (Ctrl+K on Windows/Linux).
 | Card | Meaning |
 |------|---------|
 | **Clusters** | Count in local registry |
-| **Ready nodes** | Sum of ready nodes (`status --json` per cluster) |
+| **Pods running** | Sum of Running pods (`workloads --json` per cluster) |
 | **Active job** | `1` while a hypercluster subprocess is running |
 
 ### Cluster cards
@@ -113,12 +114,21 @@ The footer shows **⌘K command palette** hint (Ctrl+K on Windows/Linux).
 Each card shows:
 
 - Cluster **name** and **distro** (`k3s` or `kubespray`)
-- **Status pill** — `unknown` / `ready` / `running` (active job) / `error` (last command failed)
-- **Config path** — truncated registry path
-- **Reveal cluster.conf** — opens config in Finder (macOS), Explorer (Windows), or file manager (Linux)
-- **Nodes ready** — e.g. `1/1 nodes ready` when kubeconfig exists
-- **Open** → **Cluster detail** view (nodes, smoke tests, preflight panel)
-- **Deploy** → runs `hypercluster deploy` with live logs
+- **Provisioned** badge when live `status --json` reaches the cluster
+- **Status pill** — derived from live node readiness (not only prior app actions)
+- **Live stats** — nodes, pods, services, VMs from CLI JSON
+- **Open cockpit** → cluster detail (overview live snapshot, workloads, VMs)
+- **Decommission** / **Reinstall** — destroy, or destroy → preflight → deploy → test (with confirmation)
+
+### Cluster lifecycle (cockpit overview)
+
+| Action | Pipeline |
+|--------|----------|
+| **Deploy full stack** | `preflight → deploy → test` |
+| **Decommission** | `destroy` (remote teardown) |
+| **Reinstall** | `destroy → preflight → deploy → test` |
+
+Pipelines run **sequentially** (blocking) so destroy completes before redeploy.
 
 ---
 

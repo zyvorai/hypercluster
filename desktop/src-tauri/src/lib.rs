@@ -1,4 +1,5 @@
 mod config;
+mod discover;
 mod hypercluster;
 mod license;
 mod log_parser;
@@ -10,6 +11,7 @@ use config::{
     load_settings, read_cluster_conf, save_settings, update_cluster_by_path, write_cluster_conf,
     AppSettings, ClusterEntry, Registry,
 };
+use discover::{auto_import_discovered, discover_cluster_configs, DiscoveredCluster};
 use hypercluster::{
     cancel_run, get_run_status, resolve_binary_path, run_hypercluster, run_sync,
     run_sync_no_config, ProcessManager, RunRequest, RunStatus,
@@ -126,6 +128,46 @@ async fn run_hypercluster_cmd(
         }
     });
     Ok(())
+}
+
+#[tauri::command]
+async fn run_hypercluster_blocking_cmd(
+    app: tauri::AppHandle,
+    manager: tauri::State<'_, ProcessManager>,
+    req: RunRequest,
+) -> Result<(), String> {
+    trial::trial_require_active()?;
+    let cmd = req.command.clone();
+    let mgr = manager.inner().clone();
+    run_hypercluster(app.clone(), mgr, req).await.map_err(|e| e.to_string())?;
+    let _ = app
+        .notification()
+        .builder()
+        .title("Hypercluster")
+        .body(format!("{cmd} completed"))
+        .show();
+    Ok(())
+}
+
+#[tauri::command]
+fn discover_clusters_cmd() -> Result<Vec<DiscoveredCluster>, String> {
+    let settings = load_settings();
+    let bin = settings
+        .hypercluster_binary
+        .as_deref()
+        .map(std::path::PathBuf::from);
+    discover_cluster_configs(bin.as_deref())
+}
+
+#[tauri::command]
+fn auto_import_discovered_cmd() -> Result<Vec<ClusterEntry>, String> {
+    trial::trial_require_active()?;
+    let settings = load_settings();
+    let bin = settings
+        .hypercluster_binary
+        .as_deref()
+        .map(std::path::PathBuf::from);
+    auto_import_discovered(bin.as_deref())
 }
 
 #[tauri::command]
@@ -432,6 +474,11 @@ pub fn run() {
             if let Ok(Some(entry)) = auto_import_repo_cluster(&bin) {
                 let _ = app.emit("hc-cluster-imported", entry);
             }
+            if let Ok(imported) = auto_import_discovered(Some(&bin)) {
+                for entry in imported {
+                    let _ = app.emit("hc-cluster-imported", entry);
+                }
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -447,6 +494,9 @@ pub fn run() {
             pick_cluster_conf,
             resolve_hypercluster_binary,
             run_hypercluster_cmd,
+            run_hypercluster_blocking_cmd,
+            discover_clusters_cmd,
+            auto_import_discovered_cmd,
             cancel_run_cmd,
             get_run_status_cmd,
             hc_status_json,

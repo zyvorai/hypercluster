@@ -31,6 +31,36 @@ export async function importCluster(path: string): Promise<ClusterEntry> {
   return invoke('import_cluster_cmd', { path })
 }
 
+export async function discoverClusters(): Promise<import('./types').DiscoveredCluster[]> {
+  return invoke('discover_clusters_cmd')
+}
+
+export async function autoImportDiscovered(): Promise<ClusterEntry[]> {
+  return invoke('auto_import_discovered_cmd')
+}
+
+export async function runCommandBlocking(req: {
+  clusterName: string
+  configPath: string
+  command: string
+  args?: string[]
+  force?: boolean
+  verbose?: boolean
+  dryRun?: boolean
+}): Promise<void> {
+  return invoke('run_hypercluster_blocking_cmd', {
+    req: {
+      cluster_name: req.clusterName,
+      config_path: req.configPath,
+      command: req.command,
+      args: req.args ?? [],
+      force: req.force ?? false,
+      verbose: req.verbose ?? false,
+      dry_run: req.dryRun ?? false,
+    },
+  })
+}
+
 export async function pickClusterConf(): Promise<string | null> {
   return invoke('pick_cluster_conf')
 }
