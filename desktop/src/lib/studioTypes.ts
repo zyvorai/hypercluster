@@ -68,6 +68,13 @@ export type ClusterSpec = {
   kubevirtVersion: string
   cdiVersion: string
   haControlPlane: HaPreset
+  /** Secondary block device for KubeVirt PVCs (LAB_SECONDARY_DISK) */
+  labSecondaryDisk: string
+  labKubevirtVolumeMount: string
+  labKubevirtStorageClass: string
+  labStorageFormat: boolean
+  labMemoryTuneEnabled: boolean
+  labAutoSetup: boolean
 }
 
 export type DistroCapability = {

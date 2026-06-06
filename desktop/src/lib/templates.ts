@@ -29,6 +29,9 @@ export const STUDIO_TEMPLATES: StudioTemplate[] = [
       metallbEnabled: true,
       metallbIpPool: '192.168.1.240-192.168.1.250',
       controlPlaneIps: ['10.0.0.10'],
+      labSecondaryDisk: '/dev/sdb',
+      labMemoryTuneEnabled: true,
+      labAutoSetup: true,
     },
   },
   {

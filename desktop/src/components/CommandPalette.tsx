@@ -3,9 +3,13 @@ import type { ClusterEntry } from '../lib/types'
 
 const RUN_COMMANDS = [
   { id: 'preflight', label: 'preflight' },
+  { id: 'deploy-full', label: 'deploy full (preflight → deploy → test)', command: 'deploy-full' },
   { id: 'deploy', label: 'deploy' },
   { id: 'test', label: 'test' },
   { id: 'test --full', label: 'test --full', command: 'test', args: ['--full'] },
+  { id: 'lab setup', label: 'lab setup', command: 'lab', args: ['setup'] },
+  { id: 'lab tune', label: 'lab tune', command: 'lab', args: ['tune'] },
+  { id: 'lab storage', label: 'lab storage --status', command: 'lab', args: ['storage', '--status'] },
   { id: 'status', label: 'status' },
   { id: 'fetch-kubeconfig', label: 'fetch-kubeconfig' },
   { id: 'merge-kubeconfig', label: 'merge-kubeconfig' },

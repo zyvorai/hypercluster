@@ -40,3 +40,9 @@ METRICS_SERVER_ENABLED="true"
 
 KUBECONFIG_OUTPUT="$HOME/.kube/k3s-remote.yaml"
 KUBECONFIG_MERGE_DEFAULT="false"
+
+# Lab ops — optional secondary disk + memory tune (see docs/guides/lab-ops.md)
+# LAB_SECONDARY_DISK="/dev/sdb"
+# LAB_STORAGE_FORMAT="1"
+# LAB_MEMORY_TUNE_ENABLED="true"
+# LAB_AUTO_SETUP="true"

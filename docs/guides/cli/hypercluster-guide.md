@@ -155,4 +155,4 @@ See [`docs/generated/MAKE-TARGETS.md`](../../generated/MAKE-TARGETS.md) for full
 
 ---
 
-_Doc version: 2026-06-05T09:21:42Z · hypercluster v0.1.0_
+_Doc version: 2026-06-06T14:21:14Z · hypercluster v0.1.0_

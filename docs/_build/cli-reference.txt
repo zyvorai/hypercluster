@@ -23,6 +23,9 @@ Commands:
   discover          Discover VMs/hosts (libvirt, Proxmox, VMware, ssh-scan, csv) (--json)
   status            Node status (optional --json for machine-readable output)
   unlock            Remove stale per-cluster lock after a crash
+  lab setup         Secondary disk + memory tune (from cluster.conf LAB_* vars)
+  lab storage       Mount LAB_SECONDARY_DISK, patch local-path, StorageClass
+  lab tune          Scale down HA replicas on single-node labs (--restore to undo)
 
 Options:
   -c <file>   Path to cluster config (default: ./cluster.conf)
@@ -52,6 +55,7 @@ shellcheck source=lib/microk8s.sh
 shellcheck source=lib/talos.sh
 shellcheck source=lib/vms.sh
 shellcheck source=lib/workloads.sh
+shellcheck source=lib/lab.sh
 ── discover (no cluster.conf required) ───────────────────────────────────────
 ── wizard (no cluster.conf required) ─────────────────────────────────────────
 ── load cluster config ──────────────────────────────────────────────────────

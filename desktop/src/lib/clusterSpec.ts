@@ -96,6 +96,12 @@ export function defaultClusterSpec(): ClusterSpec {
     kubevirtVersion: 'v1.8.3',
     cdiVersion: 'v1.65.0',
     haControlPlane: 'single',
+    labSecondaryDisk: '',
+    labKubevirtVolumeMount: '/data/kubevirt-volumes',
+    labKubevirtStorageClass: 'kubevirt-sdb',
+    labStorageFormat: false,
+    labMemoryTuneEnabled: false,
+    labAutoSetup: false,
   }
 }
 
@@ -191,6 +197,19 @@ export function specToClusterConf(spec: ClusterSpec): string {
     `KUBECONFIG_MERGE_DEFAULT="false"`,
   )
   if (s.k8sDistro === 'k3s') {
+    lines.push(
+      '',
+      '# Lab operations (single-node k3s)',
+      `LAB_SECONDARY_DISK="${s.labSecondaryDisk}"`,
+      `LAB_KUBEVIRT_VOLUME_MOUNT="${s.labKubevirtVolumeMount}"`,
+      `LAB_KUBEVIRT_VOLUME_SUBPATH="${s.labKubevirtVolumeMount}/pvc"`,
+      `LAB_KUBEVIRT_STORAGE_CLASS="${s.labKubevirtStorageClass}"`,
+      `LAB_STORAGE_FORMAT="${s.labStorageFormat ? '1' : '0'}"`,
+      `LAB_MEMORY_TUNE_ENABLED="${s.labMemoryTuneEnabled ? 'true' : 'false'}"`,
+      `LAB_AUTO_SETUP="${s.labAutoSetup ? 'true' : 'false'}"`,
+    )
+  }
+  if (s.k8sDistro === 'k3s') {
     lines.splice(
       lines.findIndex((l) => l.startsWith('KUBE_VERSION=')) + 1,
       0,
@@ -248,6 +267,14 @@ export function parseClusterSpec(content: string, clusterName?: string): Cluster
     nodes: [],
     haControlPlane:
       cpIps.length >= 5 ? '5' : cpIps.length >= 3 ? '3' : cpIps.length === 1 ? 'single' : 'custom',
+    labSecondaryDisk: getConfVar(content, 'LAB_SECONDARY_DISK') || base.labSecondaryDisk,
+    labKubevirtVolumeMount:
+      getConfVar(content, 'LAB_KUBEVIRT_VOLUME_MOUNT') || base.labKubevirtVolumeMount,
+    labKubevirtStorageClass:
+      getConfVar(content, 'LAB_KUBEVIRT_STORAGE_CLASS') || base.labKubevirtStorageClass,
+    labStorageFormat: getConfVar(content, 'LAB_STORAGE_FORMAT') === '1',
+    labMemoryTuneEnabled: getConfBool(content, 'LAB_MEMORY_TUNE_ENABLED', base.labMemoryTuneEnabled),
+    labAutoSetup: getConfBool(content, 'LAB_AUTO_SETUP', base.labAutoSetup),
   }
   const sshMap = parseNodeSshOverrides(content)
   const layoutMap = parseNodeLayout(content)
@@ -306,5 +333,7 @@ export function installPlan(spec: ClusterSpec): string[] {
     if (spec.longhornEnabled) items.push('Longhorn')
     if (spec.gpuOperatorEnabled) items.push('GPU Operator')
   }
+  if (spec.k8sDistro === 'k3s' && spec.labSecondaryDisk) items.push('Lab storage', spec.labKubevirtStorageClass)
+  if (spec.labMemoryTuneEnabled) items.push('Lab memory tune')
   return items
 }

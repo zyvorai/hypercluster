@@ -34,6 +34,15 @@ export function DeployOpsCenter({
             >
               Dry-run deploy
             </button>
+            <button type="button" className="btn-ghost text-sm" onClick={() => onRun('lab', { args: ['setup'] })}>
+              Lab setup
+            </button>
+            <button type="button" className="btn-ghost text-sm" onClick={() => onRun('lab', { args: ['tune'] })}>
+              Lab memory tune
+            </button>
+            <button type="button" className="btn-ghost text-sm" onClick={() => onRun('lab', { args: ['storage', '--status'] })}>
+              Lab storage status
+            </button>
             <button type="button" className="btn-ghost text-sm" onClick={() => onRun('preflight')}>
               Re-run preflight
             </button>

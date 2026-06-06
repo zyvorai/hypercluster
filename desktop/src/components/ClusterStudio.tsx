@@ -8,6 +8,7 @@ import { GlassCard } from './GlassCard'
 import { LivePreviewPanel } from './LivePreviewPanel'
 import { NodeCanvas } from './NodeCanvas'
 import { PlatformStackCards } from './PlatformStackCards'
+import { LabOpsFields } from './LabOpsFields'
 import { KubeVirtStudio } from './KubeVirtStudio'
 import { TestResultsPanel } from './TestResultsPanel'
 
@@ -216,6 +217,7 @@ export function ClusterStudio({
         {step === 'platform' && (
           <div className="space-y-4">
             <PlatformStackCards spec={spec} onChange={onChange} />
+            <LabOpsFields spec={spec} onChange={onChange} />
             {spec.kubevirtEnabled && (
               <KubeVirtStudio spec={spec} vms={vms} onChange={onChange} onRefreshVms={() => tempConfPath && vmsJson(tempConfPath).then(setVms)} />
             )}

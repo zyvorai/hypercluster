@@ -29,10 +29,16 @@ assert(back.clusterName === 'roundtrip-test', 'cluster name roundtrip')
 assert(back.controlPlaneIps.join(' ') === '10.0.0.1', 'control plane roundtrip')
 assert(back.workerIps.join(' ') === '10.0.0.2', 'worker roundtrip')
 assert(back.kubevirtEnabled === true, 'kubevirt roundtrip')
+assert(back.labSecondaryDisk === '/dev/sdb', 'lab disk roundtrip')
+assert(back.labAutoSetup === true, 'lab auto setup roundtrip')
+
+const labConf = specToClusterConf(spec)
+assert(labConf.includes('LAB_SECONDARY_DISK="/dev/sdb"'), 'lab vars in conf')
 
 const example = readFileSync(join(root, 'config/cluster.conf.example'), 'utf8')
 const parsed = parseClusterSpec(example)
 assert(parsed.clusterName === 'mycluster', 'parse example CLUSTER_NAME')
+assert(example.includes('LAB_SECONDARY_DISK='), 'example documents LAB_SECONDARY_DISK')
 
 if (failed) process.exit(1)
 console.log('spec roundtrip tests passed')

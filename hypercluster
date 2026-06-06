@@ -30,6 +30,9 @@ fi
 #   discover          Discover VMs/hosts (libvirt, Proxmox, VMware, ssh-scan, csv) (--json)
 #   status            Node status (optional --json for machine-readable output)
 #   unlock            Remove stale per-cluster lock after a crash
+#   lab setup         Secondary disk + memory tune (from cluster.conf LAB_* vars)
+#   lab storage       Mount LAB_SECONDARY_DISK, patch local-path, StorageClass
+#   lab tune          Scale down HA replicas on single-node labs (--restore to undo)
 #
 # Options:
 #   -c <file>   Path to cluster config (default: ./cluster.conf)
@@ -122,6 +125,8 @@ source "$SCRIPT_DIR/lib/talos.sh"
 source "$SCRIPT_DIR/lib/vms.sh"
 # shellcheck source=lib/workloads.sh
 source "$SCRIPT_DIR/lib/workloads.sh"
+# shellcheck source=lib/lab.sh
+source "$SCRIPT_DIR/lib/lab.sh"
 
 # ── discover (no cluster.conf required) ───────────────────────────────────────
 if [[ "$COMMAND" == "discover" ]]; then
@@ -308,6 +313,9 @@ cmd_deploy() {
     platform_tools::merge_laptop_kubeconfig
     progress::stage 7 7 "Done"
     log::ok "k3s virtualization platform deployed! 🎉"
+    if [[ "${LAB_AUTO_SETUP:-false}" == "true" ]]; then
+      lab::setup
+    fi
     postdeploy::print_hints
     return 0
   fi
@@ -559,6 +567,13 @@ cmd_vm() {
   esac
 }
 
+cmd_lab() {
+  if [[ "${K8S_DISTRO:-kubespray}" != "k3s" ]]; then
+    die "lab command is for K8S_DISTRO=k3s only."
+  fi
+  lab::run "$@"
+}
+
 cmd_workloads() {
   local json=0
   for arg in "$@"; do
@@ -601,6 +616,7 @@ case "$COMMAND" in
   vms)                cmd_vms "$@" ;;
   vm)                 cmd_vm "$@" ;;
   workloads)          cmd_workloads "$@" ;;
+  lab)                cmd_lab "$@" ;;
   unlock)             cmd_unlock ;;
   wizard)             ;; # handled before config load
   "")                 usage ;;

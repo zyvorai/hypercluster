@@ -30,6 +30,7 @@ Task-oriented guides for hypercluster CLI and Desktop UX.
 
 | Guide | Best for |
 |-------|----------|
+| [Lab operations](lab-ops.md) | Secondary disk for KubeVirt, single-node memory tune |
 | [Main README](../../README.md) | Install, tutorial, troubleshooting |
 | [Release checklist](../../RELEASE.md) | Version bump and QA |
 

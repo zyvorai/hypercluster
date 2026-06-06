@@ -10,7 +10,8 @@ FLAGS   ?=
 .PHONY: help init preflight deploy deploy-remote scale upgrade remove-node \
         fetch-kubeconfig merge-kubeconfig install-kubevirt status destroy check-deps \
         lint test-smoke test-inventory test-platform-config test-platform-json test-preflight-json test-python-pip test-local test-podman \
-        test-remote dry-deploy unlock wizard desktop-dev desktop-build desktop-pkg desktop-install desktop-uninstall desktop-check docs docs-venv
+        test-remote dry-deploy unlock wizard desktop-dev desktop-build desktop-pkg desktop-install desktop-uninstall desktop-check docs docs-venv \
+        lab-setup lab-storage lab-tune lab-storage-status test-lab-config
 
 help: ## 📖  Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -68,6 +69,22 @@ destroy: check-deps ## 💥  Destroy the cluster (requires confirmation)
 
 unlock: check-deps ## 🔓  Remove stale per-cluster lock after a crash
 	$(HC) -c $(CONFIG) $(FLAGS) unlock
+
+lab-setup: check-deps ## 🧪  Lab setup: storage + memory tune (cluster.conf LAB_*)
+	$(HC) -c $(CONFIG) $(FLAGS) lab setup
+
+lab-storage: check-deps ## 💾  Mount secondary disk + kubevirt StorageClass
+	$(HC) -c $(CONFIG) $(FLAGS) lab storage
+
+lab-storage-status: check-deps ## 💾  Show lab storage mount and StorageClass
+	$(HC) -c $(CONFIG) $(FLAGS) lab storage --status
+
+lab-tune: check-deps ## 🧠  Scale down HA replicas on single-node lab
+	$(HC) -c $(CONFIG) $(FLAGS) lab tune
+
+test-lab-config: ## 🧪  Lab ops config unit tests
+	chmod +x tests/test-lab-config.sh
+	./tests/test-lab-config.sh
 
 dry-deploy: check-deps ## 🔎  Dry-run deploy (prints plan, no changes)
 	$(HC) -c $(CONFIG) $(FLAGS) -n deploy

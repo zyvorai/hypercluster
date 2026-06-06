@@ -56,6 +56,9 @@ make docs                    # regenerate all docs + PDFs
 ./hypercluster -c cluster.conf deploy
 ./hypercluster -c cluster.conf test --json
 ./hypercluster -c cluster.conf status --json
+./hypercluster -c cluster.conf lab setup
+./hypercluster -c cluster.conf lab storage --status
+./hypercluster -c cluster.conf lab tune
 ```
 
 ## When changing behavior
@@ -64,7 +67,9 @@ make docs                    # regenerate all docs + PDFs
 |------|--------|
 | CLI flags/commands | `hypercluster` header comment + `make docs` |
 | cluster.conf vars | `config/cluster.conf.example` + `make docs` |
+| Lab ops commands | `lib/lab.sh`, `docs/guides/lab-ops.md` |
 | Platform install order | `lib/platform-stack.sh` + tests |
+| Lab ops (CLI + Desktop) | `lib/lab.sh`, `docs/guides/lab-ops.md`, Studio **Lab operations** |
 | JSON output shape | `lib/platform-test.sh`, `tests/test-platform-test-json.sh` |
 | Desktop ↔ CLI | `desktop/README.md`, `docs/guides/desktop-ux-guide.md`, `AGENTS.md` |
 | User-facing docs | `README.md`, run `make docs` |

@@ -1,6 +1,6 @@
 # Hypercluster Documentation Hub
 
-End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** paths. Version **0.1.0** · generated 2026-06-05T09:21:42Z.
+End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** paths. Version **0.1.0** · generated 2026-06-06T14:21:14Z.
 
 ---
 
@@ -89,4 +89,4 @@ npm run desktop        # Hypercluster Desktop
 
 ---
 
-**Regenerate:** `make docs` · **Last generated:** 2026-06-05T09:21:42Z
+**Regenerate:** `make docs` · **Last generated:** 2026-06-06T14:21:14Z

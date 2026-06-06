@@ -66,6 +66,12 @@ postdeploy::print_hints() {
     printf "  \033[1mVerify platform\033[0m\n"
     printf "    ./hypercluster -c %s test\n" "${CONFIG_FILE:-./cluster.conf}"
     echo ""
+    printf "  \033[1mLab ops (single-node)\033[0m\n"
+    printf "    ./hypercluster -c %s lab storage --status\n" "${CONFIG_FILE:-./cluster.conf}"
+    printf "    ./hypercluster -c %s lab storage   # after LAB_SECONDARY_DISK in cluster.conf\n" "${CONFIG_FILE:-./cluster.conf}"
+    printf "    ./hypercluster -c %s lab tune\n" "${CONFIG_FILE:-./cluster.conf}"
+    printf "    ./hypercluster -c %s lab setup     # storage + tune from cluster.conf\n" "${CONFIG_FILE:-./cluster.conf}"
+    echo ""
     if [[ "${METALLB_ENABLED:-true}" == "true" && -z "${METALLB_IP_POOL:-}" ]]; then
       printf "  \033[1mMetalLB\033[0m\n"
       printf "    # Set METALLB_IP_POOL in cluster.conf and re-run deploy for LoadBalancer IPs\n"

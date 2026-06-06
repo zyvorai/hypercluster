@@ -28,6 +28,7 @@ import {
 import { defaultClusterSpec, mergeClusterSpec, parseClusterSpec } from './lib/clusterSpec'
 import { applyStudioTemplate } from './lib/templates'
 import { intentById } from './lib/studioIntents'
+import { FULL_DEPLOY_PIPELINE, pipelineLabel, executePipeline } from './lib/runPipeline'
 import { AppBrandHeader, ZyvorFooter } from './components/ZyvorBrand'
 import { ConfEditor } from './components/ConfEditor'
 import type {
@@ -182,7 +183,7 @@ export default function App() {
     cluster: ClusterEntry,
     command: string,
     opts?: { force?: boolean; dryRun?: boolean; args?: string[] },
-    meta?: { returnView?: View | null },
+    meta?: { returnView?: View | null; appendLogs?: boolean },
   ) => {
     const { runCommand } = await import('./lib/api')
     returnViewRef.current = meta?.returnView ?? null
@@ -192,11 +193,13 @@ export default function App() {
       [command, ...(opts?.args ?? [])].join(' ') + (opts?.dryRun ? ' (dry-run)' : ''),
     )
     setView('deploy')
-    setLogs([])
-    setStage(null)
+    if (!meta?.appendLogs) {
+      setLogs([])
+      setStage(null)
+    }
     setRunning(true)
     setRunningCluster(cluster.name)
-    setLastJobSuccess(null)
+    if (!meta?.appendLogs) setLastJobSuccess(null)
     try {
       await runCommand({
         clusterName: cluster.name,
@@ -209,6 +212,52 @@ export default function App() {
     } catch {
       /* hc-exit still fires; errors shown in logs + notification */
     }
+  }
+
+  const runFullDeploy = async (
+    cluster: ClusterEntry,
+    meta?: { returnView?: View | null },
+  ) => {
+    const { runCommand } = await import('./lib/api')
+    returnViewRef.current = meta?.returnView ?? null
+    setReturnViewAfterJob(meta?.returnView ?? null)
+    setActive(cluster)
+    setActiveCommand(pipelineLabel(FULL_DEPLOY_PIPELINE))
+    setView('deploy')
+    setLogs([])
+    setStage(null)
+    setRunning(true)
+    setRunningCluster(cluster.name)
+    setLastJobSuccess(null)
+    let ok = true
+    ok = await executePipeline(cluster, FULL_DEPLOY_PIPELINE, async (step, index) => {
+      setRunning(true)
+      setRunningCluster(cluster.name)
+      setActiveCommand(
+        index === 0
+          ? pipelineLabel(FULL_DEPLOY_PIPELINE)
+          : `${pipelineLabel(FULL_DEPLOY_PIPELINE)} · ${step.label}`,
+      )
+      if (index > 0) {
+        setLogs((prev) => [...prev, '', `── ${step.label} ──`, ''])
+      }
+      try {
+        await runCommand({
+          clusterName: cluster.name,
+          configPath: cluster.config_path,
+          command: step.command,
+          args: step.args,
+        })
+      } catch {
+        ok = false
+        throw new Error(`pipeline failed at ${step.label}`)
+      }
+    })
+    setRunning(false)
+    setRunningCluster(null)
+    setLastJobSuccess(ok)
+    setDetailRefreshKey((k) => k + 1)
+    await refresh()
   }
 
   const openCluster = (cluster: ClusterEntry) => {
@@ -311,7 +360,7 @@ export default function App() {
   const deployStudioCluster = async () => {
     const entry = active ?? (await saveStudioCluster())
     if (!entry) return
-    await runOn(entry, 'deploy', undefined, { returnView: 'cluster' })
+    await runFullDeploy(entry, { returnView: 'cluster' })
   }
 
   const cloneClusterToStudio = async (cluster: ClusterEntry) => {
@@ -378,6 +427,10 @@ export default function App() {
     }
     if (selection.kind === 'settings') {
       openClusterSettings(selection.cluster)
+      return
+    }
+    if (selection.command === 'deploy-full') {
+      void runFullDeploy(selection.cluster, { returnView: 'cluster' })
       return
     }
     runOn(selection.cluster, selection.command, { args: selection.args }, { returnView: 'cluster' })
@@ -471,7 +524,11 @@ export default function App() {
                   runningCluster={runningCluster}
                   onOpen={() => openCluster(c)}
                   onConfigure={() => openClusterSettings(c)}
-                  onDeploy={() => runOn(c, 'deploy', undefined, { returnView: 'cluster' })}
+                  onDeploy={() =>
+                    c.distro === 'k3s'
+                      ? void runFullDeploy(c, { returnView: 'cluster' })
+                      : void runOn(c, 'deploy', undefined, { returnView: 'cluster' })
+                  }
                 />
               ))}
             </div>
@@ -537,6 +594,7 @@ export default function App() {
             onRun={(command, opts) =>
               runOn(active, command, opts, { returnView: 'cluster' })
             }
+            onRunFull={() => void runFullDeploy(active, { returnView: 'cluster' })}
             onEditConf={() => openEditor(active)}
             onEditSettings={() => openEditStudio(active)}
             onEditStudio={() => openEditStudio(active)}

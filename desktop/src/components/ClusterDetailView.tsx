@@ -25,6 +25,7 @@ export function ClusterDetailView({
   refreshToken,
   onBack,
   onRun,
+  onRunFull,
   onEditConf,
   onEditSettings,
   onEditStudio,
@@ -35,6 +36,7 @@ export function ClusterDetailView({
   refreshToken?: number
   onBack: () => void
   onRun: (command: string, opts?: { args?: string[]; force?: boolean }) => void
+  onRunFull?: () => void
   onEditConf: () => void
   onEditSettings: () => void
   onEditStudio?: () => void
@@ -194,8 +196,20 @@ export function ClusterDetailView({
           <button type="button" className="btn-ghost" onClick={() => onRun('preflight')}>
             preflight
           </button>
-          <button type="button" className="btn-primary" onClick={() => onRun('deploy')}>
-            Deploy
+          {onRunFull && cluster.distro === 'k3s' ? (
+            <button type="button" className="btn-primary" onClick={onRunFull}>
+              Deploy full stack
+            </button>
+          ) : (
+            <button type="button" className="btn-primary" onClick={() => onRun('deploy')}>
+              Deploy
+            </button>
+          )}
+          <button type="button" className="btn-ghost" onClick={() => onRun('deploy')}>
+            deploy only
+          </button>
+          <button type="button" className="btn-ghost" onClick={() => onRun('lab', { args: ['setup'] })}>
+            lab setup
           </button>
           <button type="button" className="btn-ghost" onClick={() => onRun('test')}>
             test

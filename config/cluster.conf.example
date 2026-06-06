@@ -100,3 +100,18 @@ CDI_VERSION="v1.59.0"              # k3s platform: v1.65.x tested with KubeVirt 
 # ---------------------------------------------------------------------------
 KUBECONFIG_OUTPUT="$HOME/.kube/${CLUSTER_NAME}.yaml"
 KUBECONFIG_MERGE_DEFAULT="false"    # merge into ~/.kube/config after deploy (k3s)
+
+# ---------------------------------------------------------------------------
+# Lab operations (single-node k3s + KubeVirt stacks)
+# ---------------------------------------------------------------------------
+# Secondary disk for KubeVirt VM PVCs (keeps root/k3s data on primary volume).
+LAB_SECONDARY_DISK=""                 # e.g. /dev/sdb — empty skips lab storage
+LAB_KUBEVIRT_VOLUME_MOUNT="/data/kubevirt-volumes"
+LAB_KUBEVIRT_VOLUME_SUBPATH="/data/kubevirt-volumes/pvc"
+LAB_KUBEVIRT_STORAGE_CLASS="kubevirt-sdb"
+LAB_STORAGE_FORMAT="0"                # 1 = mkfs empty LAB_SECONDARY_DISK (destructive)
+
+# Reduce HA replica counts to save RAM on one-node labs (Forge UI, IronWolf, …).
+LAB_MEMORY_TUNE_ENABLED="false"
+# Run lab setup automatically at end of deploy (storage if disk set + tune if enabled).
+LAB_AUTO_SETUP="false"
