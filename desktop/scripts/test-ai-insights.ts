@@ -1,4 +1,4 @@
-import { generateInsights } from '../src/lib/ai/insights'
+import { generateInsights, insightCounts } from '../src/lib/ai/insights'
 import type { HealthJson } from '../src/lib/types'
 
 const health: HealthJson = {
@@ -9,7 +9,16 @@ const health: HealthJson = {
   issues: ['1 pod failed'],
   status: { ready: 1, total: 1, nodes: [] },
   workloads: {
-    pods: [{ namespace: 'default', name: 'bad', phase: 'Failed', node: '', ready: 0, containers: 1 }],
+    pods: [
+      {
+        namespace: 'default',
+        name: 'bad-pod',
+        phase: 'Failed',
+        node: '',
+        ready: 0,
+        containers: 1,
+      },
+    ],
     services: [],
   },
   vms: { vms: [], templates: [] },
@@ -38,9 +47,15 @@ const insights = generateInsights({
   health,
 })
 
-if (!insights.some((i) => i.severity === 'critical' || i.severity === 'warn')) {
+const counts = insightCounts(insights)
+if (counts.critical + counts.warn < 1) {
   console.error('expected warn/critical insights', insights)
   process.exit(1)
 }
+const failedPod = insights.find((i) => i.title.includes('failed pod'))
+if (!failedPod?.detail.includes('bad-pod')) {
+  console.error('expected failed pod name in detail', failedPod)
+  process.exit(1)
+}
 console.log('PASS: AI insights generation')
-console.log(`  ${insights.length} insights`)
+console.log(`  ${insights.length} insights (${counts.critical} critical, ${counts.warn} warn)`)

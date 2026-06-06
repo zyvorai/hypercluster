@@ -1,8 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
-import type { AiContextBundle, AiMessage } from '../../lib/ai/types'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { AiContextBundle, AiInsight, AiMessage } from '../../lib/ai/types'
 import { aiChat } from '../../lib/ai/client'
+import { insightsSummary } from '../../lib/ai/insights'
 import { QUICK_PROMPTS } from '../../lib/ai/prompts'
 import { GlassCard } from '../GlassCard'
+import { AiMarkdown } from './AiMarkdown'
+
+function trimError(msg: string, max = 280): string {
+  const s = msg.replace(/^Error:\s*/i, '').trim()
+  return s.length > max ? `${s.slice(0, max)}…` : s
+}
 
 export function AiCopilot({
   open,
@@ -10,25 +17,77 @@ export function AiCopilot({
   context,
   initialPrompt,
   aiEnabled,
+  offlineInsights = [],
+  autoSendPrompt = false,
 }: {
   open: boolean
   onClose: () => void
   context: AiContextBundle
   initialPrompt?: string
   aiEnabled: boolean
+  offlineInsights?: AiInsight[]
+  autoSendPrompt?: boolean
 }) {
   const [messages, setMessages] = useState<AiMessage[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
+  const lastCluster = useRef<string | undefined>(undefined)
+  const sentInitial = useRef(false)
+
+  const send = useCallback(
+    async (text: string) => {
+      const q = text.trim()
+      if (!q || loading) return
+      if (!aiEnabled) {
+        setError('Enable AI Copilot in Settings and add an API key (or use Ollama).')
+        return
+      }
+      setError('')
+      setInput('')
+      setLoading(true)
+      const userMsg: AiMessage = { role: 'user', content: q }
+      setMessages((prev) => {
+        const next = [...prev, userMsg]
+        void aiChat({
+          messages: next.filter((m) => m.role !== 'system'),
+          context,
+        })
+          .then((res) => {
+            setMessages((p) => [...p, { role: 'assistant', content: res.content }])
+          })
+          .catch((e) => {
+            setError(trimError(String(e)))
+          })
+          .finally(() => {
+            setLoading(false)
+          })
+        return next
+      })
+    },
+    [aiEnabled, context, loading],
+  )
 
   useEffect(() => {
-    if (!open) return
-    if (initialPrompt) {
-      setInput(initialPrompt)
+    if (!open) {
+      sentInitial.current = false
+      return
     }
-  }, [open, initialPrompt])
+    if (context.clusterName !== lastCluster.current) {
+      lastCluster.current = context.clusterName
+      setMessages([])
+      setError('')
+      sentInitial.current = false
+    }
+    if (initialPrompt) setInput(initialPrompt)
+  }, [open, context.clusterName, initialPrompt])
+
+  useEffect(() => {
+    if (!open || !autoSendPrompt || !initialPrompt || !aiEnabled || sentInitial.current) return
+    sentInitial.current = true
+    void send(initialPrompt)
+  }, [open, autoSendPrompt, initialPrompt, aiEnabled, send])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -42,39 +101,26 @@ export function AiCopilot({
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
-  const send = async (text: string) => {
-    const q = text.trim()
-    if (!q || loading) return
-    setError('')
-    const userMsg: AiMessage = { role: 'user', content: q }
-    const next = [...messages, userMsg]
-    setMessages(next)
-    setInput('')
-    setLoading(true)
-    try {
-      const res = await aiChat({
-        messages: next.filter((m) => m.role !== 'system'),
-        context,
-      })
-      setMessages([...next, { role: 'assistant', content: res.content }])
-    } catch (e) {
-      setError(String(e))
-    } finally {
-      setLoading(false)
-    }
-  }
-
   if (!open) return null
 
+  const offlineSummary = offlineInsights.length ? insightsSummary(offlineInsights) : ''
+
   return (
-    <div className="fixed inset-0 z-[60] flex justify-end bg-black/40 backdrop-blur-sm">
-      <aside className="glass-panel m-2 flex h-[calc(100vh-1rem)] w-full max-w-lg flex-col border-glass-purple/30 shadow-zyvor-glow">
+    <div
+      className="fixed inset-0 z-[60] flex justify-end bg-black/40 backdrop-blur-sm"
+      onClick={onClose}
+      role="presentation"
+    >
+      <aside
+        className="glass-panel m-2 flex h-[calc(100vh-1rem)] w-full max-w-lg flex-col border-glass-purple/30 shadow-zyvor-glow"
+        onClick={(e) => e.stopPropagation()}
+      >
         <header className="flex items-center justify-between border-b border-glass-border px-4 py-3">
           <div>
             <h2 className="text-gradient-brand text-lg font-semibold">AI Copilot</h2>
             <p className="text-xs text-glass-muted">
-              {context.clusterName ? `Context: ${context.clusterName}` : 'No cluster selected'}
-              {!aiEnabled && ' · Enable AI in Settings'}
+              {context.clusterName ? `Context: ${context.clusterName}` : 'Fleet view — select a cluster for detail'}
+              {!aiEnabled && ' · LLM off (offline insights active)'}
             </p>
           </div>
           <button type="button" className="btn-ghost text-sm" onClick={onClose}>
@@ -82,12 +128,12 @@ export function AiCopilot({
           </button>
         </header>
 
-        <div className="flex flex-wrap gap-1 border-b border-glass-border px-3 py-2">
-          {QUICK_PROMPTS.slice(0, 6).map((p) => (
+        <div className="flex gap-1 overflow-x-auto border-b border-glass-border px-3 py-2">
+          {QUICK_PROMPTS.map((p) => (
             <button
               key={p.id}
               type="button"
-              className="rounded-full bg-white/5 px-2 py-1 text-[10px] text-glass-muted hover:bg-glass-purple/20 hover:text-white"
+              className="shrink-0 rounded-full bg-white/5 px-2 py-1 text-[10px] text-glass-muted hover:bg-glass-purple/20 hover:text-white"
               disabled={loading}
               onClick={() => void send(p.prompt)}
             >
@@ -97,18 +143,23 @@ export function AiCopilot({
         </div>
 
         <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
-          {messages.length === 0 && (
+          {messages.length === 0 && offlineSummary && (
+            <GlassCard className="border-glass-purple/20 text-sm">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-glass-purple">
+                Offline analysis
+              </p>
+              <pre className="whitespace-pre-wrap text-xs leading-relaxed text-glass-muted">
+                {offlineSummary}
+              </pre>
+            </GlassCard>
+          )}
+          {messages.length === 0 && !offlineSummary && (
             <GlassCard className="text-sm text-glass-muted">
               <p className="mb-2 font-medium text-white">Zyvor AI Copilot</p>
               <p>
-                Ask about health, deploy plans, log analysis, security, KubeVirt VMs, or
-                troubleshooting. Uses live cluster context when available.
+                Ask about health, deploy plans, logs, security, or KubeVirt. Live cluster context
+                is attached automatically.
               </p>
-              {!aiEnabled && (
-                <p className="mt-2 text-amber-200">
-                  Enable AI in Settings and add an API key (or use local Ollama).
-                </p>
-              )}
             </GlassCard>
           )}
           {messages.map((m, i) => (
@@ -123,13 +174,19 @@ export function AiCopilot({
               <p className="mb-1 text-[10px] uppercase tracking-wider text-glass-muted">
                 {m.role === 'user' ? 'You' : 'Copilot'}
               </p>
-              <div className="whitespace-pre-wrap leading-relaxed">{m.content}</div>
+              {m.role === 'assistant' ? (
+                <AiMarkdown text={m.content} />
+              ) : (
+                <div className="whitespace-pre-wrap leading-relaxed">{m.content}</div>
+              )}
             </div>
           ))}
-          {loading && (
-            <p className="text-sm text-glass-muted animate-pulse">Thinking…</p>
+          {loading && <p className="animate-pulse text-sm text-glass-muted">Thinking…</p>}
+          {error && (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+              {error}
+            </div>
           )}
-          {error && <p className="text-sm text-red-300">{error}</p>}
           <div ref={bottomRef} />
         </div>
 
@@ -143,16 +200,22 @@ export function AiCopilot({
           >
             <input
               className="input-glass flex-1 text-sm"
-              placeholder={aiEnabled ? 'Ask anything about your cluster…' : 'Enable AI in Settings first'}
+              placeholder={
+                aiEnabled ? 'Ask anything about your cluster…' : 'Enable LLM in Settings — offline insights above'
+              }
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={loading}
             />
-            <button type="submit" className="btn-primary text-sm" disabled={loading || !input.trim()}>
+            <button
+              type="submit"
+              className="btn-primary text-sm"
+              disabled={loading || !input.trim()}
+            >
               Send
             </button>
           </form>
-          <p className="mt-2 text-[10px] text-glass-muted">⌘J toggle · Esc close</p>
+          <p className="mt-2 text-[10px] text-glass-muted">⌘J toggle · Esc close · hypercluster-only ops</p>
         </footer>
       </aside>
     </div>

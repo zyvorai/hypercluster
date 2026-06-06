@@ -91,6 +91,7 @@ export default function App() {
   const [discovered, setDiscovered] = useState<DiscoveredCluster[]>([])
   const [copilotOpen, setCopilotOpen] = useState(false)
   const [copilotPrompt, setCopilotPrompt] = useState('')
+  const [copilotAutoSend, setCopilotAutoSend] = useState(false)
   const [aiSettings, setAiSettings] = useState<AiSettings>(() => mergeAiSettings())
   const [settingsAiDraft, setSettingsAiDraft] = useState<AiSettings>(() => mergeAiSettings())
   const returnViewRef = useRef<View | null>(null)
@@ -191,23 +192,25 @@ export default function App() {
 
   const reloadNodeStats = useCallback(async (list: ClusterEntry[]) => {
     setLiveLoading(true)
+    const results = await Promise.all(
+      list.map(async (c) => {
+        try {
+          const health = await healthJson(c.config_path)
+          return { name: c.name, health, error: false as const }
+        } catch {
+          return { name: c.name, health: null, error: true as const }
+        }
+      }),
+    )
     const statuses: Record<string, StatusJson | null> = {}
     const healthMap: Record<string, HealthJson | null> = {}
     const vmsMap: Record<string, VmsJson | null> = {}
     const workloadsMap: Record<string, WorkloadsJson | null> = {}
-    for (const c of list) {
-      try {
-        const health = await healthJson(c.config_path)
-        healthMap[c.name] = health
-        statuses[c.name] = health.status
-        workloadsMap[c.name] = health.workloads
-        vmsMap[c.name] = health.vms
-      } catch {
-        healthMap[c.name] = null
-        statuses[c.name] = null
-        vmsMap[c.name] = null
-        workloadsMap[c.name] = null
-      }
+    for (const r of results) {
+      healthMap[r.name] = r.health
+      statuses[r.name] = r.health?.status ?? null
+      workloadsMap[r.name] = r.health?.workloads ?? null
+      vmsMap[r.name] = r.health?.vms ?? null
     }
     setHealthByCluster(healthMap)
     setStatusByCluster(statuses)
@@ -303,8 +306,9 @@ export default function App() {
   const runReinstall = (cluster: ClusterEntry, meta?: { returnView?: View | null }) =>
     runPipeline(cluster, REINSTALL_PIPELINE, meta)
 
-  const openCopilot = useCallback((prompt?: string) => {
+  const openCopilot = useCallback((prompt?: string, autoSend = false) => {
     if (prompt) setCopilotPrompt(prompt)
+    setCopilotAutoSend(autoSend)
     setCopilotOpen(true)
   }, [])
 
@@ -523,19 +527,29 @@ export default function App() {
         }).map((i) => ({
           ...i,
           id: `${c.name}-${i.id}`,
-          title: `${c.name}: ${i.title}`,
+          clusterName: c.name,
         })),
       )
     }
-    return all.slice(0, 12)
+    return all.slice(0, 16)
   }, [clusters, healthByCluster, active, view, logs])
+
+  const activeInsights = useMemo(() => {
+    if (!active) return fleetInsights
+    return generateInsights({
+      cluster: active,
+      health: healthByCluster[active.name],
+      logs: view === 'deploy' ? logs : undefined,
+    })
+  }, [active, fleetInsights, healthByCluster, logs, view])
 
   const handleInsightAction = useCallback(
     (insight: AiInsight) => {
-      const clusterName = insight.title.split(':')[0]
-      const cluster = clusters.find((c) => c.name === clusterName) ?? active
+      const cluster =
+        clusters.find((c) => c.name === insight.clusterName) ?? active
       if (insight.action?.prompt) {
-        openCopilot(insight.action.prompt)
+        if (cluster) setActive(cluster)
+        openCopilot(insight.action.prompt, Boolean(aiSettings.enabled))
         return
       }
       if (!cluster) return
@@ -555,7 +569,7 @@ export default function App() {
         runOn(cluster, insight.action.command, { args: insight.action.args }, { returnView: 'cluster' })
       }
     },
-    [clusters, active, openCopilot],
+    [clusters, active, openCopilot, aiSettings.enabled],
   )
 
   const dashboardTotals = useMemo(() => {
@@ -720,7 +734,9 @@ export default function App() {
                 <AiInsightPanel
                   insights={fleetInsights}
                   title="Zyvor AI fleet insights"
+                  showCluster={clusters.length > 1}
                   onAction={handleInsightAction}
+                  onOpenCopilot={() => openCopilot()}
                 />
               </GlassCard>
             )}
@@ -840,7 +856,8 @@ export default function App() {
             onEditSettings={() => openEditStudio(active)}
             onEditStudio={() => openEditStudio(active)}
             onRemoveFromRegistry={() => removeFromRegistry(active)}
-            onAskAi={(prompt) => openCopilot(prompt)}
+            onAskAi={(prompt) => openCopilot(prompt, Boolean(aiSettings.enabled))}
+            onOpenCopilot={() => openCopilot()}
           />
         )}
 
@@ -907,6 +924,7 @@ export default function App() {
                 context={aiContext}
                 aiEnabled={Boolean(aiSettings.enabled)}
                 jobSuccess={lastJobSuccess}
+                offlineInsights={activeInsights}
               />
             </div>
           </div>
@@ -1092,10 +1110,13 @@ export default function App() {
         onClose={() => {
           setCopilotOpen(false)
           setCopilotPrompt('')
+          setCopilotAutoSend(false)
         }}
         context={aiContext}
         initialPrompt={copilotPrompt}
         aiEnabled={Boolean(aiSettings.enabled)}
+        offlineInsights={active ? activeInsights : fleetInsights}
+        autoSendPrompt={copilotAutoSend}
       />
     </div>
   )

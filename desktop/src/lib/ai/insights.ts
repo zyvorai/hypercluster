@@ -14,6 +14,16 @@ function push(
   out.push({ ...insight, id: insight.id ?? `${insight.category}-${out.length}` })
 }
 
+function failedPodSummary(health: HealthJson, limit = 3): string {
+  const failed = (health.workloads?.pods ?? []).filter((p) =>
+    ['Failed', 'Unknown', 'Error'].includes(p.phase),
+  )
+  if (!failed.length) return ''
+  const names = failed.slice(0, limit).map((p) => `${p.namespace}/${p.name}`)
+  const extra = failed.length > limit ? ` (+${failed.length - limit} more)` : ''
+  return names.join(', ') + extra
+}
+
 export function generateInsights(opts: {
   cluster?: ClusterEntry | null
   health?: HealthJson | null
@@ -24,10 +34,20 @@ export function generateInsights(opts: {
 }): AiInsight[] {
   const out: AiInsight[] = []
   const { cluster, health, tests, preflight, spec, logs } = opts
+  const clusterName = cluster?.name
+
+  const hasIssues =
+    health?.state === 'degraded' ||
+    health?.state === 'unreachable' ||
+    (health?.summary.pods_failed ?? 0) > 0 ||
+    (health?.tests?.fail ?? 0) > 0 ||
+    (tests?.fail ?? 0) > 0 ||
+    preflight?.ok === false
 
   if (health) {
     if (health.state === 'unreachable') {
       push(out, {
+        clusterName,
         severity: 'critical',
         category: 'health',
         title: 'Cluster unreachable',
@@ -36,62 +56,87 @@ export function generateInsights(opts: {
       })
     } else if (health.state === 'degraded') {
       push(out, {
+        clusterName,
         severity: 'warn',
         category: 'health',
         title: 'Cluster degraded',
         detail: health.issues.join(' · ') || 'Some nodes or pods are unhealthy.',
-        action: { label: 'Full health check', command: 'test', args: [] },
+        action: { label: 'Full check', command: 'test' },
       })
-    } else if (health.state === 'healthy') {
+    } else if (health.state === 'healthy' && !hasIssues) {
       push(out, {
+        clusterName,
         severity: 'info',
         category: 'health',
-        title: 'Cluster healthy',
-        detail: `${health.summary.nodes_ready}/${health.summary.nodes_total} nodes, ${health.summary.pods_running} pods running.`,
+        title: 'All systems go',
+        detail: `${health.summary.nodes_ready}/${health.summary.nodes_total} nodes · ${health.summary.pods_running} pods · ${health.summary.services} services`,
       })
     }
 
     if (health.summary.pods_failed > 0) {
+      const podList = failedPodSummary(health)
       push(out, {
+        clusterName,
         severity: 'critical',
         category: 'performance',
         title: `${health.summary.pods_failed} failed pod(s)`,
-        detail: 'Check workloads view for Failed/Unknown phases. Often image pull or CNI issues.',
-        action: { label: 'Ask AI to diagnose', prompt: 'Which pods are failing and why?' },
+        detail: podList
+          ? `${podList} — check image pull, CNI, or resource limits.`
+          : 'Check workloads for Failed/Unknown phases.',
+        action: {
+          label: 'Diagnose',
+          prompt: `These pods are failing: ${podList || 'unknown'}. What is the likely cause and fix?`,
+        },
       })
     }
 
     if (health.summary.pods_pending > 3) {
       push(out, {
+        clusterName,
         severity: 'warn',
         category: 'performance',
         title: `${health.summary.pods_pending} pods pending`,
-        detail: 'Pending pods may indicate resource pressure or scheduling issues.',
+        detail: 'May indicate CPU/memory pressure or PVC binding delays.',
+      })
+    }
+
+    if (health.tests && health.tests.fail > 0) {
+      const failed = health.tests.checks.filter((c) => !c.passed).map((c) => c.name)
+      push(out, {
+        clusterName,
+        severity: 'critical',
+        category: 'ops',
+        title: `${health.tests.fail} platform test(s) failed`,
+        detail: failed.join(', '),
+        action: { label: 'Re-run test', command: 'test' },
+      })
+    } else if (health.tests && health.tests.pass > 0 && health.tests.fail === 0) {
+      push(out, {
+        clusterName,
+        severity: 'info',
+        category: 'ops',
+        title: `Platform tests ${health.tests.pass}/${health.tests.pass}`,
+        detail: 'Stack smoke tests passing.',
       })
     }
   }
 
-  if (tests && tests.fail > 0) {
+  if (tests && tests.fail > 0 && !out.some((i) => i.title.includes('platform test'))) {
     const failed = tests.checks.filter((c) => !c.passed).map((c) => c.name)
     push(out, {
+      clusterName,
       severity: 'critical',
       category: 'ops',
       title: `${tests.fail} platform test(s) failed`,
       detail: failed.join(', '),
       action: { label: 'Re-run test', command: 'test' },
     })
-  } else if (tests && tests.pass > 0 && tests.fail === 0) {
-    push(out, {
-      severity: 'info',
-      category: 'ops',
-      title: `Platform tests passing (${tests.pass}/${tests.pass})`,
-      detail: 'Stack smoke tests all green.',
-    })
   }
 
   if (preflight && !preflight.ok) {
     const failed = preflight.checks.filter((c) => !c.passed).map((c) => c.name)
     push(out, {
+      clusterName,
       severity: 'warn',
       category: 'ops',
       title: 'Preflight issues',
@@ -103,37 +148,32 @@ export function generateInsights(opts: {
   if (spec) {
     const nodeCount =
       spec.nodes.length || spec.controlPlaneIps.length + spec.workerIps.length
-    if (nodeCount === 1 && spec.k8sDistro === 'k3s') {
+    if (nodeCount === 1 && spec.k8sDistro === 'k3s' && !hasIssues) {
       push(out, {
+        clusterName,
         severity: 'info',
         category: 'cost',
         title: 'Single-node lab',
-        detail: 'Consider lab tune to scale down HA replicas (Cilium, cert-manager).',
+        detail: 'Run lab tune to scale down HA replicas on one node.',
         action: { label: 'lab tune', command: 'lab', args: ['tune'] },
       })
     }
     if (!spec.certManagerEnabled && spec.metallbEnabled) {
       push(out, {
+        clusterName,
         severity: 'warn',
         category: 'security',
         title: 'cert-manager disabled',
-        detail: 'TLS for ingress/webhooks may fail without cert-manager on k3s platform.',
+        detail: 'Ingress and webhook TLS may fail on k3s platform stacks.',
       })
     }
     if (spec.metallbEnabled && !spec.metallbIpPool?.trim()) {
       push(out, {
+        clusterName,
         severity: 'critical',
         category: 'config',
         title: 'MetalLB pool missing',
         detail: 'Set METALLB_IP_POOL in cluster.conf before deploy.',
-      })
-    }
-    if (spec.kubevirtEnabled && !spec.longhornEnabled && nodeCount === 1) {
-      push(out, {
-        severity: 'info',
-        category: 'config',
-        title: 'KubeVirt without Longhorn',
-        detail: 'Use LAB_SECONDARY_DISK or local-path for VM disks on single-node labs.',
       })
     }
   }
@@ -142,35 +182,63 @@ export function generateInsights(opts: {
     const errLines = logs.filter((l) => /error|failed|fatal|die:/i.test(l))
     if (errLines.length > 0) {
       push(out, {
+        clusterName,
         severity: 'warn',
         category: 'ops',
-        title: `${errLines.length} error line(s) in recent logs`,
-        detail: errLines.slice(-2).join(' ').slice(0, 200),
-        action: { label: 'AI log analysis', prompt: 'Analyze the recent deploy logs and suggest fixes.' },
+        title: `${errLines.length} error(s) in job logs`,
+        detail: errLines.slice(-1)[0]?.slice(0, 160) ?? 'See deploy log console.',
+        action: {
+          label: 'Analyze logs',
+          prompt: 'Analyze the recent hypercluster job logs and give exact next steps.',
+        },
       })
     }
   }
 
   if (cluster?.last_action_ok === false) {
     push(out, {
+      clusterName,
       severity: 'warn',
       category: 'ops',
-      title: `Last action failed: ${cluster.last_action}`,
-      detail: cluster.last_action_at ?? 'Check deploy logs for details.',
+      title: `Last job failed: ${cluster.last_action}`,
+      detail: 'Review deploy logs or run preflight before retrying.',
       action: { label: 'Ask AI', prompt: 'Why did the last hypercluster job fail?' },
     })
   }
 
-  return out.sort((a, b) => {
+  return dedupeInsights(out).sort((a, b) => {
     const rank = { critical: 0, warn: 1, info: 2 }
     return rank[a.severity] - rank[b.severity]
   })
 }
 
+function dedupeInsights(insights: AiInsight[]): AiInsight[] {
+  const seen = new Set<string>()
+  return insights.filter((i) => {
+    const key = `${i.category}:${i.title}:${i.detail.slice(0, 40)}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
 export function insightsSummary(insights: AiInsight[]): string {
-  if (!insights.length) return 'No insights — cluster looks good or no data yet.'
-  return insights
-    .slice(0, 6)
-    .map((i) => `[${i.severity.toUpperCase()}] ${i.title}: ${i.detail}`)
+  const actionable = insights.filter((i) => i.severity !== 'info')
+  const list = actionable.length ? actionable : insights
+  if (!list.length) return 'No insights — cluster looks good or awaiting first health check.'
+  return list
+    .slice(0, 8)
+    .map((i) => {
+      const prefix = i.clusterName ? `[${i.clusterName}] ` : ''
+      return `${prefix}[${i.severity.toUpperCase()}] ${i.title}: ${i.detail}`
+    })
     .join('\n')
+}
+
+export function insightCounts(insights: AiInsight[]) {
+  return {
+    critical: insights.filter((i) => i.severity === 'critical').length,
+    warn: insights.filter((i) => i.severity === 'warn').length,
+    info: insights.filter((i) => i.severity === 'info').length,
+  }
 }

@@ -38,6 +38,7 @@ export type AiInsightAction = {
 
 export type AiInsight = {
   id: string
+  clusterName?: string
   severity: AiInsightSeverity
   category: AiInsightCategory
   title: string

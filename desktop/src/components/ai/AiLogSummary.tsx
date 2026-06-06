@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import type { AiContextBundle } from '../../lib/ai/types'
+import { insightsSummary } from '../../lib/ai/insights'
+import type { AiContextBundle, AiInsight } from '../../lib/ai/types'
 import { aiAsk } from '../../lib/ai/client'
 import { AI_LOG_ANALYSIS_PROMPT } from '../../lib/ai/prompts'
 import { GlassCard } from '../GlassCard'
@@ -9,17 +10,20 @@ export function AiLogSummary({
   context,
   aiEnabled,
   jobSuccess,
+  offlineInsights = [],
 }: {
   logs: string[]
   context: AiContextBundle
   aiEnabled: boolean
   jobSuccess?: boolean | null
+  offlineInsights?: AiInsight[]
 }) {
   const [summary, setSummary] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const errCount = logs.filter((l) => /error|failed|fatal|die:/i.test(l)).length
+  const offline = offlineInsights.length ? insightsSummary(offlineInsights) : ''
 
   const analyze = async () => {
     setLoading(true)
@@ -32,7 +36,7 @@ export function AiLogSummary({
       )
       setSummary(text)
     } catch (e) {
-      setError(String(e))
+      setError(String(e).slice(0, 200))
     } finally {
       setLoading(false)
     }
@@ -46,8 +50,8 @@ export function AiLogSummary({
         <div>
           <h3 className="text-sm font-medium text-glass-purple">AI log analysis</h3>
           <p className="text-xs text-glass-muted">
-            {errCount > 0 ? `${errCount} error line(s) detected` : 'Job completed'}
-            {jobSuccess === true && ' · success'}
+            {errCount > 0 ? `${errCount} error line(s)` : 'No errors detected'}
+            {jobSuccess === true && ' · succeeded'}
             {jobSuccess === false && ' · failed'}
           </p>
         </div>
@@ -57,9 +61,14 @@ export function AiLogSummary({
           disabled={!aiEnabled || loading}
           onClick={() => void analyze()}
         >
-          {loading ? 'Analyzing…' : aiEnabled ? 'Analyze with AI' : 'Enable AI in Settings'}
+          {loading ? 'Analyzing…' : aiEnabled ? 'Deep analysis (LLM)' : 'Enable LLM in Settings'}
         </button>
       </div>
+      {offline && !summary && (
+        <pre className="mb-2 max-h-32 overflow-y-auto whitespace-pre-wrap rounded-xl bg-black/25 p-3 text-xs text-glass-muted">
+          {offline}
+        </pre>
+      )}
       {summary && (
         <div className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-xl bg-black/25 p-3 text-sm leading-relaxed text-white/90">
           {summary}

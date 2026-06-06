@@ -70,7 +70,15 @@ fn resolve_ai(settings: &AiSettings) -> Result<(String, String, String, Option<S
         ),
     };
 
-    let api_key = key.filter(|k| !k.trim().is_empty()).ok_or_else(|| {
+    let mut api_key = key.filter(|k| !k.trim().is_empty());
+    if api_key.is_none() {
+        api_key = match provider.as_str() {
+            "anthropic" => std::env::var("ANTHROPIC_API_KEY").ok(),
+            "ollama" => Some("ollama".into()),
+            _ => std::env::var("OPENAI_API_KEY").ok(),
+        };
+    }
+    let api_key = api_key.ok_or_else(|| {
         String::from(
             "AI API key missing — add it in Settings → AI Copilot (Ollama can use any placeholder).",
         )
@@ -126,7 +134,8 @@ async fn chat_openai_compatible(
     let status = resp.status();
     let body = resp.text().await.map_err(|e| e.to_string())?;
     if !status.is_success() {
-        return Err(format!("AI HTTP {status}: {body}"));
+        let snippet: String = body.chars().take(400).collect();
+        return Err(format!("AI HTTP {status}: {snippet}"));
     }
 
     let parsed: serde_json::Value =
@@ -200,7 +209,8 @@ async fn chat_anthropic(
     let status = resp.status();
     let body = resp.text().await.map_err(|e| e.to_string())?;
     if !status.is_success() {
-        return Err(format!("Anthropic HTTP {status}: {body}"));
+        let snippet: String = body.chars().take(400).collect();
+        return Err(format!("Anthropic HTTP {status}: {snippet}"));
     }
 
     let parsed: serde_json::Value =

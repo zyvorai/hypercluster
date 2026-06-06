@@ -41,6 +41,7 @@ export function ClusterDetailView({
   onEditStudio,
   onRemoveFromRegistry,
   onAskAi,
+  onOpenCopilot,
 }: {
   cluster: ClusterEntry
   runningCluster?: string | null
@@ -56,6 +57,7 @@ export function ClusterDetailView({
   onEditStudio?: () => void
   onRemoveFromRegistry: () => void
   onAskAi?: (prompt: string) => void
+  onOpenCopilot?: () => void
 }) {
   const [config, setConfig] = useState<WizardForm | null>(null)
   const [spec, setSpec] = useState<ClusterSpec | null>(null)
@@ -323,6 +325,7 @@ export function ClusterDetailView({
                 else if (ins.action?.command)
                   onRun(ins.action.command, { args: ins.action.args })
               }}
+              onOpenCopilot={onOpenCopilot}
             />
           </GlassCard>
           <ClusterLiveSnapshot
