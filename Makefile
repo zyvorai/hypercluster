@@ -140,6 +140,9 @@ test-workloads-json: ## 🧪  Run workloads + vm create JSON unit tests
 test-spec-roundtrip: ## 🧪  ClusterSpec ↔ cluster.conf roundtrip
 	cd desktop && npx --yes tsx scripts/test-spec-roundtrip.ts
 
+test-ai-insights: ## 🧪  AI rule-based insights unit test
+	cd desktop && npx --yes tsx scripts/test-ai-insights.ts
+
 test-local: ## 🧪  End-to-end test via Multipass VMs (20–30 min)
 	chmod +x scripts/test-local.sh
 	./scripts/test-local.sh
@@ -182,7 +185,7 @@ desktop-check: ## 🖥️  Typecheck + cargo check desktop app
 	cd desktop && npm install && npm run build
 	cd desktop/src-tauri && cargo test -- paths::
 	cd desktop/src-tauri && cargo check
-	$(MAKE) test-spec-roundtrip test-discover-json test-vms-json test-workloads-json
+	$(MAKE) test-spec-roundtrip test-ai-insights test-discover-json test-vms-json test-workloads-json
 
 test-desktop-ux-remote: ## 🧪  UX smoke: CLI JSON + remote libvirt/machina host
 	chmod +x scripts/test-desktop-ux-remote.sh scripts/test-remote-libvirt-vm.sh

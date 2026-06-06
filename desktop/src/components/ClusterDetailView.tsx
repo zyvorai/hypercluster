@@ -4,6 +4,7 @@ import { parseClusterConf } from '../lib/confParse'
 import { parseClusterSpec, installPlan } from '../lib/clusterSpec'
 import { clusterPillStatus } from '../lib/clusterStatus'
 import { summarizeClusterLive } from '../lib/clusterLive'
+import { generateInsights } from '../lib/ai/insights'
 import type {
   ClusterEntry,
   ClusterSpec,
@@ -19,6 +20,7 @@ import type {
 import { GlassCard } from './GlassCard'
 import { ClusterLiveSnapshot } from './ClusterLiveSnapshot'
 import { ClusterHealthReport } from './ClusterHealthReport'
+import { AiInsightPanel } from './ai/AiInsightPanel'
 import { ClusterLifecyclePanel } from './ClusterLifecyclePanel'
 import { KubeVirtStudio } from './KubeVirtStudio'
 import { StatusPill } from './StatusPill'
@@ -38,6 +40,7 @@ export function ClusterDetailView({
   onEditSettings,
   onEditStudio,
   onRemoveFromRegistry,
+  onAskAi,
 }: {
   cluster: ClusterEntry
   runningCluster?: string | null
@@ -52,6 +55,7 @@ export function ClusterDetailView({
   onEditSettings: () => void
   onEditStudio?: () => void
   onRemoveFromRegistry: () => void
+  onAskAi?: (prompt: string) => void
 }) {
   const [config, setConfig] = useState<WizardForm | null>(null)
   const [spec, setSpec] = useState<ClusterSpec | null>(null)
@@ -183,6 +187,13 @@ export function ClusterDetailView({
 
   const pillStatus = clusterPillStatus(cluster, runningCluster ?? null, status)
   const liveSummary = summarizeClusterLive(status, workloads, vms)
+  const aiInsights = generateInsights({
+    cluster,
+    health: healthReport,
+    tests: tests ?? undefined,
+    preflight: preflight ?? undefined,
+    spec: spec ?? undefined,
+  })
   const sections: { id: CockpitSection; label: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'nodes', label: 'Nodes' },
@@ -303,6 +314,17 @@ export function ClusterDetailView({
             fullCheckLoading={fullCheckLoading}
             onRunFullCheck={() => void loadHealth(true)}
           />
+          <GlassCard className="border-glass-purple/20">
+            <AiInsightPanel
+              insights={aiInsights}
+              title="AI recommendations"
+              onAction={(ins) => {
+                if (ins.action?.prompt && onAskAi) onAskAi(ins.action.prompt)
+                else if (ins.action?.command)
+                  onRun(ins.action.command, { args: ins.action.args })
+              }}
+            />
+          </GlassCard>
           <ClusterLiveSnapshot
             summary={liveSummary}
             workloads={workloads}

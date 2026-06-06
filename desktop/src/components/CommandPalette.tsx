@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ClusterEntry } from '../lib/types'
+import { parseNaturalLanguage, nlCommandHint } from '../lib/ai/nlCommand'
 
 const RUN_COMMANDS = [
   { id: 'preflight', label: 'preflight' },
@@ -30,6 +31,7 @@ const APP_ACTIONS = [
   { id: 'quick-gpu', label: 'Quick Deploy — AI / GPU' },
   { id: 'import-conf', label: 'Import cluster.conf' },
   { id: 'scan-clusters', label: 'Scan for cluster.conf files' },
+  { id: 'open-ai', label: 'Open AI Copilot' },
 ]
 
 export type PaletteSelection =
@@ -38,6 +40,7 @@ export type PaletteSelection =
   | { kind: 'settings'; cluster: ClusterEntry }
   | { kind: 'edit'; cluster: ClusterEntry }
   | { kind: 'app'; action: string }
+  | { kind: 'ai'; query: string; cluster?: ClusterEntry }
 
 export function CommandPalette({
   open,
@@ -95,6 +98,11 @@ export function CommandPalette({
     [needle],
   )
 
+  const nlParsed = useMemo(
+    () => (needle.length >= 2 ? parseNaturalLanguage(q.trim(), clusters) : null),
+    [needle, q, clusters],
+  )
+
   if (!open) return null
 
   return (
@@ -103,11 +111,75 @@ export function CommandPalette({
         <input
           autoFocus
           className="w-full border-b border-glass-border bg-transparent px-4 py-3 outline-none"
-          placeholder="Search clusters, commands, or actions…"
+          placeholder="Search clusters, commands, AI ask, or natural language…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && nlParsed) {
+              e.preventDefault()
+              if (nlParsed.kind === 'run') {
+                onSelect({
+                  kind: 'run',
+                  cluster: nlParsed.cluster,
+                  command: nlParsed.command,
+                  args: nlParsed.args,
+                })
+              } else if (nlParsed.kind === 'open') {
+                onSelect({ kind: 'detail', cluster: nlParsed.cluster })
+              } else if (nlParsed.kind === 'ai') {
+                onSelect({ kind: 'ai', query: nlParsed.query })
+              }
+              onClose()
+            }
+          }}
         />
         <div className="max-h-80 overflow-y-auto p-2">
+          {needle.length >= 2 && (
+            <div className="mb-3 border-b border-glass-border pb-2">
+              <p className="px-2 py-1 text-xs font-semibold text-glass-purple">AI & natural language</p>
+              {nlParsed?.kind === 'run' && (
+                <button
+                  type="button"
+                  className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-glass-purple/15"
+                  onClick={() => {
+                    onSelect({
+                      kind: 'run',
+                      cluster: nlParsed.cluster,
+                      command: nlParsed.command,
+                      args: nlParsed.args,
+                    })
+                    onClose()
+                  }}
+                >
+                  Run {nlParsed.command} on {nlParsed.cluster.name}
+                </button>
+              )}
+              {nlParsed?.kind === 'open' && (
+                <button
+                  type="button"
+                  className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-glass-purple/15"
+                  onClick={() => {
+                    onSelect({ kind: 'detail', cluster: nlParsed.cluster })
+                    onClose()
+                  }}
+                >
+                  Open {nlParsed.cluster.name}
+                </button>
+              )}
+              <button
+                type="button"
+                className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-glass-purple/15"
+                onClick={() => {
+                  onSelect({ kind: 'ai', query: q.trim() })
+                  onClose()
+                }}
+              >
+                Ask AI Copilot: {q.trim().slice(0, 60)}
+                {q.trim().length > 60 ? '…' : ''}
+              </button>
+              <p className="px-2 py-1 text-[10px] text-glass-muted">{nlCommandHint()}</p>
+            </div>
+          )}
           {filteredApp.length > 0 && (
             <div className="mb-3">
               <p className="px-2 py-1 text-xs font-semibold text-glass-muted">App</p>

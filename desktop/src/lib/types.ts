@@ -27,6 +27,7 @@ export type JobExitPayload = {
 
 export type AppSettings = {
   hypercluster_binary?: string | null
+  ai?: import('./ai/types').AiSettings
 }
 
 export type ParsedStage = {

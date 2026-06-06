@@ -32,6 +32,11 @@ import { intentById } from './lib/studioIntents'
 import { FULL_DEPLOY_PIPELINE, DECOMMISSION_PIPELINE, REINSTALL_PIPELINE } from './lib/runPipeline'
 import { runClusterPipeline } from './lib/runClusterPipeline'
 import { summarizeClusterLive } from './lib/clusterLive'
+import { buildAiContext } from './lib/ai/context'
+import { generateInsights } from './lib/ai/insights'
+import { mergeAiSettings } from './lib/ai/client'
+import type { AiInsight, AiSettings } from './lib/ai/types'
+import { AiCopilot, AiInsightPanel, AiLogSummary, AiSettingsCard } from './components/ai'
 import { AppBrandHeader, ZyvorFooter } from './components/ZyvorBrand'
 import { ConfEditor } from './components/ConfEditor'
 import type {
@@ -84,6 +89,10 @@ export default function App() {
   const [studioIntentId, setStudioIntentId] = useState<StudioIntentId>('kubernetes')
   const [studioExpertLevel, setStudioExpertLevel] = useState<StudioExpertLevel>('advanced')
   const [discovered, setDiscovered] = useState<DiscoveredCluster[]>([])
+  const [copilotOpen, setCopilotOpen] = useState(false)
+  const [copilotPrompt, setCopilotPrompt] = useState('')
+  const [aiSettings, setAiSettings] = useState<AiSettings>(() => mergeAiSettings())
+  const [settingsAiDraft, setSettingsAiDraft] = useState<AiSettings>(() => mergeAiSettings())
   const returnViewRef = useRef<View | null>(null)
 
   const refresh = useCallback(async () => {
@@ -98,7 +107,12 @@ export default function App() {
 
   useEffect(() => {
     refresh()
-    getSettings().then((s) => setSettingsBin(s.hypercluster_binary ?? ''))
+    getSettings().then((s) => {
+      setSettingsBin(s.hypercluster_binary ?? '')
+      const ai = mergeAiSettings(s.ai)
+      setAiSettings(ai)
+      setSettingsAiDraft(ai)
+    })
     autoImportDiscovered()
       .then((imported) => {
         if (imported.length) refresh()
@@ -131,6 +145,10 @@ export default function App() {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'f') {
         e.preventDefault()
         setGlobalSearchOpen(true)
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') {
+        e.preventDefault()
+        setCopilotOpen((o) => !o)
       }
       if (
         e.key === 'Escape' &&
@@ -284,6 +302,11 @@ export default function App() {
 
   const runReinstall = (cluster: ClusterEntry, meta?: { returnView?: View | null }) =>
     runPipeline(cluster, REINSTALL_PIPELINE, meta)
+
+  const openCopilot = useCallback((prompt?: string) => {
+    if (prompt) setCopilotPrompt(prompt)
+    setCopilotOpen(true)
+  }, [])
 
   const openCluster = (cluster: ClusterEntry) => {
     setActive(cluster)
@@ -443,6 +466,13 @@ export default function App() {
       else if (selection.action === 'scan-clusters') {
         void autoImportDiscovered().then(() => refresh())
       }
+      else if (selection.action === 'open-ai') {
+        openCopilot()
+      }
+      return
+    }
+    if (selection.kind === 'ai') {
+      openCopilot(selection.query)
       return
     }
     if (selection.kind === 'detail') {
@@ -471,6 +501,62 @@ export default function App() {
     }
     runOn(selection.cluster, selection.command, { args: selection.args }, { returnView: 'cluster' })
   }
+
+  const aiContext = useMemo(
+    () =>
+      buildAiContext({
+        cluster: active,
+        health: active ? healthByCluster[active.name] : null,
+        logs: view === 'deploy' ? logs : undefined,
+      }),
+    [active, healthByCluster, logs, view],
+  )
+
+  const fleetInsights = useMemo(() => {
+    const all: AiInsight[] = []
+    for (const c of clusters) {
+      all.push(
+        ...generateInsights({
+          cluster: c,
+          health: healthByCluster[c.name],
+          logs: active?.name === c.name && view === 'deploy' ? logs : undefined,
+        }).map((i) => ({
+          ...i,
+          id: `${c.name}-${i.id}`,
+          title: `${c.name}: ${i.title}`,
+        })),
+      )
+    }
+    return all.slice(0, 12)
+  }, [clusters, healthByCluster, active, view, logs])
+
+  const handleInsightAction = useCallback(
+    (insight: AiInsight) => {
+      const clusterName = insight.title.split(':')[0]
+      const cluster = clusters.find((c) => c.name === clusterName) ?? active
+      if (insight.action?.prompt) {
+        openCopilot(insight.action.prompt)
+        return
+      }
+      if (!cluster) return
+      if (insight.action?.command === 'deploy-full') {
+        void runFullDeploy(cluster, { returnView: 'cluster' })
+        return
+      }
+      if (insight.action?.command === 'decommission') {
+        void runDecommission(cluster, { returnView: 'cluster' })
+        return
+      }
+      if (insight.action?.command === 'reinstall') {
+        void runReinstall(cluster, { returnView: 'cluster' })
+        return
+      }
+      if (insight.action?.command) {
+        runOn(cluster, insight.action.command, { args: insight.action.args }, { returnView: 'cluster' })
+      }
+    },
+    [clusters, active, openCopilot],
+  )
 
   const dashboardTotals = useMemo(() => {
     let podsRunning = 0
@@ -518,7 +604,18 @@ export default function App() {
             {n.label}
           </button>
         ))}
-        <p className="mt-auto px-2 text-[10px] text-glass-muted">⌘K palette · Esc back from logs</p>
+        <button
+          type="button"
+          className={`rounded-xl px-3 py-2.5 text-left text-sm transition ${
+            copilotOpen
+              ? 'bg-glass-purple/25 text-white ring-1 ring-glass-purple/40'
+              : 'text-glass-muted hover:bg-glass-purple/10 hover:text-white'
+          }`}
+          onClick={() => setCopilotOpen((o) => !o)}
+        >
+          AI Copilot ⌘J
+        </button>
+        <p className="mt-auto px-2 text-[10px] text-glass-muted">⌘K palette · ⌘J AI · Esc back</p>
         <ZyvorFooter className="px-2" />
       </aside>
 
@@ -618,6 +715,15 @@ export default function App() {
                 <p className="stat-value text-3xl font-semibold">{running ? '1' : '0'}</p>
               </GlassCard>
             </div>
+            {clusters.length > 0 && (
+              <GlassCard className="mb-6 border-glass-purple/25">
+                <AiInsightPanel
+                  insights={fleetInsights}
+                  title="Zyvor AI fleet insights"
+                  onAction={handleInsightAction}
+                />
+              </GlassCard>
+            )}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               {clusters.map((c) => (
                 <ClusterCard
@@ -734,6 +840,7 @@ export default function App() {
             onEditSettings={() => openEditStudio(active)}
             onEditStudio={() => openEditStudio(active)}
             onRemoveFromRegistry={() => removeFromRegistry(active)}
+            onAskAi={(prompt) => openCopilot(prompt)}
           />
         )}
 
@@ -794,6 +901,14 @@ export default function App() {
               </GlassCard>
             )}
             <StructuredLogConsole lines={logs} />
+            <div className="mt-4">
+              <AiLogSummary
+                logs={logs}
+                context={aiContext}
+                aiEnabled={Boolean(aiSettings.enabled)}
+                jobSuccess={lastJobSuccess}
+              />
+            </div>
           </div>
         )}
 
@@ -871,6 +986,18 @@ export default function App() {
 
         {view === 'settings' && (
           <div className="max-w-2xl space-y-4">
+            <AiSettingsCard
+              settings={settingsAiDraft}
+              onChange={setSettingsAiDraft}
+              onSave={async () => {
+                const { setSettings } = await import('./lib/api')
+                await setSettings({
+                  hypercluster_binary: settingsBin || null,
+                  ai: settingsAiDraft,
+                })
+                setAiSettings(mergeAiSettings(settingsAiDraft))
+              }}
+            />
             <GlassCard className="space-y-4">
               <h2 className="text-xl font-semibold">Settings</h2>
               <p className="text-sm text-glass-muted">Resolved binary: {binaryPath}</p>
@@ -885,7 +1012,10 @@ export default function App() {
                 className="btn-primary"
                 onClick={async () => {
                   const { setSettings } = await import('./lib/api')
-                  await setSettings({ hypercluster_binary: settingsBin || null })
+                  await setSettings({
+                    hypercluster_binary: settingsBin || null,
+                    ai: aiSettings,
+                  })
                   setBinaryPath(await resolveBinary())
                 }}
               >
@@ -955,6 +1085,17 @@ export default function App() {
         onClose={() => setPaletteOpen(false)}
         clusters={clusters}
         onSelect={handlePaletteSelect}
+      />
+
+      <AiCopilot
+        open={copilotOpen}
+        onClose={() => {
+          setCopilotOpen(false)
+          setCopilotPrompt('')
+        }}
+        context={aiContext}
+        initialPrompt={copilotPrompt}
+        aiEnabled={Boolean(aiSettings.enabled)}
       />
     </div>
   )

@@ -301,7 +301,8 @@ JSON used internally (not shown in log view):
 
 | Desktop surface | hypercluster command |
 |-----------------|----------------------|
-| Dashboard node counts | `status --json` |
+| Dashboard health | `health --json` |
+| Dashboard node counts | `status --json` (via health) |
 | Cluster detail smoke | `test --json` / `test --full --json` |
 | Cluster detail preflight | `preflight --json` |
 | Workloads cockpit | `workloads --json` |
@@ -310,6 +311,37 @@ JSON used internally (not shown in log view):
 | Node discovery (Studio) | `discover --json --source …` |
 
 Human-readable test output appears in the log console; JSON mode keeps stdout clean for parsers.
+
+---
+
+## 8. Zyvor AI Copilot
+
+Hypercluster Desktop includes **offline AI insights** plus optional **LLM chat** when you configure a provider in **Settings → AI Copilot**.
+
+### Offline (no API key)
+
+| Feature | Where |
+|---------|--------|
+| Fleet insights | Dashboard — health, tests, config warnings |
+| Cluster recommendations | Cockpit → Overview |
+| Log error detection | Deploy log view |
+| Natural language hints | ⌘K palette (`deploy k3s-175`, `open lab`, `explain health`) |
+
+### LLM chat (optional)
+
+| Provider | Base URL default |
+|----------|------------------|
+| OpenAI / compatible | `https://api.openai.com/v1` |
+| Ollama (local) | `http://127.0.0.1:11434/v1` |
+| Anthropic | `https://api.anthropic.com` |
+
+**Shortcuts:** ⌘J — toggle AI Copilot · ⌘K — palette with “Ask AI Copilot”
+
+**Context injected automatically:** cluster name, health summary, recent deploy logs, platform test results (when loaded).
+
+**Quick prompts:** Explain health · Suggest fixes · Deploy plan · Security review · KubeVirt strategy · Analyze logs · Right-size · Upgrade path
+
+All lifecycle suggestions from the copilot must use **hypercluster** commands only (never raw `helm`/`kubectl` for deploy/destroy).
 
 ### ClusterSpec and save behavior
 
@@ -328,4 +360,4 @@ Human-readable test output appears in the log console; JSON mode keeps stdout cl
 
 ---
 
-_Doc version: 2026-06-06T17:27:55Z · hypercluster v0.1.0_
+_Doc version: 2026-06-06T18:54:43Z · hypercluster v0.1.0_

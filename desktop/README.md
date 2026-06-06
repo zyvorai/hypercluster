@@ -97,7 +97,9 @@ Templates live in `config/templates/*.yaml`. The typed model is `desktop/src/lib
 | Test / Validate | `preflight` |
 | Deploy | `deploy` |
 | Platform smoke (k3s) | `test` / `test --full` |
-| Node status (dashboard) | `status --json` |
+| Fleet health (dashboard) | `health --json` |
+| Node status (dashboard) | `status --json` (via health) |
+| AI Copilot chat | `ai_chat_cmd` (OpenAI / Ollama / Anthropic) |
 | Workloads cockpit | `workloads --json` |
 | KubeVirt VMs / templates | `vms --json` |
 | Template create (preview) | `vm create --template … --name … --json` |

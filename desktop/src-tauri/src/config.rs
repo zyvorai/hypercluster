@@ -21,8 +21,25 @@ pub struct ClusterEntry {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct AiSettings {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default = "default_ai_provider")]
+    pub provider: String,
+    pub api_key: Option<String>,
+    pub base_url: Option<String>,
+    pub model: Option<String>,
+}
+
+fn default_ai_provider() -> String {
+    "openai".into()
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AppSettings {
     pub hypercluster_binary: Option<String>,
+    #[serde(default)]
+    pub ai: AiSettings,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

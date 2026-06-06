@@ -1,3 +1,4 @@
+mod ai;
 mod config;
 mod discover;
 mod hypercluster;
@@ -6,6 +7,7 @@ mod log_parser;
 mod paths;
 mod trial;
 
+use ai::{ai_chat, AiChatRequest, AiChatResponse};
 use config::{
     auto_import_repo_cluster, create_cluster, delete_cluster, import_cluster_from_path,
     load_settings, read_cluster_conf, save_settings, update_cluster_by_path, write_cluster_conf,
@@ -184,6 +186,11 @@ async fn get_run_status_cmd(
     cluster_name: String,
 ) -> Result<Option<RunStatus>, String> {
     get_run_status(&manager, cluster_name).await
+}
+
+#[tauri::command]
+async fn ai_chat_cmd(req: AiChatRequest) -> Result<AiChatResponse, String> {
+    ai_chat(req).await
 }
 
 #[tauri::command]
@@ -509,6 +516,7 @@ pub fn run() {
             auto_import_discovered_cmd,
             cancel_run_cmd,
             get_run_status_cmd,
+            ai_chat_cmd,
             hc_health_json,
             hc_status_json,
             hc_test_json,
