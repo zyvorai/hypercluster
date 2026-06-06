@@ -122,3 +122,281 @@
   background-clip: text;
   color: transparent;
 }
+
+/* Animated backdrop orbs */
+.backdrop-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.55;
+}
+.backdrop-orb-orange {
+  width: 42vw;
+  height: 42vw;
+  max-width: 520px;
+  max-height: 520px;
+  left: -8%;
+  bottom: -12%;
+  background: radial-gradient(circle, rgba(240, 88, 58, 0.35), transparent 70%);
+}
+.backdrop-orb-purple {
+  width: 38vw;
+  height: 38vw;
+  max-width: 480px;
+  max-height: 480px;
+  right: -6%;
+  top: -8%;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.28), transparent 70%);
+}
+.backdrop-orb-indigo {
+  width: 28vw;
+  height: 28vw;
+  max-width: 360px;
+  max-height: 360px;
+  left: 38%;
+  top: 42%;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.18), transparent 70%);
+}
+
+/* Hero & tiles */
+.hero-panel {
+  border-radius: var(--radius-liquid-lg);
+  border: 1px solid rgba(240, 88, 58, 0.18);
+  background:
+    linear-gradient(135deg, rgba(240, 88, 58, 0.08) 0%, transparent 42%),
+    linear-gradient(225deg, rgba(167, 139, 250, 0.06) 0%, transparent 50%),
+    var(--glass-panel);
+  backdrop-filter: blur(24px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+.hero-stat-tile {
+  min-width: 5.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.22);
+  transition: border-color 0.2s, transform 0.2s;
+}
+.hero-stat-tile:hover {
+  border-color: rgba(240, 88, 58, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Cluster cards */
+.cluster-card {
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+}
+.cluster-card:hover {
+  transform: translateY(-3px);
+}
+.cluster-card--healthy {
+  border-color: rgba(52, 211, 153, 0.28) !important;
+}
+.cluster-card--degraded {
+  border-color: rgba(251, 191, 36, 0.32) !important;
+}
+.cluster-card--unreachable {
+  border-color: rgba(248, 113, 113, 0.32) !important;
+}
+.cluster-card--running {
+  box-shadow:
+    0 16px 50px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(251, 191, 36, 0.2);
+}
+
+/* Empty welcome */
+.empty-welcome-glow {
+  position: absolute;
+  inset: -40% -20%;
+  background: radial-gradient(ellipse at center, rgba(167, 139, 250, 0.12), transparent 60%);
+  pointer-events: none;
+}
+
+/* Micro-interactions */
+.pulse-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+.pulse-dot-amber {
+  background: #fbbf24;
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.6);
+}
+.pulse-dot-emerald {
+  background: #34d399;
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+}
+
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.kbd {
+  display: inline-block;
+  padding: 0.1rem 0.35rem;
+  border-radius: 6px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.7rem;
+  font-family: ui-monospace, monospace;
+}
+
+.nav-item-active {
+  background: linear-gradient(135deg, rgba(240, 88, 58, 0.18), rgba(167, 139, 250, 0.12));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 4px 20px rgba(240, 88, 58, 0.12);
+}
+
+.stat-bar {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.stat-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--gradient-accent-btn);
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.palette-overlay {
+  animation: fade-in 0.15s ease-out;
+}
+.palette-panel {
+  animation: scale-in 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Cockpit */
+.cockpit-header {
+  border-radius: var(--radius-liquid-lg);
+  border: 1px solid rgba(167, 139, 250, 0.18);
+  background:
+    linear-gradient(135deg, rgba(167, 139, 250, 0.07) 0%, transparent 45%),
+    var(--glass-panel);
+  backdrop-filter: blur(24px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.cockpit-tab {
+  border-radius: 12px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--glass-muted);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid transparent;
+  transition: all 0.18s ease;
+}
+.cockpit-tab:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.08);
+}
+.cockpit-tab-active {
+  color: white;
+  background: linear-gradient(135deg, rgba(240, 88, 58, 0.22), rgba(167, 139, 250, 0.15));
+  border-color: rgba(240, 88, 58, 0.25);
+  box-shadow: 0 4px 16px rgba(240, 88, 58, 0.1);
+}
+
+/* Copilot */
+.copilot-panel {
+  box-shadow:
+    -12px 0 48px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(167, 139, 250, 0.15);
+}
+.copilot-chip {
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+  font-size: 10px;
+  color: var(--glass-muted);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  transition: all 0.15s ease;
+}
+.copilot-chip:hover:not(:disabled) {
+  color: white;
+  background: rgba(167, 139, 250, 0.2);
+  border-color: rgba(167, 139, 250, 0.35);
+}
+
+.insight-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.insight-card:hover {
+  transform: translateX(2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}

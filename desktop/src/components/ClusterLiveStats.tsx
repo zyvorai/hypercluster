@@ -5,11 +5,13 @@ function Stat({
   value,
   sub,
   accent,
+  ratio,
 }: {
   label: string
   value: string | number
   sub?: string
   accent?: boolean
+  ratio?: number
 }) {
   return (
     <div className="rounded-xl border border-glass-border bg-black/20 px-3 py-2">
@@ -17,7 +19,12 @@ function Stat({
       <p className={accent ? 'stat-value text-xl font-semibold' : 'text-xl font-semibold text-white'}>
         {value}
       </p>
-      {sub ? <p className="text-xs text-glass-muted">{sub}</p> : null}
+      {ratio !== undefined && ratio >= 0 && (
+        <div className="stat-bar mt-2">
+          <div className="stat-bar-fill" style={{ width: `${Math.min(100, Math.round(ratio * 100))}%` }} />
+        </div>
+      )}
+      {sub ? <p className="mt-1 text-xs text-glass-muted">{sub}</p> : null}
     </div>
   )
 }
@@ -32,7 +39,12 @@ export function ClusterLiveStats({
   loading?: boolean
 }) {
   if (loading && !summary) {
-    return <p className="text-sm text-glass-muted">Loading live cluster state…</p>
+    return (
+      <div className="space-y-2">
+        <div className="skeleton h-10 w-full" />
+        <div className="skeleton h-10 w-full" />
+      </div>
+    )
   }
   if (!summary) {
     return (
@@ -50,6 +62,8 @@ export function ClusterLiveStats({
   }
 
   const grid = compact ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-2 gap-3 sm:grid-cols-4'
+  const nodeRatio = summary.nodesTotal > 0 ? summary.nodesReady / summary.nodesTotal : 0
+  const podRatio = summary.podsTotal > 0 ? summary.podsRunning / summary.podsTotal : 0
 
   return (
     <div className={grid}>
@@ -58,6 +72,7 @@ export function ClusterLiveStats({
         value={`${summary.nodesReady}/${summary.nodesTotal}`}
         sub="ready"
         accent
+        ratio={nodeRatio}
       />
       <Stat
         label="Pods"
@@ -68,6 +83,7 @@ export function ClusterLiveStats({
             : `${summary.podsTotal} total`
         }
         accent
+        ratio={podRatio}
       />
       <Stat label="Services" value={summary.services} accent={!compact} />
       <Stat

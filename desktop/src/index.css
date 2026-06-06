@@ -24,6 +24,9 @@
     filter: brightness(1.06);
   }
   .btn-ghost {
-    @apply rounded-full border border-glass-border bg-white/5 px-4 py-2 transition hover:border-glass-accent/30 hover:bg-white/10;
+    @apply rounded-full border border-glass-border bg-white/5 px-4 py-2 transition hover:border-glass-accent/30 hover:bg-white/10 active:scale-[0.98];
+  }
+  .btn-primary:active {
+    transform: scale(0.98);
   }
 }

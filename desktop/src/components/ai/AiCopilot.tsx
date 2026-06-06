@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import type { AiContextBundle, AiInsight, AiMessage } from '../../lib/ai/types'
 import { aiChat } from '../../lib/ai/client'
 import { insightsSummary } from '../../lib/ai/insights'
@@ -101,123 +102,141 @@ export function AiCopilot({
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
-  if (!open) return null
-
   const offlineSummary = offlineInsights.length ? insightsSummary(offlineInsights) : ''
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex justify-end bg-black/40 backdrop-blur-sm"
-      onClick={onClose}
-      role="presentation"
-    >
-      <aside
-        className="glass-panel m-2 flex h-[calc(100vh-1rem)] w-full max-w-lg flex-col border-glass-purple/30 shadow-zyvor-glow"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="flex items-center justify-between border-b border-glass-border px-4 py-3">
-          <div>
-            <h2 className="text-gradient-brand text-lg font-semibold">AI Copilot</h2>
-            <p className="text-xs text-glass-muted">
-              {context.clusterName ? `Context: ${context.clusterName}` : 'Fleet view — select a cluster for detail'}
-              {!aiEnabled && ' · LLM off (offline insights active)'}
-            </p>
-          </div>
-          <button type="button" className="btn-ghost text-sm" onClick={onClose}>
-            Close
-          </button>
-        </header>
-
-        <div className="flex gap-1 overflow-x-auto border-b border-glass-border px-3 py-2">
-          {QUICK_PROMPTS.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className="shrink-0 rounded-full bg-white/5 px-2 py-1 text-[10px] text-glass-muted hover:bg-glass-purple/20 hover:text-white"
-              disabled={loading}
-              onClick={() => void send(p.prompt)}
-            >
-              {p.icon} {p.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
-          {messages.length === 0 && offlineSummary && (
-            <GlassCard className="border-glass-purple/20 text-sm">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-glass-purple">
-                Offline analysis
-              </p>
-              <pre className="whitespace-pre-wrap text-xs leading-relaxed text-glass-muted">
-                {offlineSummary}
-              </pre>
-            </GlassCard>
-          )}
-          {messages.length === 0 && !offlineSummary && (
-            <GlassCard className="text-sm text-glass-muted">
-              <p className="mb-2 font-medium text-white">Zyvor AI Copilot</p>
-              <p>
-                Ask about health, deploy plans, logs, security, or KubeVirt. Live cluster context
-                is attached automatically.
-              </p>
-            </GlassCard>
-          )}
-          {messages.map((m, i) => (
-            <div
-              key={i}
-              className={`rounded-xl px-3 py-2 text-sm ${
-                m.role === 'user'
-                  ? 'ml-8 bg-glass-accent/15 text-white'
-                  : 'mr-4 border border-glass-purple/20 bg-glass-purple/5 text-white/95'
-              }`}
-            >
-              <p className="mb-1 text-[10px] uppercase tracking-wider text-glass-muted">
-                {m.role === 'user' ? 'You' : 'Copilot'}
-              </p>
-              {m.role === 'assistant' ? (
-                <AiMarkdown text={m.content} />
-              ) : (
-                <div className="whitespace-pre-wrap leading-relaxed">{m.content}</div>
-              )}
-            </div>
-          ))}
-          {loading && <p className="animate-pulse text-sm text-glass-muted">Thinking…</p>}
-          {error && (
-            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-              {error}
-            </div>
-          )}
-          <div ref={bottomRef} />
-        </div>
-
-        <footer className="border-t border-glass-border p-3">
-          <form
-            className="flex gap-2"
-            onSubmit={(e) => {
-              e.preventDefault()
-              void send(input)
-            }}
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-[60] flex justify-end bg-black/40 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          onClick={onClose}
+          role="presentation"
+        >
+          <motion.aside
+            className="glass-panel copilot-panel m-2 flex h-[calc(100vh-1rem)] w-full max-w-lg flex-col border-glass-purple/30 shadow-zyvor-glow"
+            initial={{ x: '100%', opacity: 0.8 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: '100%', opacity: 0.8 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <input
-              className="input-glass flex-1 text-sm"
-              placeholder={
-                aiEnabled ? 'Ask anything about your cluster…' : 'Enable LLM in Settings — offline insights above'
-              }
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              disabled={loading}
-            />
-            <button
-              type="submit"
-              className="btn-primary text-sm"
-              disabled={loading || !input.trim()}
-            >
-              Send
-            </button>
-          </form>
-          <p className="mt-2 text-[10px] text-glass-muted">⌘J toggle · Esc close · hypercluster-only ops</p>
-        </footer>
-      </aside>
-    </div>
+            <header className="flex items-center justify-between border-b border-glass-border px-4 py-3">
+              <div>
+                <h2 className="text-gradient-brand text-lg font-semibold">AI Copilot</h2>
+                <p className="text-xs text-glass-muted">
+                  {context.clusterName ? `Context: ${context.clusterName}` : 'Fleet view — select a cluster for detail'}
+                  {!aiEnabled && ' · LLM off (offline insights active)'}
+                </p>
+              </div>
+              <button type="button" className="btn-ghost text-sm" onClick={onClose}>
+                Close
+              </button>
+            </header>
+
+            <div className="flex gap-1.5 overflow-x-auto border-b border-glass-border px-3 py-2">
+              {QUICK_PROMPTS.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className="copilot-chip shrink-0"
+                  disabled={loading}
+                  onClick={() => void send(p.prompt)}
+                >
+                  {p.icon} {p.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
+              {messages.length === 0 && offlineSummary && (
+                <GlassCard className="border-glass-purple/20 text-sm">
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-glass-purple">
+                    Offline analysis
+                  </p>
+                  <pre className="whitespace-pre-wrap text-xs leading-relaxed text-glass-muted">
+                    {offlineSummary}
+                  </pre>
+                </GlassCard>
+              )}
+              {messages.length === 0 && !offlineSummary && (
+                <GlassCard className="text-sm text-glass-muted">
+                  <p className="mb-2 font-medium text-white">Zyvor AI Copilot</p>
+                  <p>
+                    Ask about health, deploy plans, logs, security, or KubeVirt. Live cluster context
+                    is attached automatically.
+                  </p>
+                </GlassCard>
+              )}
+              {messages.map((m, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className={`rounded-xl px-3 py-2 text-sm ${
+                    m.role === 'user'
+                      ? 'ml-8 bg-glass-accent/15 text-white'
+                      : 'mr-4 border border-glass-purple/20 bg-glass-purple/5 text-white/95'
+                  }`}
+                >
+                  <p className="mb-1 text-[10px] uppercase tracking-wider text-glass-muted">
+                    {m.role === 'user' ? 'You' : 'Copilot'}
+                  </p>
+                  {m.role === 'assistant' ? (
+                    <AiMarkdown text={m.content} />
+                  ) : (
+                    <div className="whitespace-pre-wrap leading-relaxed">{m.content}</div>
+                  )}
+                </motion.div>
+              ))}
+              {loading && (
+                <div className="inline-flex items-center gap-2 text-sm text-glass-muted">
+                  <span className="spinner" />
+                  Thinking…
+                </div>
+              )}
+              {error && (
+                <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                  {error}
+                </div>
+              )}
+              <div ref={bottomRef} />
+            </div>
+
+            <footer className="border-t border-glass-border p-3">
+              <form
+                className="flex gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  void send(input)
+                }}
+              >
+                <input
+                  className="input-glass flex-1 text-sm"
+                  placeholder={
+                    aiEnabled ? 'Ask anything about your cluster…' : 'Enable LLM in Settings — offline insights above'
+                  }
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  disabled={loading}
+                />
+                <button
+                  type="submit"
+                  className="btn-primary text-sm"
+                  disabled={loading || !input.trim()}
+                >
+                  Send
+                </button>
+              </form>
+              <p className="mt-2 text-[10px] text-glass-muted">⌘J toggle · Esc close · hypercluster-only ops</p>
+            </footer>
+          </motion.aside>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }

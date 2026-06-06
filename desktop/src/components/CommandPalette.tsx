@@ -106,8 +106,8 @@ export function CommandPalette({
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 pt-[15vh] backdrop-blur-sm">
-      <div className="glass-panel-lg w-full max-w-lg overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 pt-[15vh] backdrop-blur-sm palette-overlay">
+      <div className="glass-panel-lg w-full max-w-lg overflow-hidden shadow-2xl palette-panel">
         <input
           autoFocus
           className="w-full border-b border-glass-border bg-transparent px-4 py-3 outline-none"

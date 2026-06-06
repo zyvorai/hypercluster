@@ -19,7 +19,8 @@ import type {
 } from '../lib/types'
 import { GlassCard } from './GlassCard'
 import { ClusterLiveSnapshot } from './ClusterLiveSnapshot'
-import { ClusterHealthReport } from './ClusterHealthReport'
+import { ClusterHealthReport, ClusterHealthBadge } from './ClusterHealthReport'
+import { CockpitSectionTabs, CockpitSectionBody } from './CockpitNav'
 import { AiInsightPanel } from './ai/AiInsightPanel'
 import { ClusterLifecyclePanel } from './ClusterLifecyclePanel'
 import { KubeVirtStudio } from './KubeVirtStudio'
@@ -215,91 +216,93 @@ export function ClusterDetailView({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <button type="button" className="btn-ghost mb-2 text-sm" onClick={onBack}>
-            ← Back
+      <div className="cockpit-header flex flex-wrap items-start justify-between gap-4 p-5">
+        <div className="min-w-0">
+          <button type="button" className="btn-ghost mb-3 text-sm" onClick={onBack}>
+            ← Back to dashboard
           </button>
-          <h2 className="flex items-center gap-3 text-2xl font-semibold">
-            {cluster.name}
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-gradient-brand text-2xl font-bold tracking-tight">{cluster.name}</h2>
             <StatusPill status={pillStatus} />
-          </h2>
-          <p className="text-sm text-glass-muted">
-            {cluster.distro} · Cluster Studio cockpit
+            {healthReport?.state && <ClusterHealthBadge state={healthReport.state} />}
+          </div>
+          <p className="mt-1 text-sm capitalize text-glass-muted">
+            {cluster.distro} · Cluster cockpit
           </p>
-          <button
-            type="button"
-            className="text-xs text-glass-accent"
-            onClick={() => revealConfig(cluster.config_path)}
-          >
-            Reveal cluster.conf
-          </button>
-          {cluster.last_action && (
-            <p className="text-xs text-glass-muted">
-              Last: {cluster.last_action}
-              {cluster.last_action_at ? ` · ${cluster.last_action_at}` : ''}
-              {cluster.last_action_ok === false
-                ? ' · failed'
-                : cluster.last_action_ok
-                  ? ' · ok'
-                  : ''}
-            </p>
-          )}
+          <div className="mt-2 flex flex-wrap gap-3 text-xs">
+            <button
+              type="button"
+              className="text-glass-accent-light hover:underline"
+              onClick={() => revealConfig(cluster.config_path)}
+            >
+              Reveal cluster.conf
+            </button>
+            {cluster.last_action && (
+              <span className="text-glass-muted">
+                Last: {cluster.last_action}
+                {cluster.last_action_at ? ` · ${cluster.last_action_at}` : ''}
+                {cluster.last_action_ok === false
+                  ? ' · failed'
+                  : cluster.last_action_ok
+                    ? ' · ok'
+                    : ''}
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" className="btn-ghost" onClick={() => void refreshLive()} disabled={liveRefreshing}>
-            {liveRefreshing ? 'Refreshing…' : 'Refresh live state'}
+          <button type="button" className="btn-ghost text-sm" onClick={() => void refreshLive()} disabled={liveRefreshing}>
+            {liveRefreshing ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="spinner" /> Refreshing…
+              </span>
+            ) : (
+              'Refresh live state'
+            )}
           </button>
-          <button type="button" className="btn-ghost" onClick={() => onRun('preflight')}>
+          <button type="button" className="btn-ghost text-sm" onClick={() => onRun('preflight')}>
             preflight
           </button>
           {onRunFull && cluster.distro === 'k3s' ? (
-            <button type="button" className="btn-primary" onClick={onRunFull}>
+            <button type="button" className="btn-primary text-sm" onClick={onRunFull}>
               Deploy full stack
             </button>
           ) : (
-            <button type="button" className="btn-primary" onClick={() => onRun('deploy')}>
+            <button type="button" className="btn-primary text-sm" onClick={() => onRun('deploy')}>
               Deploy
             </button>
           )}
-          <button type="button" className="btn-ghost" onClick={() => onRun('deploy')}>
+          <button type="button" className="btn-ghost text-sm" onClick={() => onRun('deploy')}>
             deploy only
           </button>
-          <button type="button" className="btn-ghost" onClick={() => onRun('lab', { args: ['setup'] })}>
+          <button type="button" className="btn-ghost text-sm" onClick={() => onRun('lab', { args: ['setup'] })}>
             lab setup
           </button>
-          <button type="button" className="btn-ghost" onClick={() => onRun('test')}>
+          <button type="button" className="btn-ghost text-sm" onClick={() => onRun('test')}>
             test
           </button>
+          {onOpenCopilot && (
+            <button type="button" className="btn-ghost text-sm" onClick={onOpenCopilot}>
+              AI ⌘J
+            </button>
+          )}
           {onEditStudio && (
-            <button type="button" className="btn-primary" onClick={onEditStudio}>
+            <button type="button" className="btn-primary text-sm" onClick={onEditStudio}>
               Edit in Studio
             </button>
           )}
-          <button type="button" className="btn-ghost" onClick={onEditSettings}>
-            Settings form
+          <button type="button" className="btn-ghost text-sm" onClick={onEditSettings}>
+            Settings
           </button>
-          <button type="button" className="btn-ghost" onClick={onEditConf}>
+          <button type="button" className="btn-ghost text-sm" onClick={onEditConf}>
             Raw conf
           </button>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-1">
-        {sections.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            className={`rounded-lg px-3 py-1 text-sm ${
-              section === s.id ? 'bg-glass-accent/30' : 'bg-white/5 text-glass-muted'
-            }`}
-            onClick={() => setSection(s.id)}
-          >
-            {s.label}
-          </button>
-        ))}
-      </div>
+      <CockpitSectionTabs sections={sections} active={section} onChange={setSection} />
 
+      <CockpitSectionBody sectionKey={section}>
       {section === 'overview' && (
         <>
           <ClusterLifecyclePanel
@@ -717,6 +720,7 @@ export function ClusterDetailView({
           <TestResultsPanel results={tests} loading={testLoading} error={testErr} />
         </GlassCard>
       )}
+      </CockpitSectionBody>
 
       <GlassCard>
         <h3 className="mb-2 font-medium text-red-300">Remove from registry</h3>

@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { listen } from '@tauri-apps/api/event'
 import { ClusterCard } from './components/ClusterCard'
+import { DashboardHero } from './components/DashboardHero'
+import { EmptyClusterWelcome } from './components/EmptyClusterWelcome'
+import { ViewTransition } from './components/ViewTransition'
 import { ClusterDetailView } from './components/ClusterDetailView'
 import { ClusterRegistryList } from './components/ClusterRegistryList'
 import { CommandPalette, type PaletteSelection } from './components/CommandPalette'
@@ -583,30 +586,53 @@ export default function App() {
     return { podsRunning, podsTotal }
   }, [workloadsByCluster])
 
-  const nav: { id: View; label: string; disabled?: boolean }[] = [
-    { id: 'dashboard', label: 'Dashboard' },
+  const nav: { id: View; label: string; icon: string; disabled?: boolean }[] = [
+    { id: 'dashboard', label: 'Dashboard', icon: '◈' },
     {
       id: 'cluster',
       label: active ? active.name : 'Cluster detail',
+      icon: '◆',
       disabled: !active,
     },
-    { id: 'studio-hub', label: 'Create Cluster' },
-    { id: 'operations', label: 'Advanced ops' },
-    { id: 'settings', label: 'Settings' },
+    { id: 'studio-hub', label: 'Create Cluster', icon: '＋' },
+    { id: 'operations', label: 'Advanced ops', icon: '⚙' },
+    { id: 'settings', label: 'Settings', icon: '◇' },
   ]
+
+  const fleetHealthSummary = useMemo(() => {
+    let healthy = 0
+    let issues = 0
+    for (const h of Object.values(healthByCluster)) {
+      if (!h) continue
+      if (h.state === 'healthy') healthy++
+      else issues++
+    }
+    return { healthy, issues, total: healthy + issues }
+  }, [healthByCluster])
 
   return (
     <div className="flex min-h-screen">
       <aside className="glass-panel app-sidebar m-3 flex w-60 flex-col gap-1 p-3">
         <AppBrandHeader />
+        {fleetHealthSummary.total > 0 && (
+          <div className="mb-2 rounded-xl border border-glass-border bg-black/20 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wider text-glass-muted">Fleet</p>
+            <p className="text-sm text-white">
+              {fleetHealthSummary.healthy}/{fleetHealthSummary.total} healthy
+              {fleetHealthSummary.issues > 0 && (
+                <span className="text-amber-200"> · {fleetHealthSummary.issues} need attention</span>
+              )}
+            </p>
+          </div>
+        )}
         {nav.map((n) => (
           <button
             key={n.id}
             type="button"
             disabled={n.disabled}
-            className={`rounded-xl px-3 py-2.5 text-left text-sm transition disabled:opacity-40 ${
+            className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition disabled:opacity-40 ${
               view === n.id
-                ? 'bg-glass-accent/20 text-white shadow-zyvor-glow ring-1 ring-glass-accent/25'
+                ? 'nav-item-active text-white ring-1 ring-glass-accent/25'
                 : 'text-glass-muted hover:bg-white/5 hover:text-white'
             }`}
             onClick={() => {
@@ -615,18 +641,20 @@ export default function App() {
               else if (!n.disabled) setView(n.id)
             }}
           >
-            {n.label}
+            <span className="w-4 shrink-0 text-center text-xs opacity-80">{n.icon}</span>
+            <span className="truncate">{n.label}</span>
           </button>
         ))}
         <button
           type="button"
-          className={`rounded-xl px-3 py-2.5 text-left text-sm transition ${
+          className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition ${
             copilotOpen
               ? 'bg-glass-purple/25 text-white ring-1 ring-glass-purple/40'
               : 'text-glass-muted hover:bg-glass-purple/10 hover:text-white'
           }`}
           onClick={() => setCopilotOpen((o) => !o)}
         >
+          <span className="w-4 shrink-0 text-center text-xs text-glass-purple">✦</span>
           AI Copilot ⌘J
         </button>
         <p className="mt-auto px-2 text-[10px] text-glass-muted">⌘K palette · ⌘J AI · Esc back</p>
@@ -634,28 +662,26 @@ export default function App() {
       </aside>
 
       <main className="flex-1 overflow-y-auto p-6">
+        <ViewTransition viewKey={view}>
         {view === 'dashboard' && (
           <div>
-            <div className="mb-6 flex items-end justify-between">
-              <div>
-                <p className="mb-1 text-xs font-medium uppercase tracking-[0.2em] text-glass-accent-light">
-                  Zyvor Platform
-                </p>
-                <h2 className="text-gradient-brand text-3xl font-bold tracking-tight">Clusters</h2>
-                <p className="mt-1 text-sm text-glass-muted">hypercluster @ {binaryPath || '…'}</p>
-              </div>
-              <div className="flex gap-2">
+            <DashboardHero
+              clusterCount={clusters.length}
+              podsRunning={dashboardTotals.podsRunning}
+              podsTotal={dashboardTotals.podsTotal}
+              running={running}
+              liveLoading={liveLoading}
+              healthByCluster={healthByCluster}
+              insights={fleetInsights}
+              onRefresh={() => void reloadNodeStats(clusters)}
+              onOpenCopilot={() => openCopilot()}
+            />
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs text-glass-muted">hypercluster @ {binaryPath || '…'}</p>
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="btn-ghost"
-                  onClick={() => void reloadNodeStats(clusters)}
-                  disabled={liveLoading || clusters.length === 0}
-                >
-                  {liveLoading ? 'Refreshing health…' : 'Refresh health'}
-                </button>
-                <button
-                  type="button"
-                  className="btn-ghost"
+                  className="btn-ghost text-sm"
                   onClick={async () => {
                     const imported = await autoImportDiscovered()
                     await refresh()
@@ -669,10 +695,10 @@ export default function App() {
                 >
                   Scan for clusters
                 </button>
-                <button type="button" className="btn-ghost" onClick={handleImportConf}>
+                <button type="button" className="btn-ghost text-sm" onClick={handleImportConf}>
                   Import cluster.conf
                 </button>
-                <button type="button" className="btn-primary" onClick={openStudioHub}>
+                <button type="button" className="btn-primary text-sm" onClick={openStudioHub}>
                   + New Cluster
                 </button>
               </div>
@@ -705,30 +731,21 @@ export default function App() {
               </GlassCard>
             )}
             {clusters.length === 0 && (
-              <GlassCard className="mb-6">
-                <p className="text-glass-muted">
-                  No clusters in the desktop registry yet. Import an existing{' '}
-                  <code className="text-white">cluster.conf</code> or create one with Cluster Studio.
-                </p>
-              </GlassCard>
+              <EmptyClusterWelcome
+                onCreate={openStudioHub}
+                onImport={handleImportConf}
+                onScan={async () => {
+                  const imported = await autoImportDiscovered()
+                  await refresh()
+                  if (imported.length) {
+                    setLogs((prev) => [
+                      ...prev,
+                      `Auto-imported: ${imported.map((c) => c.name).join(', ')}`,
+                    ])
+                  }
+                }}
+              />
             )}
-            <div className="mb-6 grid grid-cols-3 gap-4">
-              <GlassCard className="shadow-zyvor-card">
-                <p className="text-sm text-glass-muted">Clusters</p>
-                <p className="stat-value text-3xl font-semibold">{clusters.length}</p>
-              </GlassCard>
-              <GlassCard className="shadow-zyvor-card">
-                <p className="text-sm text-glass-muted">Pods running</p>
-                <p className="stat-value text-3xl font-semibold">
-                  {dashboardTotals.podsRunning}
-                  <span className="text-lg text-glass-muted">/{dashboardTotals.podsTotal}</span>
-                </p>
-              </GlassCard>
-              <GlassCard className="shadow-zyvor-card">
-                <p className="text-sm text-glass-muted">Active job</p>
-                <p className="stat-value text-3xl font-semibold">{running ? '1' : '0'}</p>
-              </GlassCard>
-            </div>
             {clusters.length > 0 && (
               <GlassCard className="mb-6 border-glass-purple/25">
                 <AiInsightPanel
@@ -741,9 +758,10 @@ export default function App() {
               </GlassCard>
             )}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {clusters.map((c) => (
+              {clusters.map((c, i) => (
                 <ClusterCard
                   key={c.id}
+                  index={i}
                   cluster={c}
                   liveStatus={statusByCluster[c.name]}
                   health={healthByCluster[c.name]}
@@ -1058,6 +1076,7 @@ export default function App() {
             />
           </div>
         )}
+        </ViewTransition>
       </main>
 
       {preflightPromptCluster && (

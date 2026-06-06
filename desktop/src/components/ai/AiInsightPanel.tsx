@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { motion } from 'framer-motion'
 import type { AiInsight, AiInsightSeverity } from '../../lib/ai/types'
 import { insightCounts } from '../../lib/ai/insights'
 
@@ -108,10 +109,13 @@ export function AiInsightPanel({
         onOpenCopilot={onOpenCopilot}
       />
       <ul className="space-y-2">
-        {shown.map((ins) => (
-          <li
+        {shown.map((ins, i) => (
+          <motion.li
             key={ins.id}
-            className={`rounded-xl border px-3 py-2 text-sm ${severityClass(ins.severity)}`}
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.04 }}
+            className={`insight-card rounded-xl border px-3 py-2 text-sm ${severityClass(ins.severity)}`}
           >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
@@ -138,7 +142,7 @@ export function AiInsightPanel({
                 </button>
               )}
             </div>
-          </li>
+          </motion.li>
         ))}
       </ul>
       {compact && filtered.length > 3 && (
