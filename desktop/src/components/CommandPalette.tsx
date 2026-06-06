@@ -140,7 +140,7 @@ export function CommandPalette({
               {nlParsed?.kind === 'run' && (
                 <button
                   type="button"
-                  className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-glass-purple/15"
+                  className="search-result-row block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-glass-purple/15"
                   onClick={() => {
                     onSelect({
                       kind: 'run',
@@ -157,7 +157,7 @@ export function CommandPalette({
               {nlParsed?.kind === 'open' && (
                 <button
                   type="button"
-                  className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-glass-purple/15"
+                  className="search-result-row block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-glass-purple/15"
                   onClick={() => {
                     onSelect({ kind: 'detail', cluster: nlParsed.cluster })
                     onClose()
@@ -168,7 +168,7 @@ export function CommandPalette({
               )}
               <button
                 type="button"
-                className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-glass-purple/15"
+                className="search-result-row block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-glass-purple/15"
                 onClick={() => {
                   onSelect({ kind: 'ai', query: q.trim() })
                   onClose()
@@ -187,7 +187,7 @@ export function CommandPalette({
                 <button
                   key={action.id}
                   type="button"
-                  className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10"
+                  className="search-result-row block w-full rounded-xl px-3 py-2 text-left text-sm"
                   onClick={() => {
                     onSelect({ kind: 'app', action: action.id })
                     onClose()
@@ -208,7 +208,7 @@ export function CommandPalette({
                   <button
                     key={`${c.id}-${action.id}`}
                     type="button"
-                    className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10"
+                    className="search-result-row block w-full rounded-xl px-3 py-2 text-left text-sm"
                     onClick={() => {
                       if (action.id === 'open-detail') {
                         onSelect({ kind: 'detail', cluster: c })
@@ -227,7 +227,7 @@ export function CommandPalette({
                   <button
                     key={`${c.id}-${cmd.id}`}
                     type="button"
-                    className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10"
+                    className="search-result-row block w-full rounded-xl px-3 py-2 text-left text-sm"
                     onClick={() => {
                       onSelect({
                         kind: 'run',

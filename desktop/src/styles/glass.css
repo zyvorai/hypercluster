@@ -400,3 +400,43 @@
   transform: translateX(2px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
+
+/* Deploy pipeline */
+.deploy-phase-active {
+  color: white;
+  border-color: rgba(240, 88, 58, 0.45) !important;
+  background: linear-gradient(135deg, rgba(240, 88, 58, 0.22), rgba(167, 139, 250, 0.12));
+  box-shadow: 0 0 24px rgba(240, 88, 58, 0.15);
+}
+
+/* Log console */
+.log-console-panel {
+  border-color: rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.5) 100%),
+    var(--glass-panel);
+  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+.log-line {
+  padding: 1px 0;
+  border-left: 2px solid transparent;
+  padding-left: 6px;
+}
+.log-line:hover {
+  border-left-color: rgba(240, 88, 58, 0.35);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Search */
+.search-result-row {
+  transition: background 0.12s ease, transform 0.12s ease;
+}
+.search-result-row:hover {
+  background: rgba(167, 139, 250, 0.12);
+  transform: translateX(2px);
+}
+
+/* Studio intent cards */
+.studio-intent-card {
+  height: 100%;
+}

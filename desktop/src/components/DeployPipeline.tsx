@@ -1,11 +1,12 @@
+import { motion } from 'framer-motion'
 import type { ParsedStage } from '../lib/types'
 import { GlassCard } from './GlassCard'
 
 const PIPELINE = [
-  { id: 'infra', label: 'Infrastructure', match: /preflight|init|host prep|inventory/i },
-  { id: 'k8s', label: 'Kubernetes', match: /k3s|kubespray|cluster\.yml|rke2|microk8s|install|server|agent/i },
-  { id: 'platform', label: 'Platform', match: /platform|helm|cilium|metallb|kubevirt|cdi|stack/i },
-  { id: 'validation', label: 'Validation', match: /kubeconfig|tools|merge|done|fetch/i },
+  { id: 'infra', label: 'Infrastructure', icon: '◈', match: /preflight|init|host prep|inventory/i },
+  { id: 'k8s', label: 'Kubernetes', icon: '◆', match: /k3s|kubespray|cluster\.yml|rke2|microk8s|install|server|agent/i },
+  { id: 'platform', label: 'Platform', icon: '✦', match: /platform|helm|cilium|metallb|kubevirt|cdi|stack/i },
+  { id: 'validation', label: 'Validation', icon: '✓', match: /kubeconfig|tools|merge|done|fetch|test/i },
 ]
 
 function stagePhase(label: string, current: number, total: number): string {
@@ -26,53 +27,110 @@ export function DeployPipeline({
   running: boolean
 }) {
   const activePhase = stage ? stagePhase(stage.label, stage.current, stage.total) : null
-  const progress = stage ? Math.round((stage.current / stage.total) * 100) : 0
+  const activeIdx = PIPELINE.findIndex((p) => p.id === activePhase)
+  const progress = stage ? Math.round((stage.current / stage.total) * 100) : running ? 4 : 0
 
   return (
-    <GlassCard className="mb-4 space-y-4">
+    <GlassCard className="mb-4 space-y-4 border-glass-accent/15">
       <div className="flex items-center justify-between">
-        <h3 className="font-medium">Deploy pipeline</h3>
-        {stage && (
-          <span className="text-sm text-glass-muted">
+        <div>
+          <h3 className="font-medium">Deploy pipeline</h3>
+          <p className="text-xs text-glass-muted">preflight → k3s → platform stack → validation</p>
+        </div>
+        {stage ? (
+          <span className="rounded-full bg-glass-accent/15 px-2.5 py-1 text-xs text-glass-accent-light">
             Stage {stage.current}/{stage.total}
           </span>
-        )}
+        ) : running ? (
+          <span className="inline-flex items-center gap-2 text-xs text-glass-muted">
+            <span className="spinner" /> Starting…
+          </span>
+        ) : null}
       </div>
+
       <div className="grid grid-cols-4 gap-2">
-        {PIPELINE.map((p) => {
+        {PIPELINE.map((p, i) => {
           const active = activePhase === p.id
-          const done =
-            stage &&
-            PIPELINE.findIndex((x) => x.id === p.id) <
-              PIPELINE.findIndex((x) => x.id === activePhase)
+          const done = stage && activeIdx > i
           return (
-            <div
+            <motion.div
               key={p.id}
-              className={`rounded-xl border px-2 py-3 text-center text-xs ${
+              animate={active ? { scale: [1, 1.02, 1] } : { scale: 1 }}
+              transition={active ? { duration: 1.6, repeat: Infinity } : undefined}
+              className={`deploy-phase rounded-xl border px-2 py-3 text-center text-xs ${
                 active
-                  ? 'border-glass-accent bg-glass-accent/20 text-white'
+                  ? 'deploy-phase-active'
                   : done
                     ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200'
                     : 'border-glass-border bg-black/10 text-glass-muted'
               }`}
             >
+              <div className="mb-1 text-base opacity-80">{done ? '✓' : p.icon}</div>
               {p.label}
-            </div>
+            </motion.div>
           )
         })}
       </div>
-      {stage && (
+
+      {(stage || running) && (
         <>
-          <p className="text-sm font-medium">{stage.label}</p>
-          <div className="h-2 overflow-hidden rounded-full bg-black/30">
-            <div
-              className="h-full bg-glass-accent transition-all duration-300"
-              style={{ width: `${progress}%` }}
+          {stage && <p className="text-sm font-medium">{stage.label}</p>}
+          <div className="stat-bar h-2.5">
+            <motion.div
+              className="stat-bar-fill h-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
             />
           </div>
+          <p className="text-right text-[10px] text-glass-muted">{progress}%</p>
         </>
       )}
-      {!stage && running && <p className="text-sm text-glass-muted">Starting…</p>}
     </GlassCard>
+  )
+}
+
+export function DeployJobHeader({
+  clusterName,
+  command,
+  running,
+  success,
+  onBack,
+  backLabel = 'Back',
+}: {
+  clusterName: string
+  command: string
+  running: boolean
+  success: boolean | null
+  onBack?: () => void
+  backLabel?: string
+}) {
+  return (
+    <div className="cockpit-header mb-4 flex flex-wrap items-center justify-between gap-3 p-5">
+      <div>
+        <p className="mb-1 text-xs uppercase tracking-wider text-glass-muted">Job console</p>
+        <h2 className="text-gradient-brand text-xl font-bold">
+          {clusterName} — {command}
+        </h2>
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+          {running && (
+            <span className="inline-flex items-center gap-2 text-amber-200">
+              <span className="pulse-dot pulse-dot-amber" /> Running
+            </span>
+          )}
+          {!running && success === true && (
+            <span className="text-emerald-300">✓ Succeeded</span>
+          )}
+          {!running && success === false && (
+            <span className="text-red-300">✗ Failed</span>
+          )}
+        </div>
+      </div>
+      {onBack && (
+        <button type="button" className="btn-primary text-sm" onClick={onBack}>
+          {backLabel}
+        </button>
+      )}
+    </div>
   )
 }

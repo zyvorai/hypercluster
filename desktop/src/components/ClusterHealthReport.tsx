@@ -24,13 +24,32 @@ export function ClusterHealthBadge({
   state: HealthState
   compact?: boolean
 }) {
+  const showPulse = state === 'healthy' || state === 'degraded'
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${stateStyles(state)} ${compact ? '' : 'text-xs'}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${stateStyles(state)} ${compact ? '' : 'text-xs'}`}
     >
+      {showPulse && (
+        <span
+          className={`pulse-dot ${state === 'healthy' ? 'pulse-dot-emerald' : 'pulse-dot-amber'}`}
+        />
+      )}
       {healthStateLabel(state)}
     </span>
   )
+}
+
+function healthCardBorder(state: HealthState): string {
+  switch (state) {
+    case 'healthy':
+      return 'cluster-card--healthy'
+    case 'degraded':
+      return 'cluster-card--degraded'
+    case 'unreachable':
+      return 'cluster-card--unreachable'
+    default:
+      return ''
+  }
 }
 
 export function ClusterHealthReport({
@@ -47,7 +66,11 @@ export function ClusterHealthReport({
   if (loading && !report) {
     return (
       <GlassCard>
-        <p className="text-sm text-glass-muted">Connecting to cluster and loading health report…</p>
+        <div className="space-y-3">
+          <div className="skeleton h-5 w-40" />
+          <div className="skeleton h-12 w-full" />
+          <div className="skeleton h-12 w-full" />
+        </div>
       </GlassCard>
     )
   }
@@ -76,7 +99,7 @@ export function ClusterHealthReport({
   }
 
   return (
-    <GlassCard>
+    <GlassCard className={healthCardBorder(report.state)}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -94,7 +117,13 @@ export function ClusterHealthReport({
             disabled={fullCheckLoading}
             onClick={onRunFullCheck}
           >
-            {fullCheckLoading ? 'Running platform tests…' : 'Full check (+ tests)'}
+            {fullCheckLoading ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="spinner" /> Running tests…
+              </span>
+            ) : (
+              'Full check (+ tests)'
+            )}
           </button>
         )}
       </div>

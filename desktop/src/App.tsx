@@ -10,7 +10,7 @@ import { CommandPalette, type PaletteSelection } from './components/CommandPalet
 import { CreateClusterHub } from './components/CreateClusterHub'
 import { ClusterStudio } from './components/ClusterStudio'
 import { QuickDeployStudio } from './components/QuickDeployStudio'
-import { DeployPipeline } from './components/DeployPipeline'
+import { DeployPipeline, DeployJobHeader } from './components/DeployPipeline'
 import { GlassCard } from './components/GlassCard'
 import { DeployOpsCenter } from './components/DeployOpsCenter'
 import { StructuredLogConsole } from './components/StructuredLogConsole'
@@ -892,31 +892,22 @@ export default function App() {
 
         {view === 'deploy' && active && (
           <div>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-xl font-semibold">
-                {active.name} — {activeCommand}
-                {running ? ' (running)' : ''}
-                {!running && lastJobSuccess === true && (
-                  <span className="ml-2 text-sm text-emerald-300">✓ succeeded</span>
-                )}
-                {!running && lastJobSuccess === false && (
-                  <span className="ml-2 text-sm text-red-300">✗ failed</span>
-                )}
-              </h2>
-              {!running && returnViewAfterJob && (
-                <button
-                  type="button"
-                  className="btn-primary text-sm"
-                  onClick={() => {
-                    setView(returnViewAfterJob)
-                    setReturnViewAfterJob(null)
-                    returnViewRef.current = null
-                  }}
-                >
-                  Back{returnViewAfterJob === 'cluster' ? ' to cluster detail' : ''}
-                </button>
-              )}
-            </div>
+            <DeployJobHeader
+              clusterName={active.name}
+              command={activeCommand}
+              running={running}
+              success={lastJobSuccess}
+              onBack={
+                !running && returnViewAfterJob
+                  ? () => {
+                      setView(returnViewAfterJob)
+                      setReturnViewAfterJob(null)
+                      returnViewRef.current = null
+                    }
+                  : undefined
+              }
+              backLabel={returnViewAfterJob === 'cluster' ? 'Back to cluster detail' : 'Back'}
+            />
             <DeployPipeline stage={stage} running={running} />
             <DeployOpsCenter
               cluster={active}
@@ -931,7 +922,7 @@ export default function App() {
               }}
             />
             {stage && (
-              <GlassCard className="mb-4">
+              <GlassCard className="mb-4 border-glass-accent/20">
                 <p className="text-sm font-medium">{stage.label}</p>
               </GlassCard>
             )}

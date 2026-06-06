@@ -54,6 +54,19 @@ export function buildSearchIndex(
   return items
 }
 
+function kindIcon(kind: SearchResult['kind']): string {
+  switch (kind) {
+    case 'cluster':
+      return '◈'
+    case 'node':
+      return '◆'
+    case 'vm':
+      return '▣'
+    default:
+      return '→'
+  }
+}
+
 export function GlobalSearch({
   open,
   onClose,
@@ -76,32 +89,39 @@ export function GlobalSearch({
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center bg-black/60 pt-[12vh] backdrop-blur-sm">
-      <div className="glass-panel-lg w-full max-w-xl overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 z-[60] flex items-start justify-center bg-black/60 pt-[12vh] backdrop-blur-sm palette-overlay">
+      <div className="glass-panel-lg w-full max-w-xl overflow-hidden shadow-2xl palette-panel">
         <input
           autoFocus
-          className="w-full border-b border-glass-border bg-transparent px-4 py-3 outline-none"
+          className="w-full border-b border-glass-border bg-transparent px-4 py-3 outline-none placeholder:text-glass-muted"
           placeholder="Search nodes, VMs, clusters, templates…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => e.key === 'Escape' && onClose()}
         />
         <ul className="max-h-96 overflow-y-auto p-2">
-          {filtered.map((item, i) => (
-            <li key={`${item.kind}-${i}`}>
-              <button
-                type="button"
-                className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10"
-                onClick={() => {
-                  onSelect(item)
-                  onClose()
-                }}
-              >
-                <span className="text-[10px] uppercase text-glass-muted">{item.kind}</span>
-                <span className="block">{item.label}</span>
-              </button>
-            </li>
-          ))}
+          {filtered.length === 0 ? (
+            <li className="px-3 py-6 text-center text-sm text-glass-muted">No matches</li>
+          ) : (
+            filtered.map((item, i) => (
+              <li key={`${item.kind}-${i}`}>
+                <button
+                  type="button"
+                  className="search-result-row block w-full rounded-xl px-3 py-2.5 text-left text-sm"
+                  onClick={() => {
+                    onSelect(item)
+                    onClose()
+                  }}
+                >
+                  <span className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-glass-muted">
+                    <span className="text-glass-purple">{kindIcon(item.kind)}</span>
+                    {item.kind}
+                  </span>
+                  <span className="mt-0.5 block text-white">{item.label}</span>
+                </button>
+              </li>
+            ))
+          )}
         </ul>
       </div>
     </div>
