@@ -8,24 +8,26 @@ Deploys upstream Kubernetes with **Podman** as the container runtime, entirely o
 ## 📋 Table of Contents
 
 1. [How it works](#how-it-works)
-2. [Prerequisites](#prerequisites)
-3. [macOS setup & local testing](#macos-setup--local-testing)
-4. [Remote k3s platform quickstart](#remote-k3s-platform-quickstart)
-5. [Documentation](#documentation)
-6. [Installation](#installation)
-7. [Configuration](#configuration)
-8. [Tutorial: first cluster](#tutorial-first-cluster)
+2. [Scope & non-goals](#scope--non-goals)
+3. [Zyvor platform stack](#zyvor-platform-stack)
+4. [Prerequisites](#prerequisites)
+5. [macOS setup & local testing](#macos-setup--local-testing)
+6. [Remote k3s platform quickstart](#remote-k3s-platform-quickstart)
+7. [Documentation](#documentation)
+8. [Installation](#installation)
+9. [Configuration](#configuration)
+10. [Tutorial: first cluster](#tutorial-first-cluster)
    - [Step 1 — Prepare your nodes](#step-1--prepare-your-nodes)
    - [Step 2 — Create your config](#step-2--create-your-config)
    - [Step 3 — Run preflight checks](#step-3--run-preflight-checks)
    - [Step 4 — Deploy](#step-4--deploy)
    - [Step 5 — Access the cluster](#step-5--access-the-cluster)
-9. [Day-2 operations](#day-2-operations)
-10. [Standalone scripts (legacy)](#standalone-scripts-legacy)
-11. [Command reference](#command-reference)
-12. [Project layout](#project-layout)
-13. [Podman notes](#podman-notes)
-14. [Troubleshooting](#troubleshooting)
+11. [Day-2 operations](#day-2-operations)
+12. [Standalone scripts (legacy)](#standalone-scripts-legacy)
+13. [Command reference](#command-reference)
+14. [Project layout](#project-layout)
+15. [Podman notes](#podman-notes)
+16. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -56,6 +58,43 @@ cluster.conf  ──►  hypercluster  ──►  SSH to remote host
 ```
 
 For Kubespray, hypercluster is a **thin shell wrapper** — it delegates cluster operations to Ansible playbooks. For k3s, it orchestrates SSH bootstrap plus Helm-based platform installs from your laptop.
+
+---
+
+## Scope & non-goals
+
+hypercluster deploys and operates **on-prem Kubernetes over SSH** — it is not a general infrastructure platform.
+
+**In scope:** Kubernetes lifecycle (deploy, upgrade, scale, health, destroy), Ansible/Kubespray automation, k3s platform stack (Cilium, cert-manager, MetalLB, KubeVirt/CDI), lab tuning for single-node labs, optional GPU Operator install.
+
+**Out of scope:** CI/CD pipelines, AI/LLM serving (vLLM, Triton, KServe), DevSecOps (SAST, secrets vault, policy enforcement), databases (PostgreSQL, Qdrant), full observability stacks (Prometheus/Grafana/Loki), backup/DR (Velero), general Linux/ KVM hypervisor engineering, and deep GPU/CUDA tuning.
+
+Desktop UI items marked **coming soon** or **catalog-only** (Kyverno, Velero, Prometheus, vLLM) are not shipped features.
+
+Full domain mapping (12 engineering areas): [`docs/agents/training.md` § Scope & non-goals](docs/agents/training.md#2-scope--non-goals).
+
+**Day 2 products (install after cluster):** [`docs/guides/zyvor-platform-stack.md`](docs/guides/zyvor-platform-stack.md) — forge, v9s, machina, packetwolf, and install order. No separate mega-product required.
+
+---
+
+## Zyvor platform stack
+
+hypercluster is **Day 0** only. After `deploy`, use sibling Zyvor products for GPU/AI, VM ops, observability, migration, and metal — see the full [platform stack guide](docs/guides/zyvor-platform-stack.md).
+
+| Phase | Product | Purpose |
+|-------|---------|---------|
+| 0 | machina · zyvor-fabric · IronWolf | Hypervisor / bare metal |
+| 0 | guestkit · hyper2kvm | VM migration & inspect |
+| **1** | **hypercluster** | **Kubernetes cluster** |
+| 2+ | packetwolf | Cilium network intelligence |
+| 2+ | forge | GPU operators, vLLM/Triton, GitOps |
+| 2+ | v9s · ragnarok · VMRogue | KubeVirt VM operations |
+
+```bash
+export KUBECONFIG="$HOME/.kube/mycluster.yaml"   # from cluster.conf
+kubectl get nodes
+# Then install sibling products against this kubeconfig
+```
 
 ---
 
@@ -254,6 +293,7 @@ On macOS, run `./scripts/setup-macos.sh` first (installs bash 5, helm, kubectl).
 | [`docs/guides/cli/hypercluster-guide.md`](docs/guides/cli/hypercluster-guide.md) | CLI commands, JSON, k3s workflow |
 | [`AGENTS.md`](AGENTS.md) | **AI agent instructions** (start here for agents) |
 | [`docs/agents/training.md`](docs/agents/training.md) | Full agent training guide |
+| [`docs/guides/zyvor-platform-stack.md`](docs/guides/zyvor-platform-stack.md) | **Zyvor ecosystem** — Day 2 products & install order |
 | [`docs/generated/AGENT-QUICKREF.md`](docs/generated/AGENT-QUICKREF.md) | Auto-generated agent quickref |
 | [`.cursor/rules/`](.cursor/rules/) | Cursor rules (auto-applied) |
 | [`docs/generated/CLI.md`](docs/generated/CLI.md) | Auto-generated CLI help |
@@ -278,13 +318,24 @@ make docs-serve    # http://localhost:8080
 | Tool | Minimum version | Install |
 |------|----------------|---------|
 | Bash | 4.0+ | bundled on Linux; `brew install bash` on macOS |
-| Ansible | 2.14+ | `pip3 install ansible` |
-| Python | 3.9+ | `python3 --version` |
+| Ansible | 2.14+ (11.x for Kubespray v2.31+) | `brew install ansible` on macOS; `pip3 install ansible` on Linux |
+| **Python** | **3.11+** | Required by Kubespray v2.31 / Ansible 11 — **not** macOS `/usr/bin/python3` (3.9) |
 | Git | any | `apt install git` / `brew install git` |
 | kubectl | matches cluster version | see [Step 5](#step-5--access-the-cluster) |
 
+**macOS (CLI or Desktop app):** run the one-time installer — it installs Homebrew **Python 3.12**, **bash 5**, **ansible**, **kubectl**, **helm**, and Kubespray Python modules:
+
 ```bash
-# Install Python dependencies (required by Kubespray)
+chmod +x scripts/setup-macos.sh
+./scripts/setup-macos.sh
+```
+
+The Desktop app launches with a minimal PATH; it prepends Homebrew Python/Ansible and stores Kubespray data under `~/Library/Application Support/Hypercluster/` (including `kubespray-venv`). Without Homebrew Python 3.11+, Kubespray deploy from the app will fail preflight.
+
+**Linux / manual Python check:**
+
+```bash
+python3 --version   # must be 3.11 or newer
 pip3 install jinja2 netaddr
 
 # Verify
@@ -292,7 +343,7 @@ ansible --version
 python3 -c "import jinja2, netaddr; print('ok')"
 ```
 
-> **macOS note:** the system Bash is 3.x. Install `brew install bash` and ensure `/opt/homebrew/bin/bash` appears before `/bin/bash` in your `PATH`, or invoke `hypercluster` with `bash hypercluster`.
+> **macOS note:** the system Bash is 3.x. Install `brew install bash` (included in `setup-macos.sh`) and ensure `/opt/homebrew/bin/bash` appears before `/bin/bash` in your `PATH`, or invoke `hypercluster` with `bash hypercluster`.
 
 ### On every target node
 
@@ -305,6 +356,15 @@ python3 -c "import jinja2, netaddr; print('ok')"
 ---
 
 ## Installation
+
+Minimal deployer setup on **macOS** (required before first Kubespray deploy from CLI or Desktop):
+
+```bash
+chmod +x scripts/setup-macos.sh
+./scripts/setup-macos.sh    # Python 3.11+, bash 5, ansible, kubectl, helm, jinja2, netaddr
+```
+
+CLI from source:
 
 ```bash
 git clone https://github.com/ssahani/hypercluster.git
@@ -396,11 +456,11 @@ The file is gitignored by default so secrets (SSH key paths) never end up in ver
 CLUSTER_NAME="mycluster"           # used as inventory dir name and kubeconfig context
 
 # ── Kubespray source ──────────────────────────────────────────────────────────
-KUBESPRAY_VERSION="v2.30.0"        # any git tag from the Kubespray repo
+KUBESPRAY_VERSION="v2.31.0"        # any git tag from the Kubespray repo
 KUBESPRAY_DIR=".kubespray"         # where to clone it (relative or absolute)
 
 # ── Kubernetes ────────────────────────────────────────────────────────────────
-KUBE_VERSION="v1.32.0"
+KUBE_VERSION="v1.35.4"
 CONTAINER_MANAGER="podman"         # podman | containerd | docker
 CNI_PLUGIN="calico"                # calico | cilium | flannel | kube-ovn
 
@@ -496,8 +556,8 @@ Edit `cluster.conf` with your values:
 
 ```bash
 CLUSTER_NAME="mycluster"
-KUBESPRAY_VERSION="v2.30.0"
-KUBE_VERSION="v1.32.0"
+KUBESPRAY_VERSION="v2.31.0"
+KUBE_VERSION="v1.35.4"
 CONTAINER_MANAGER="podman"
 CNI_PLUGIN="calico"
 
@@ -613,16 +673,16 @@ Expected output:
 
 ```
 NAME      STATUS   ROLES           AGE   VERSION   INTERNAL-IP     OS-IMAGE
-master1   Ready    control-plane   5m    v1.32.0   192.168.1.100   Ubuntu 22.04
-worker1   Ready    <none>          4m    v1.32.0   192.168.1.101   Ubuntu 22.04
-worker2   Ready    <none>          4m    v1.32.0   192.168.1.102   Ubuntu 22.04
+master1   Ready    control-plane   5m    v1.35.4   192.168.1.100   Ubuntu 22.04
+worker1   Ready    <none>          4m    v1.35.4   192.168.1.101   Ubuntu 22.04
+worker2   Ready    <none>          4m    v1.35.4   192.168.1.102   Ubuntu 22.04
 ```
 
 #### Install kubectl (if not already installed)
 
 ```bash
 # Linux
-curl -LO "https://dl.k8s.io/release/v1.32.0/bin/linux/amd64/kubectl"
+curl -LO "https://dl.k8s.io/release/v1.35.4/bin/linux/amd64/kubectl"
 chmod +x kubectl && sudo mv kubectl /usr/local/bin/
 
 # macOS
@@ -673,7 +733,7 @@ make scale
 
 ### Upgrade Kubernetes
 
-1. Update `KUBE_VERSION` in `cluster.conf` (e.g. `v1.32.0` → `v1.33.0`).
+1. Update `KUBE_VERSION` in `cluster.conf` (e.g. `v1.35.4` → `v1.36.0`).
 2. Optionally update `KUBESPRAY_VERSION` to a release that supports the new Kubernetes version.
 3. Run:
 
@@ -1088,8 +1148,8 @@ Version is tracked in the [`VERSION`](VERSION) file and shown by `./hypercluster
 
 | Component | Version |
 |-----------|---------|
-| Kubespray | v2.30.0 |
-| Kubernetes | v1.32.0 |
+| Kubespray | v2.31.0 |
+| Kubernetes | v1.35.4 |
 | KubeVirt | v1.3.1 |
 | CDI | v1.59.0 |
 ## License

@@ -8,7 +8,8 @@ Premium macOS/Windows desktop UI for the [hypercluster](../hypercluster) CLI —
 
 - Node.js 20+
 - Rust (for Tauri 2)
-- macOS: Xcode CLT; **Apple Silicon (M-series) for release installs**; [Homebrew bash 5](https://formulae.brew.sh/formula/bash) recommended
+- macOS: Xcode CLT; **Apple Silicon (M-series) for release installs**
+- **Deploy-side tools (Kubespray):** Python **3.11+** (Homebrew), bash **5**, ansible, kubectl, helm — install via `./scripts/setup-macos.sh` from repo root before first deploy from the app
 - A working `hypercluster` binary (repo root `../hypercluster` is auto-detected in dev)
 
 ## Branding & icons

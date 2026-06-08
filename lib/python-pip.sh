@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Python pip helpers — pip3 with python3 -m pip fallback (Homebrew/macOS compat).
 
+# shellcheck source=lib/python-resolve.sh
+source "${HYPERCLUSTER_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}/lib/python-resolve.sh"
+
 pip::_repo_dir() {
   echo "${HYPERCLUSTER_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 }
@@ -12,7 +15,9 @@ if [[ -z "${_PYTHON_PIP_LOG_SOURCED:-}" ]]; then
 fi
 
 pip::_externally_managed() {
-  python3 -c "
+  local py
+  py="$(python::bin)"
+  "$py" -c "
 import sys, sysconfig
 from pathlib import Path
 if sys.version_info < (3, 11):
@@ -37,7 +42,8 @@ pip::module_install_hint() {
 }
 
 pip::install() {
-  local extra=()
+  local extra=() py
+  py="$(python::bin)"
   if pip::_externally_managed; then
     extra=(--break-system-packages)
   fi
@@ -55,7 +61,7 @@ pip::install() {
     fi
   fi
 
-  if python3 -m pip install "${extra[@]}" "$@" 2>"$err_pym"; then
+  if "$py" -m pip install "${extra[@]}" "$@" 2>"$err_pym"; then
     return 0
   fi
 

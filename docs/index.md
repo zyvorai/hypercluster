@@ -1,6 +1,6 @@
 # Hypercluster Documentation Hub
 
-End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** paths. Version **0.1.0** · generated 2026-06-06T19:09:30Z.
+End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** paths. Version **0.1.0** · generated 2026-06-08T10:35:16Z.
 
 ---
 
@@ -12,6 +12,7 @@ End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** p
 - **Hypercluster Desktop** — Tauri app; all actions via CLI ([guide](guides/desktop-ux-guide.md))
 - **Doc generator** — `make docs` · `make docs-serve` (port 8080)
 - **Agent training** — [AGENTS.md](../AGENTS.md) · [training.md](agents/training.md)
+- **Zyvor platform stack** — [zyvor-platform-stack.md](guides/zyvor-platform-stack.md) (Day 2 products, install order)
 
 ---
 
@@ -40,6 +41,7 @@ End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** p
 | Document | Description |
 |----------|-------------|
 | [Guides index](guides/README.md) | All task-oriented guides |
+| [Zyvor platform stack](guides/zyvor-platform-stack.md) | Ecosystem map and Day 2 install order |
 | [Desktop UX guide](guides/desktop-ux-guide.md) | Liquid Glass UI — full UX reference |
 | [Apple Silicon Desktop](guides/desktop-macos-apple-silicon.md) | M-series Mac install and troubleshooting |
 | [CLI guide](guides/cli/hypercluster-guide.md) | Commands, flags, JSON, Make |
@@ -91,4 +93,4 @@ npm run desktop        # Hypercluster Desktop
 
 ---
 
-**Regenerate:** `make docs` · **Last generated:** 2026-06-06T19:09:30Z
+**Regenerate:** `make docs` · **Last generated:** 2026-06-08T10:35:16Z

@@ -37,6 +37,18 @@ if [[ -f "$TRIAL_SCRIPT" ]]; then
   sudo -u "$CONSOLE_USER" -H bash -lc "source '${TRIAL_SCRIPT}' && hc_trial_ensure_started" 2>/dev/null || true
 fi
 
+HC_DATA="$(sudo -u "$CONSOLE_USER" -H bash -lc 'echo "$HOME/Library/Application Support/Hypercluster"')"
+PY=""
+for candidate in /opt/homebrew/bin/python3 /opt/homebrew/opt/python@3.12/bin/python3 /usr/local/bin/python3; do
+  if [[ -x "$candidate" ]] && "$candidate" -c 'import sys; exit(0 if sys.version_info >= (3, 11) else 1)' 2>/dev/null; then
+    PY="$candidate"
+    break
+  fi
+done
+if [[ -n "$PY" ]]; then
+  sudo -u "$CONSOLE_USER" -H bash -lc "mkdir -p '$HC_DATA' && '$PY' -m venv '$HC_DATA/kubespray-venv'" 2>/dev/null || true
+fi
+
 APP="/Applications/Hypercluster.app"
 if [[ -d "$APP" ]]; then
   LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"

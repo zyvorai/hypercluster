@@ -18,7 +18,48 @@ Agents must prefer **`./hypercluster`** over manual helm/kubectl/ssh scripts unl
 
 ---
 
-## 2. Architecture
+## 2. Scope & non-goals
+
+hypercluster is a **bash CLI + Desktop UI** for **on-prem Kubernetes over SSH** — not a general infrastructure platform. Use this section when scoping sales, support, or agent work so Desktop **placeholders** (Kyverno, Velero, Prometheus, vLLM — `wired: false` or “coming soon” in `desktop/src/lib/spec-manifest.json`) are not treated as shipped features.
+
+### In scope (core product)
+
+| Domain | Coverage |
+|--------|----------|
+| **Kubernetes engineering** | Deploy, upgrade, scale, remove-node, destroy, kubeconfig, preflight, status/health/test JSON; Kubespray + k3s paths; platform stack (Cilium → cert-manager → MetalLB → KubeVirt/CDI → metrics-server). |
+| **Infrastructure automation** | `cluster.conf` as single source of truth; Ansible/Kubespray; inventory generation (`lib/inventory.sh`); SSH automation; wizard/profiles; Desktop `ClusterSpec` → conf. Not bundled cloud Terraform/Kubespray cloud contrib. |
+
+### Predominantly out of scope
+
+| Domain | Notes |
+|--------|-------|
+| **DevOps / CI/CD** | No pipeline engine, GitOps, or release automation — lifecycle is on-demand (`deploy`, `upgrade`, `scale`) from laptop or Desktop. |
+| **AI/LLM infrastructure** | No vLLM, TensorRT-LLM, Triton, KServe, or inference optimization. Desktop **AI Copilot** is ops chat/insights only (`desktop/src/lib/ai/`). |
+| **DevSecOps** | No SAST, secrets vault, secure pipeline gates. Kyverno/Falco/Trivy are catalog-only. cert-manager TLS is a platform addon, not a DevSecOps program. |
+| **Database & AI platform stack** | No PostgreSQL, Qdrant, vector DB, or backend data-plane integration. |
+| **Observability & reliability** | No Prometheus/Grafana/Loki install, alerting, or log pipelines. Light touches: metrics-server, optional Cilium Hubble, `health --json` / smoke tests. |
+| **HA & disaster recovery** | Multi–control-plane HA via Kubespray is supported; **backup/restore, failover planning, and BCP are out of scope** (Velero coming soon; kubeconfig file backup only in `lib/kubeconfig.sh`). |
+
+### Mostly out of scope (narrow in-scope slices)
+
+| Domain | Out of scope | In-scope slice |
+|--------|--------------|----------------|
+| **Linux infrastructure** | General OS admin, network/storage design, hardening, capacity tuning | **Lab ops** only: secondary disk, StorageClass patch, memory tune on single-node k3s labs (`lib/lab.sh`). Nodes assumed prepped (SSH, swap off, ports). |
+| **Virtualization engineering** | Bare-metal KVM hypervisor design, host HA, hypervisor resource pools | **KubeVirt/CDI on Kubernetes**: Helm install, VM list/create JSON, templates, discover (`lib/vms.sh`, `lib/discover.sh`). |
+| **GPU infrastructure** | H100/A100 fleet design, CUDA tuning, GPU scheduling/monitoring stacks | Optional **NVIDIA GPU Operator + NFD** when `GPU_OPERATOR_ENABLED=true` (`lib/platform-stack.sh`). |
+| **Container platform engineering** | Standalone registry/OCI lifecycle, image build pipelines | Runtime choice via Kubespray (`podman`/`containerd`/`docker`) and k3s containerd; lifecycle delegated to Kubernetes/CRI. |
+
+### Quick out-of-scope list
+
+Treat as **out of scope** (fully or for the main body of work): DevOps CI/CD (#2), AI/LLM infra (#6), DevSecOps (#8), database/vector stack (#10), full observability/SRE (#11), backup/BCP DR (#12), general Linux infra (#1), bare-metal virtualization (#4), deep GPU engineering (#5), standalone container platform (#7).
+
+**In scope:** Kubernetes engineering (#3), infrastructure automation (#9).
+
+**Ecosystem (Day 2 products):** [Zyvor platform stack guide](../guides/zyvor-platform-stack.md) — install order and sibling repo map (forge, v9s, machina, packetwolf, …). hypercluster does **not** replace those products.
+
+---
+
+## 3. Architecture
 
 ### Kubespray path (`K8S_DISTRO=kubespray`)
 
@@ -67,7 +108,7 @@ Registry: `~/Library/Application Support/Hypercluster/clusters.json`.
 
 ---
 
-## 3. Configuration contract
+## 4. Configuration contract
 
 Single source: **`cluster.conf`** (shell-sourced, gitignored).
 
@@ -85,7 +126,7 @@ Template: `config/cluster.conf.example` · Generated ref: `docs/generated/CONFIG
 
 ---
 
-## 4. CLI reference
+## 5. CLI reference
 
 ```bash
 ./hypercluster -c cluster.conf <command> [args]
@@ -105,7 +146,7 @@ Flags: `-c` config, `-f` force, `-n` dry-run, `-v` verbose.
 
 ---
 
-## 5. JSON automation
+## 6. JSON automation
 
 ### `preflight --json`
 
@@ -143,7 +184,7 @@ Use for dashboard fleet refresh and automation. `--with-test` runs platform smok
 
 ---
 
-## 6. Agent workflows
+## 7. Agent workflows
 
 ### Verify a k3s cluster is healthy
 
@@ -177,7 +218,7 @@ Expect `state: "healthy"` (or investigate `issues[]`), and `fail: 0` on full pla
 
 ---
 
-## 7. Testing matrix
+## 8. Testing matrix
 
 | Target | Command | Needs cluster |
 |--------|---------|---------------|
@@ -194,7 +235,7 @@ Always run unit tests before claiming a fix is complete.
 
 ---
 
-## 8. Documentation pipeline
+## 9. Documentation pipeline
 
 ```bash
 make docs
@@ -211,7 +252,7 @@ Agents editing CLI or config **must** run `make docs` and commit generated artif
 
 ---
 
-## 9. Do not
+## 10. Do not
 
 - Install cert-manager before Cilium on k3s.
 - Commit secrets, `cluster.conf`, or kubeconfigs.
@@ -222,7 +263,7 @@ Agents editing CLI or config **must** run `make docs` and commit generated artif
 
 ---
 
-## 10. Related files
+## 11. Related files
 
 | File | Role |
 |------|------|

@@ -61,7 +61,7 @@ export const STUDIO_TEMPLATES: StudioTemplate[] = [
       templateId: 'production-ha',
       clusterName: 'production-ha',
       k8sDistro: 'kubespray',
-      kubeVersion: 'v1.30.4',
+      kubeVersion: 'v1.35.4',
       cniPlugin: 'calico',
       containerManager: 'containerd',
       kubePodsSubnet: '10.233.64.0/18',

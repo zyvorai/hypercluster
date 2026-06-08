@@ -66,6 +66,17 @@ fi
 export PATH="$(brew --prefix)/bin:$PATH"
 info "Active bash: $(bash --version | head -1)"
 
+# ── Python 3 (Kubespray/Ansible 11 requires 3.11+) ───────────────────────────
+step "Python 3"
+BREW_PREFIX="$(brew --prefix)"
+if [[ -x "${BREW_PREFIX}/bin/python3" ]] && "${BREW_PREFIX}/bin/python3" -c 'import sys; exit(0 if sys.version_info >= (3, 11) else 1)' 2>/dev/null; then
+  info "Python already installed: $("${BREW_PREFIX}/bin/python3" --version)"
+else
+  info "Installing Python 3 via Homebrew …"
+  brew install python@3.12 || brew install python
+  info "Python installed: $("${BREW_PREFIX}/bin/python3" --version 2>/dev/null || python3 --version)"
+fi
+
 # ── Ansible ───────────────────────────────────────────────────────────────────
 step "Ansible"
 if command -v ansible &>/dev/null; then
@@ -145,7 +156,7 @@ info "Podman machine: $(podman machine list --format '{{.Name}} {{.LastUp}}' 2>/
 # Modern macOS Python is PEP 668 "externally managed" — use --break-system-packages
 step "Python modules"
 for mod in jinja2 netaddr; do
-  if python3 -c "import $mod" &>/dev/null; then
+  if "${BREW_PREFIX}/bin/python3" -c "import $mod" &>/dev/null 2>&1 || python3 -c "import $mod" &>/dev/null; then
     info "$mod already installed."
   else
     info "Installing $mod …"
@@ -160,11 +171,11 @@ PROFILE="$HOME/.zshrc"
 [[ "$SHELL" == */bash ]] && PROFILE="$HOME/.bash_profile"
 
 BREW_PREFIX="$(brew --prefix)"
-PY_VER=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+PY_VER=$("${BREW_PREFIX}/bin/python3" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 
 LINES=(
   "# hypercluster — added by setup-macos.sh"
-  "export PATH=\"$BREW_PREFIX/bin:$BREW_PREFIX/opt/ansible/bin:\$HOME/Library/Python/$PY_VER/bin:/usr/local/bin:\$PATH\""
+  "export PATH=\"$BREW_PREFIX/bin:$BREW_PREFIX/opt/python@3.12/bin:$BREW_PREFIX/opt/python@3.13/bin:$BREW_PREFIX/opt/ansible/bin:\$HOME/Library/Python/$PY_VER/bin:/usr/local/bin:\$PATH\""
 )
 
 ALREADY_SET=true

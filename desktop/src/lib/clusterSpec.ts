@@ -64,7 +64,7 @@ export function defaultClusterSpec(): ClusterSpec {
     description: '',
     k8sDistro: 'k3s',
     deployModel: 'ssh',
-    kubesprayVersion: 'v2.30.0',
+    kubesprayVersion: 'v2.31.0',
     kubeVersion: 'v1.35.5+k3s1',
     nodes: [],
     controlPlaneIps: ['10.0.0.10'],

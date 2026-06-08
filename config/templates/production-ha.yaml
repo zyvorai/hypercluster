@@ -6,7 +6,7 @@ icon: ha
 defaults:
   clusterName: production-ha
   k8sDistro: kubespray
-  kubeVersion: v1.30.4
+  kubeVersion: v1.35.4
   cniPlugin: calico
   controlPlaneIps:
     - 10.0.0.11

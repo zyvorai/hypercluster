@@ -37,13 +37,24 @@ preflight::check_command() {
 }
 
 preflight::check_python_module() {
-  local mod="$1"
-  if python3 -c "import $mod" &>/dev/null; then
+  local mod="$1" py
+  py="$(python::bin)"
+  if "$py" -c "import $mod" &>/dev/null; then
     preflight::_pass "Python module: $mod"
     return 0
   fi
   preflight::_fail "Python module: $mod" "$(pip::module_install_hint "$mod")"
   return 1
+}
+
+preflight::check_python() {
+  local py ver
+  if ! py="$(python::resolve 2>/dev/null)"; then
+    preflight::_fail "Python 3.11+" "not found — macOS: brew install python@3.12 && ./scripts/setup-macos.sh"
+    return 1
+  fi
+  ver="$("$py" -c 'import sys; print(".".join(map(str, sys.version_info[:3])))')"
+  preflight::_pass "Python 3.11+" "$py ($ver)"
 }
 
 preflight::check_ssh_key() {
@@ -191,6 +202,7 @@ preflight::run() {
   done
 
   if [[ "$distro" == "kubespray" ]]; then
+    preflight::check_python || (( failed++ )) || true
     for mod in jinja2 netaddr; do
       preflight::check_python_module "$mod" || (( failed++ )) || true
     done

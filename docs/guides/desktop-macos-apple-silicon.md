@@ -12,8 +12,9 @@ This guide covers install requirements, common compatibility issues, and fixes w
 |------|-------|
 | **Mac** | Apple Silicon (M-series), macOS 11+ |
 | **Installer** | `Hypercluster-*-arm64.pkg` — filename must include `arm64` |
+| **Python** | **3.11+** via Homebrew (`python@3.12`) — **not** `/usr/bin/python3` (3.9) |
 | **Homebrew bash 5** | Required for the bundled `hypercluster` CLI scripts |
-| **Deploy tools** | `ssh`, `kubectl`, `helm`, `ansible` (via `./scripts/setup-macos.sh`) |
+| **Deploy tools** | `ssh`, `git`, `kubectl`, `helm`, `ansible` (via `./scripts/setup-macos.sh`) |
 | **Rosetta** | **Do not** enable “Open using Rosetta” on Hypercluster.app |
 
 One-time setup from repo root:
@@ -33,8 +34,11 @@ When you launch Hypercluster from **Finder**, **Dock**, or **Spotlight**, macOS 
 Hypercluster Desktop now prepends these paths for every CLI subprocess:
 
 - `/opt/homebrew/bin` and `/opt/homebrew/sbin` (Apple Silicon Homebrew)
+- `/opt/homebrew/opt/python@3.12/bin` (and other Homebrew Python installs)
 - `/usr/local/bin` and `/usr/local/sbin` (Intel Homebrew / legacy installs)
 - Standard system paths (`/usr/bin`, `/bin`, …)
+
+It sets `HYPERCLUSTER_PYTHON` and `HYPERCLUSTER_DATA_DIR` so Kubespray uses Homebrew Python and writes its venv under `~/Library/Application Support/Hypercluster/kubespray-venv` (not inside the read-only `.app` bundle).
 
 It also forwards `SSH_AUTH_SOCK` and `HOME` so remote deploy over SSH works with your login session keys.
 
@@ -70,6 +74,19 @@ brew install bash
 ```
 
 The desktop app runs subprocesses with Homebrew bash when present (`/opt/homebrew/bin/bash`, then `/usr/local/bin/bash`).
+
+### Python too old or `Python 3.11+` preflight failure
+
+Kubespray v2.31 requires **Python 3.11+** and **Ansible 11**. macOS system Python at `/usr/bin/python3` is 3.9 and will not work.
+
+```bash
+brew install python@3.12
+./scripts/setup-macos.sh
+python3 --version    # expect 3.11 or newer from /opt/homebrew/bin/python3
+./scripts/macos/desktop-preflight.sh
+```
+
+Then quit and reopen Hypercluster Desktop.
 
 ### `ssh: command not found` or `helm: command not found`
 
@@ -129,4 +146,4 @@ See also:
 
 ---
 
-_Doc version: 2026-06-06T19:09:30Z · hypercluster v0.1.0_
+_Doc version: 2026-06-08T10:35:16Z · hypercluster v0.1.0_

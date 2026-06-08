@@ -95,4 +95,28 @@ postdeploy::print_hints() {
   printf "  \033[1mAPI server\033[0m\n"
   printf "    https://%s:6443\n" "$cp_ip"
   echo ""
+
+  postdeploy::print_zyvor_handoff "$kc"
+}
+
+postdeploy::print_zyvor_handoff() {
+  local kc="${1:-$(postdeploy::_kc)}"
+  log::section "Zyvor platform stack (Day 2)"
+  echo ""
+  printf "  hypercluster is Day 0 only. Install sibling products against this kubeconfig:\n"
+  printf "    export KUBECONFIG=%s\n" "$kc"
+  echo ""
+  printf "  \033[1mGuide\033[0m\n"
+  printf "    docs/guides/zyvor-platform-stack.md\n"
+  echo ""
+  printf "  \033[1mForge import\033[0m\n"
+  printf "    ./hypercluster -c %s forge-handoff --json\n" "${CONFIG_FILE:-./cluster.conf}"
+  echo ""
+  printf "  \033[1mTypical next installs\033[0m\n"
+  printf "    packetwolf   — Cilium network intelligence (after Cilium CNI)\n"
+  printf "    forge        — GPU operators, vLLM/Triton, GitOps\n"
+  printf "    v9s (Zeus)   — KubeVirt VM / app operations\n"
+  printf "    machina      — bare-metal libvirt (before cluster, if needed)\n"
+  printf "    guestkit     — offline VM inspect / migration assurance\n"
+  echo ""
 }

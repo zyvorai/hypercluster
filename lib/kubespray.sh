@@ -1,17 +1,29 @@
 #!/usr/bin/env bash
 # Kubespray clone / playbook execution helpers — source this file.
 
+# shellcheck source=lib/runtime-paths.sh
+source "${HYPERCLUSTER_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}/lib/runtime-paths.sh"
+# shellcheck source=lib/python-resolve.sh
+source "${HYPERCLUSTER_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}/lib/python-resolve.sh"
+
 kubespray::_venv_dir() {
-  local script_dir="${HYPERCLUSTER_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+  if runtime::bundled_macos_app; then
+    echo "$(runtime::data_dir)/kubespray-venv"
+    return 0
+  fi
+  local script_dir
+  script_dir="$(runtime::_repo_dir)"
   echo "$script_dir/.kubespray-venv"
 }
 
 kubespray::_ensure_venv() {
-  local venv_dir
+  local venv_dir py
   venv_dir="$(kubespray::_venv_dir)"
+  py="$(python::bin)"
   if [[ ! -d "$venv_dir/bin" ]]; then
     log::info "Creating Python venv at $venv_dir …"
-    python3 -m venv "$venv_dir" || die "python3 -m venv failed — is python3-venv installed?"
+    python::require
+    "$py" -m venv "$venv_dir" || die "python venv failed ($py) — install Python 3.11+ (macOS: brew install python@3.12)"
   fi
   # shellcheck disable=SC1091
   source "$venv_dir/bin/activate"

@@ -13,6 +13,8 @@ Guidance for AI coding agents (Cursor, Claude, etc.) working in this repository.
 
 **Hypercluster Desktop** (`desktop/`) is a Tauri + React UI that **only** spawns the `hypercluster` binary — never `helm`, `kubectl`, or manual installs for lifecycle ops.
 
+**Scope:** on-prem K8s lifecycle + Ansible automation — see [docs/agents/training.md § Scope & non-goals](docs/agents/training.md#2-scope--non-goals). **Day 2:** [docs/guides/zyvor-platform-stack.md](docs/guides/zyvor-platform-stack.md) (forge, v9s, machina, packetwolf, install order).
+
 ## Golden rules
 
 1. **Single config file:** `cluster.conf` (gitignored). Template: `config/cluster.conf.example`.

@@ -9,7 +9,7 @@ FLAGS   ?=
 
 .PHONY: help init preflight deploy deploy-remote scale upgrade remove-node \
         fetch-kubeconfig merge-kubeconfig install-kubevirt status destroy check-deps \
-        lint test-smoke test-inventory test-platform-config test-platform-json test-platform-health-json test-preflight-json test-python-pip test-local test-podman \
+        lint test-smoke test-inventory test-platform-config test-platform-json test-platform-health-json test-preflight-json test-python-pip test-python-resolve test-runtime-paths test-forge-handoff test-local test-podman \
         test-remote dry-deploy unlock wizard desktop-dev desktop-build desktop-pkg desktop-install desktop-uninstall desktop-brand desktop-icons desktop-preflight desktop-check docs docs-venv \
         lab-setup lab-storage lab-tune lab-storage-status test-lab-config
 
@@ -124,6 +124,18 @@ test-preflight-json: ## 🧪  Run preflight JSON output unit tests
 test-python-pip: ## 🧪  Run pip install fallback helper unit tests
 	chmod +x tests/test-python-pip.sh
 	./tests/test-python-pip.sh
+
+test-python-resolve: ## 🧪  Run Python resolver unit tests
+	chmod +x tests/test-python-resolve.sh
+	./tests/test-python-resolve.sh
+
+test-runtime-paths: ## 🧪  Run bundled app data path unit tests
+	chmod +x tests/test-runtime-paths.sh
+	./tests/test-runtime-paths.sh
+
+test-forge-handoff: ## 🧪  Run forge-handoff JSON unit tests
+	chmod +x tests/test-forge-handoff.sh
+	./tests/test-forge-handoff.sh
 
 test-discover-json: ## 🧪  Run discover JSON output unit tests
 	chmod +x tests/test-discover-json.sh

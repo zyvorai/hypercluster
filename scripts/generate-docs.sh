@@ -206,6 +206,7 @@ End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** p
 - **Hypercluster Desktop** — Tauri app; all actions via CLI ([guide](guides/desktop-ux-guide.md))
 - **Doc generator** — \`make docs\` · \`make docs-serve\` (port 8080)
 - **Agent training** — [AGENTS.md](../AGENTS.md) · [training.md](agents/training.md)
+- **Zyvor platform stack** — [zyvor-platform-stack.md](guides/zyvor-platform-stack.md) (Day 2 products, install order)
 
 ---
 
@@ -234,6 +235,7 @@ End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** p
 | Document | Description |
 |----------|-------------|
 | [Guides index](guides/README.md) | All task-oriented guides |
+| [Zyvor platform stack](guides/zyvor-platform-stack.md) | Ecosystem map and Day 2 install order |
 | [Desktop UX guide](guides/desktop-ux-guide.md) | Liquid Glass UI — full UX reference |
 | [Apple Silicon Desktop](guides/desktop-macos-apple-silicon.md) | M-series Mac install and troubleshooting |
 | [CLI guide](guides/cli/hypercluster-guide.md) | Commands, flags, JSON, Make |
@@ -542,7 +544,7 @@ EOF
 
 stamp_guides() {
   local footer="_Doc version: ${TS} · hypercluster v${VERSION}_"
-  for f in "${DOCS}/guides/desktop-ux-guide.md" "${DOCS}/guides/desktop-macos-apple-silicon.md" "${DOCS}/guides/cli/hypercluster-guide.md"; do
+  for f in "${DOCS}/guides/desktop-ux-guide.md" "${DOCS}/guides/desktop-macos-apple-silicon.md" "${DOCS}/guides/cli/hypercluster-guide.md" "${DOCS}/guides/zyvor-platform-stack.md"; do
     [[ -f "$f" ]] || continue
     if grep -q "Doc version:" "$f"; then
       sed -i.bak "s/_Doc version:.*_/${footer}/" "$f" && rm -f "${f}.bak"

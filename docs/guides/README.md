@@ -31,6 +31,7 @@ Task-oriented guides for hypercluster CLI and Desktop UX.
 
 | Guide | Best for |
 |-------|----------|
+| [Zyvor platform stack](zyvor-platform-stack.md) | Ecosystem map, Day 2 install order, sibling products |
 | [Lab operations](lab-ops.md) | Secondary disk for KubeVirt, single-node memory tune |
 | [Main README](../../README.md) | Install, tutorial, troubleshooting |
 | [Release checklist](../../RELEASE.md) | Version bump and QA |
@@ -43,7 +44,7 @@ Task-oriented guides for hypercluster CLI and Desktop UX.
 | Use Desktop instead of CLI | [Desktop UX guide](desktop-ux-guide.md) | 10 min |
 | Discover nodes for Studio | [CLI guide — discover](cli/hypercluster-guide.md#discover-no-clusterconf) | 5 min |
 | Automate smoke tests | [CLI guide — JSON](cli/hypercluster-guide.md#json-output) | 5 min |
-| Import existing config | [Desktop UX — Import](desktop-ux-guide.md#3-dashboard) | 2 min |
+| Install sibling Zyvor products after deploy | [Zyvor platform stack](zyvor-platform-stack.md) | 5 min |
 
 ## Regenerate docs
 

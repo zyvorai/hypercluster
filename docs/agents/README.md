@@ -4,7 +4,7 @@ Instructions for AI coding agents working on hypercluster.
 
 | Document | Purpose |
 |----------|---------|
-| [training.md](training.md) | Full training guide (architecture, workflows, invariants) |
+| [training.md](training.md) | Full training guide (architecture, **scope & non-goals**, **platform stack**, workflows) |
 | [../../AGENTS.md](../../AGENTS.md) | Root quick reference (Cursor / repo agents) |
 | [../generated/AGENT-QUICKREF.md](../generated/AGENT-QUICKREF.md) | Auto-generated from repo sources (`make docs`) |
 | [../pdf/AGENT-TRAINING.pdf](../pdf/AGENT-TRAINING.pdf) | Printable training PDF |

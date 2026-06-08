@@ -9,7 +9,7 @@ CLUSTER_NAME="mycluster"
 # ---------------------------------------------------------------------------
 # Kubespray source
 # ---------------------------------------------------------------------------
-KUBESPRAY_VERSION="v2.30.0"
+KUBESPRAY_VERSION="v2.31.0"
 KUBESPRAY_DIR=".kubespray"          # relative to this repo root
 
 # ---------------------------------------------------------------------------
@@ -53,7 +53,7 @@ GPU_OPERATOR_ENABLED="false"
 # ---------------------------------------------------------------------------
 # Kubernetes (Kubespray path)
 # ---------------------------------------------------------------------------
-KUBE_VERSION="v1.32.0"
+KUBE_VERSION="v1.35.4"
 CONTAINER_MANAGER="podman"          # podman | containerd | docker
 CNI_PLUGIN="cilium"                 # cilium | calico | flannel | kube-ovn
 
@@ -84,6 +84,7 @@ WORKER_IPS="192.168.1.101 192.168.1.102"
 # Optional add-ons
 # ---------------------------------------------------------------------------
 METRICS_SERVER_ENABLED="true"
+# Deprecated in Kubespray v2.31.0+ (removed upstream); kept for older Kubespray pins only.
 INGRESS_NGINX_ENABLED="false"
 DASHBOARD_ENABLED="false"
 

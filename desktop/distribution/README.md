@@ -21,16 +21,31 @@ chmod +x scripts/setup-macos.sh
 | Install locally | `make desktop-install` | `/Applications/Hypercluster.app` |
 | Sanity check | `make desktop-check` | TS + `cargo check` |
 
-Requirements: **Apple Silicon (arm64)** for release artifacts, macOS 11+, Node 20+, Rust, Xcode CLT, Homebrew bash 5.
+Requirements: **Apple Silicon (arm64)** for release artifacts, macOS 11+, Node 20+, Rust, Xcode CLT.
+
+**Minimal deploy requirements** (Kubespray path from the installed app):
+
+| Tool | Minimum | Notes |
+|------|---------|--------|
+| **Python** | **3.11+** | Homebrew `python@3.12` — macOS `/usr/bin/python3` (3.9) is too old |
+| **bash** | **5.x** | Homebrew bash — system `/bin/bash` is 3.2 |
+| **ansible** | 2.14+ (11.x for Kubespray v2.31+) | Via Homebrew |
+| **ssh**, **git**, **kubectl**, **helm** | any recent | Deploy-side tools |
+
+Install all of the above in one step:
+
+```bash
+chmod +x scripts/setup-macos.sh
+./scripts/setup-macos.sh   # bash 5, python@3.12, ansible, kubectl, helm, …
+```
 
 Before first deploy from the installed app:
 
 ```bash
-./scripts/setup-macos.sh
 ./scripts/macos/desktop-preflight.sh
 ```
 
-Troubleshooting (PATH, bash 5, SSH agent, wrong-arch builds): [docs/guides/desktop-macos-apple-silicon.md](../../docs/guides/desktop-macos-apple-silicon.md).
+Troubleshooting (PATH, bash 5, Python, SSH agent, wrong-arch builds): [docs/guides/desktop-macos-apple-silicon.md](../../docs/guides/desktop-macos-apple-silicon.md).
 
 ## Install options
 
@@ -130,7 +145,9 @@ The desktop app auto-detects this path; no separate CLI install required.
 
 - **Apple Silicon Mac (M1/M2/M3/M4 or later)** — arm64 only; Intel (x86_64) support ended
 - macOS 11.0+
+- **Python 3.11+** (Homebrew `python@3.12`) — required for Kubespray/Ansible from the app
 - [Homebrew bash 5](https://formulae.brew.sh/formula/bash) for bundled CLI scripts
+- **ansible**, **kubectl**, **helm**, **ssh**, **git** — `./scripts/setup-macos.sh` from repo root
 
 Build the release `.pkg` on an Apple Silicon Mac (`make desktop-pkg`). Local dev on Intel Macs still works via `npm run desktop`, but release artifacts are arm64-only.
 
