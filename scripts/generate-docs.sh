@@ -617,6 +617,7 @@ validate_index
 gen_welcome_html
 DOCS="${DOCS}" gen_presentations
 "$(docs_python)" "${ROOT}/scripts/generate-platform-presentations.py"
+"$(docs_python)" "${ROOT}/scripts/generate-platform-detail-deck.py"
 gen_presentations_readme
 stamp_guides
 gen_pdfs || {
