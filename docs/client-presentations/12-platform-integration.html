@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>Integration & install order</title><style>
+  @page { size: A4; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: #1a1a2e; background: #fff; line-height: 1.6; }
+
+  .cover { height: 100vh; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; page-break-after: always; position: relative; overflow: hidden; }
+  .cover::before { content: ''; position: absolute; inset: -50%; background: radial-gradient(circle at 30% 50%, rgba(255,143,63,0.15) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(99,102,241,0.1) 0%, transparent 50%); }
+  .cover h1 { font-size: 3.1em; font-weight: 800; letter-spacing: -1px; position: relative; }
+  .cover h1 span { color: #ff8f3f; }
+  .cover h2 { font-size: 1.25em; font-weight: 300; opacity: 0.9; margin: 1em 0; max-width: 640px; position: relative; }
+  .cover .badge { display: inline-block; background: rgba(255,143,63,0.2); border: 1px solid rgba(255,143,63,0.4); padding: 8px 20px; border-radius: 20px; font-size: 0.88em; margin-top: 1.5em; position: relative; }
+
+  .page { min-height: 100vh; padding: 56px 72px; page-break-after: always; position: relative; }
+  .page-dark { background: #0f111a; color: #e8e6df; }
+  .page-light { background: #fafbfc; color: #1a1a2e; }
+  .page-accent { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #e8e6df; }
+
+  h2 { font-size: 1.85em; font-weight: 700; margin-bottom: 0.55em; color: #ff8f3f; }
+  h3 { font-size: 1.1em; font-weight: 600; margin: 1em 0 0.4em; color: #ffb380; }
+  .page-light h3 { color: #c2410c; }
+  p.sub { opacity: 0.75; margin-bottom: 1.2em; font-size: 0.98em; }
+
+  ul { margin: 0.5em 0 0.8em 1.35em; }
+  li { margin-bottom: 0.42em; font-size: 0.95em; }
+  code { background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.88em; }
+  .page-light code { background: #eef2ff; color: #1e293b; }
+
+  .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin: 1.2em 0; }
+  .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; }
+  .page-light .card { background: #fff; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .card h4 { font-size: 1em; font-weight: 600; margin-bottom: 6px; color: #ff8f3f; }
+  .page-light .card h4 { color: #ea580c; }
+  .card p { font-size: 0.9em; opacity: 0.88; }
+
+  .stat-row { display: flex; gap: 14px; margin: 1.2em 0; flex-wrap: wrap; }
+  .stat { flex: 1; min-width: 110px; text-align: center; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 16px 8px; }
+  .page-light .stat { background: #fff; border: 1px solid #e5e7eb; }
+  .stat .n { font-size: 2em; font-weight: 800; color: #ff8f3f; line-height: 1; }
+  .page-light .stat .n { color: #ea580c; }
+  .stat .l { font-size: 0.78em; opacity: 0.72; margin-top: 6px; line-height: 1.3; }
+
+  table { width: 100%; border-collapse: collapse; margin: 1em 0; font-size: 0.88em; }
+  th { background: #ff8f3f; color: #fff; padding: 10px 14px; text-align: left; font-weight: 600; }
+  td { padding: 9px 14px; border-bottom: 1px solid rgba(255,255,255,0.1); vertical-align: top; }
+  .page-light td { border-bottom: 1px solid #e5e7eb; }
+  .page-light tr:nth-child(even) td { background: #f9fafb; }
+
+  .flow { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 1em 0; flex-wrap: wrap; }
+  .flow-step { background: rgba(255,143,63,0.15); border: 1px solid rgba(255,143,63,0.35); padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 0.82em; text-align: center; }
+  .flow-arrow { font-size: 1.2em; color: #ff8f3f; }
+
+  .cta { background: linear-gradient(135deg, #ff8f3f, #e67a30); color: #fff; padding: 28px; border-radius: 12px; text-align: center; margin-top: 1.5em; }
+  .cta h3 { color: #fff; margin-bottom: 0.3em; }
+  .footer { position: absolute; bottom: 28px; left: 72px; right: 72px; text-align: center; font-size: 0.76em; opacity: 0.45; }
+</style></head>
+<body>
+<div class="cover">
+  <h1>Zyvor <span>Platform</span></h1>
+  <h2>Cross-product flows and recommended deployment sequence</h2>
+  <div class="badge">hypercluster v0.1.0 · zyvor.dev · ssahani portfolio</div>
+</div>
+
+<div class="page page-dark">
+  <h2>Install order</h2>
+  <div class="flow"><span class="flow-step">Metal/Hypervisor</span><span class="flow-arrow">→</span><span class="flow-step">Migration prep</span><span class="flow-arrow">→</span><span class="flow-step">hypercluster</span><span class="flow-arrow">→</span><span class="flow-step">packetwolf · forge · v9s</span><span class="flow-arrow">→</span><span class="flow-step">hermes · Aether</span></div>
+  <table><thead><tr><th>Phase</th><th>Product</th><th>When</th></tr></thead><tbody><tr><td><strong>0a</strong></td><td>machina / zyvor-fabric / IronWolf</td><td>Bare metal or libvirt hosts not ready</td></tr><tr><td><strong>0b</strong></td><td>guestkit + hyper2kvm</td><td>VMs moving from VMware/Hyper-V</td></tr><tr><td><strong>1</strong></td><td>hypercluster</td><td>Always first for K8s</td></tr><tr><td><strong>2</strong></td><td>packetwolf</td><td>Cilium-enabled cluster</td></tr><tr><td><strong>3</strong></td><td>forge + v9s/VMRogue/ragnarok</td><td>GPU/AI + KubeVirt ops</td></tr><tr><td><strong>4</strong></td><td>hermes + Aether</td><td>App layer + portability overlay</td></tr></tbody></table>
+  <div class="footer">See docs/guides/zyvor-platform-stack.md</div>
+</div>
+<div class="page page-light">
+  <h2>Integration matrix</h2>
+  <table><thead><tr><th>From</th><th>To</th><th>Mechanism</th></tr></thead><tbody><tr><td><strong>hypercluster</strong></td><td>Forge, Hermes, Zeus</td><td>kubeconfig + forge-handoff JSON</td></tr><tr><td><strong>hypersdk</strong></td><td>hyper2kvm</td><td>Export → convert/deploy pipeline</td></tr><tr><td><strong>guestkit</strong></td><td>Veyron</td><td>Pre-flight boot scoring + fix plans</td></tr><tr><td><strong>packetwolf</strong></td><td>forge</td><td>Intelligence plane network module</td></tr><tr><td><strong>machina</strong></td><td>v9s</td><td>Physical hypervisor → cloud VM layer</td></tr><tr><td><strong>Aether</strong></td><td>All runtimes</td><td>Unified deploy/migrate</td></tr></tbody></table>
+  <div class="footer">Composable siblings — no monolith required</div>
+</div>
+</body></html>

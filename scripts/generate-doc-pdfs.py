@@ -250,6 +250,7 @@ def main() -> int:
         (DOCS / "guides" / "cli" / "hypercluster-guide.md", "CLI-GUIDE.pdf"),
         (DOCS / "_build" / "cli-reference.txt", "CLI-REFERENCE.pdf"),
         (DOCS / "generated" / "CONFIG-REFERENCE.md", "CONFIG-REFERENCE.pdf"),
+        (DOCS / "PLATFORM_ARCHITECTURE.md", "PLATFORM-ARCHITECTURE.pdf"),
     ]
 
     for src, pdf_name in sources:

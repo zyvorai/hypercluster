@@ -1,6 +1,6 @@
 # Hypercluster Documentation Hub
 
-End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** paths. Version **0.1.0** · generated 2026-06-16T23:19:58Z.
+End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** paths. Version **0.1.0** · generated 2026-06-17T05:27:17Z.
 
 ---
 
@@ -13,7 +13,8 @@ End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** p
 - **Doc generator** — `make docs` · `make docs-serve` (port 8080)
 - **Agent training** — [AGENTS.md](../AGENTS.md) · [training.md](agents/training.md)
 - **Zyvor platform stack** — [zyvor-platform-stack.md](guides/zyvor-platform-stack.md) (Day 2 products, install order)
-- **Platform architecture** — [PLATFORM_ARCHITECTURE.md](PLATFORM_ARCHITECTURE.md) (full Zyvor portfolio — all ssahani projects)
+- **Platform architecture** — [PLATFORM_ARCHITECTURE.md](PLATFORM_ARCHITECTURE.md) (full ssahani portfolio)
+- **Platform client PDFs** — [06-platform-overview.pdf](pdf/06-platform-overview.pdf) … [13-platform-deployment.pdf](pdf/13-platform-deployment.pdf)
 
 ---
 
@@ -74,6 +75,8 @@ End-to-end Kubernetes cluster lifecycle — **Kubespray** and **k3s platform** p
 | Document | Description |
 |----------|-------------|
 | [Presentation index](client-presentations/README.md) | A4 HTML decks (offline / print PDF) |
+| [Platform overview PDF](pdf/06-platform-overview.pdf) | Zyvor platform client deck series (06–13) |
+| [Platform architecture PDF](pdf/PLATFORM-ARCHITECTURE.pdf) | Full printable architecture reference |
 
 ### Release
 
@@ -95,4 +98,4 @@ npm run desktop        # Hypercluster Desktop
 
 ---
 
-**Regenerate:** `make docs` · **Last generated:** 2026-06-16T23:19:58Z
+**Regenerate:** `make docs` · **Last generated:** 2026-06-17T05:27:17Z
