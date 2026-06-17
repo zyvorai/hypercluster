@@ -1,5 +1,5 @@
 # KubeVirt-aware Cilium for k3s (Flannel disabled). Generated/overridden at deploy time.
-kubeProxyReplacement: true
+kubeProxyReplacement: KUBE_PROXY_REPLACEMENT
 
 k8sServiceHost: K8S_SERVICE_HOST
 k8sServicePort: 6443
@@ -11,14 +11,14 @@ ipam:
   mode: kubernetes
 
 hubble:
-  enabled: true
+  enabled: HUBBLE_ENABLED
   relay:
-    enabled: true
+    enabled: HUBBLE_ENABLED
   ui:
-    enabled: true
+    enabled: HUBBLE_ENABLED
 
 gatewayAPI:
-  enabled: true
+  enabled: GATEWAY_API_ENABLED
 
 l2announcements:
   enabled: true
@@ -30,7 +30,7 @@ nodePort:
   enabled: true
 
 bgpControlPlane:
-  enabled: true
+  enabled: BGP_CONTROL_PLANE_ENABLED
 
 bandwidthManager:
   enabled: true
@@ -44,7 +44,7 @@ hostFirewall:
   enabled: false
 
 encryption:
-  enabled: false
+  enabled: ENCRYPTION_ENABLED
 
 k8sClientRateLimit:
   qps: 50
@@ -52,6 +52,8 @@ k8sClientRateLimit:
 
 bpf:
   masquerade: true
+  # k3s API server runs on the host; without kube-proxy it needs BPF LB for ClusterIP.
+  lbExternalClusterIP: true
 
 routingMode: native
 autoDirectNodeRoutes: true

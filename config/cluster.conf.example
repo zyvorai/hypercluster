@@ -25,7 +25,10 @@ K3S_VERSION=""                       # e.g. v1.35.5+k3s1 (empty = latest channel
 K3S_EXEC_ARGS="--flannel-backend=none --disable-network-policy --disable traefik --disable servicelb --disable-kube-proxy"
 CILIUM_HUBBLE_ENABLED="true"
 CILIUM_KUBE_PROXY_REPLACEMENT="true"
-CILIUM_K8S_SERVICE_HOST="127.0.0.1"
+CILIUM_BGP_ENABLED="false"
+CILIUM_WIREGUARD_ENABLED="false"
+CILIUM_GATEWAY_API_ENABLED="false"
+CILIUM_K8S_SERVICE_HOST="127.0.0.1"   # multi-node: set to first control-plane IP (not 127.0.0.1)
 
 # k3s platform stack (Helm) — auto-installed on deploy when K8S_DISTRO=k3s
 PLATFORM_STACK_ENABLED="true"
@@ -101,6 +104,8 @@ CDI_VERSION="v1.59.0"              # k3s platform: v1.65.x tested with KubeVirt 
 # ---------------------------------------------------------------------------
 KUBECONFIG_OUTPUT="$HOME/.kube/${CLUSTER_NAME}.yaml"
 KUBECONFIG_MERGE_DEFAULT="false"    # merge into ~/.kube/config after deploy (k3s)
+# K3S_API_LOCAL_PORT="16443"        # patch kubeconfig server to 127.0.0.1:PORT (SSH API tunnel)
+# SSH_PROXY_JUMP="user@hypervisor"  # libvirt/NAT: SSH to guests via hypervisor (see deploy-remote.sh)
 
 # ---------------------------------------------------------------------------
 # Lab operations (single-node k3s + KubeVirt stacks)

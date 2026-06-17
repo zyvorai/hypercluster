@@ -160,6 +160,16 @@
     "wired": true
   },
   {
+    "key": "ciliumKubeProxyReplacement",
+    "label": "Cilium kube-proxy replacement",
+    "description": "ClusterSpec.ciliumKubeProxyReplacement \u2192 CILIUM_KUBE_PROXY_REPLACEMENT",
+    "group": "Network",
+    "confKey": "CILIUM_KUBE_PROXY_REPLACEMENT",
+    "type": "boolean",
+    "specPath": "ciliumKubeProxyReplacement",
+    "wired": true
+  },
+  {
     "key": "ciliumBgp",
     "label": "Cilium BGP",
     "description": "ClusterSpec.ciliumBgp \u2192 CILIUM_BGP_ENABLED",

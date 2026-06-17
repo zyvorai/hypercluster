@@ -46,15 +46,35 @@ platform::_helm_version_arg() {
   return 0
 }
 
+platform::_conf_bool() {
+  local var_name="$1" default="${2:-false}"
+  local val="${!var_name:-$default}"
+  if [[ "$val" == "true" || "$val" == "1" || "$val" == "yes" ]]; then
+    echo "true"
+  else
+    echo "false"
+  fi
+}
+
 platform::_gen_cilium_values() {
   local dest="$1" pod_cidr="${KUBE_PODS_SUBNET:-10.42.0.0/16}"
   local svc_host="${CILIUM_K8S_SERVICE_HOST:-127.0.0.1}"
-  local tpl
+  local kpr hubble bgp gateway enc tpl
+  kpr="$(platform::_conf_bool CILIUM_KUBE_PROXY_REPLACEMENT true)"
+  hubble="$(platform::_conf_bool CILIUM_HUBBLE_ENABLED true)"
+  bgp="$(platform::_conf_bool CILIUM_BGP_ENABLED false)"
+  gateway="$(platform::_conf_bool CILIUM_GATEWAY_API_ENABLED false)"
+  enc="$(platform::_conf_bool CILIUM_WIREGUARD_ENABLED false)"
   tpl="$(platform::_repo_root)/config/k3s/cilium-values.yaml"
   [[ -f "$tpl" ]] || die "missing $tpl"
   sed \
     -e "s|K8S_SERVICE_HOST|${svc_host}|g" \
     -e "s|POD_CIDR|${pod_cidr}|g" \
+    -e "s|KUBE_PROXY_REPLACEMENT|${kpr}|g" \
+    -e "s|HUBBLE_ENABLED|${hubble}|g" \
+    -e "s|GATEWAY_API_ENABLED|${gateway}|g" \
+    -e "s|BGP_CONTROL_PLANE_ENABLED|${bgp}|g" \
+    -e "s|ENCRYPTION_ENABLED|${enc}|g" \
     "$tpl" > "$dest"
 }
 
@@ -126,27 +146,30 @@ platform::install_cilium() {
     cilium status --wait --wait-duration 10m --ignore-warnings 2>/dev/null || true
   fi
   platform::_kubectl wait --for=condition=Ready node --all --timeout=600s
-  if [[ "${CILIUM_HUBBLE_ENABLED:-true}" == "true" ]] && command -v cilium &>/dev/null; then
-    platform::_export_kc
-    cilium hubble enable 2>/dev/null || log::warn "cilium hubble enable skipped (may already be on)"
-  fi
   log::ok "Cilium ready"
 }
 
 platform::install_metallb() {
   [[ "${METALLB_ENABLED:-true}" == "true" ]] || return 0
   log::section "MetalLB"
-  local ver_arg pool
+  local ver_arg pool manifest attempt
   ver_arg=$(platform::_helm_version_arg METALLB_CHART_VERSION)
   pool="${METALLB_IP_POOL:?METALLB_IP_POOL required when METALLB_ENABLED=true}"
   # shellcheck disable=SC2086
-  platform::_helm upgrade --install metallb metallb/metallb \
-    --namespace metallb-system \
-    --create-namespace \
-    ${ver_arg} \
-    --wait --timeout 10m
+  platform::_helm_wait_or_ready metallb metallb-system 10m metallb/metallb \
+    ${ver_arg}
 
-  platform::_kubectl apply -f - <<EOF
+  if platform::_kubectl get ipaddresspool default -n metallb-system &>/dev/null; then
+    log::ok "MetalLB ready (pool: $pool, already configured)"
+    return 0
+  fi
+
+  log::info "Waiting for MetalLB webhook …"
+  platform::_kubectl wait --for=condition=Available deployment/metallb-controller \
+    -n metallb-system --timeout=300s 2>/dev/null || true
+
+  manifest="$(mktemp)"
+  cat > "$manifest" <<EOF
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
@@ -165,7 +188,18 @@ spec:
   ipAddressPools:
     - default
 EOF
-  log::ok "MetalLB ready (pool: $pool)"
+
+  for attempt in 1 2 3 4 5 6; do
+    if platform::_kubectl apply -f "$manifest"; then
+      rm -f "$manifest"
+      log::ok "MetalLB ready (pool: $pool)"
+      return 0
+    fi
+    log::warn "MetalLB pool apply failed (attempt $attempt/6) — retrying after webhook warm-up …"
+    sleep 15
+  done
+  rm -f "$manifest"
+  die "MetalLB IPAddressPool apply failed after retries (API server may not reach webhook — check Cilium kube-proxy replacement on host)"
 }
 
 platform::install_snapshot_controller() {
@@ -329,10 +363,12 @@ spec:
       labels:
         k8s-app: metrics-server
     spec:
+      dnsPolicy: ClusterFirstWithHostNet
+      hostNetwork: true
       containers:
         - args:
             - --cert-dir=/tmp
-            - --secure-port=10250
+            - --secure-port=10251
             - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
             - --kubelet-use-node-status-port
             - --metric-resolution=15s
@@ -348,7 +384,7 @@ spec:
             periodSeconds: 10
           name: metrics-server
           ports:
-            - containerPort: 10250
+            - containerPort: 10251
               name: https
               protocol: TCP
           readinessProbe:
@@ -377,6 +413,14 @@ spec:
               name: tmp-dir
       nodeSelector:
         kubernetes.io/os: linux
+        node-role.kubernetes.io/control-plane: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
       priorityClassName: system-cluster-critical
       serviceAccountName: metrics-server
       volumes:
@@ -426,9 +470,15 @@ platform::install_kubevirt() {
   platform::_kubectl -n kubevirt wait kv kubevirt --for=condition=Available --timeout=600s 2>/dev/null \
     || platform::_kubectl -n kubevirt wait kubevirt kubevirt --for=condition=Available --timeout=600s
   log::info "Recycling KubeVirt pods (fresh CNI routes after Cilium) …"
-  platform::_kubectl delete pods -n kubevirt --all --force --grace-period=0 &>/dev/null || true
-  platform::_kubectl wait --for=condition=Available deployment --all -n kubevirt --timeout=600s 2>/dev/null \
-    || platform::_kubectl wait --for=condition=Ready pod --all -n kubevirt --timeout=600s
+  platform::_kubectl delete pods -n kubevirt \
+    -l 'kubevirt.io in (virt-api,virt-controller,virt-operator,virt-handler)' \
+    --force --grace-period=0 &>/dev/null || true
+  platform::_kubectl wait --for=condition=Available \
+    deployment/virt-api deployment/virt-controller deployment/virt-operator \
+    -n kubevirt --timeout=600s 2>/dev/null \
+    || platform::_kubectl wait --for=condition=Ready \
+    pod -l 'kubevirt.io in (virt-api,virt-controller,virt-operator,virt-handler)' \
+    -n kubevirt --timeout=600s
   log::ok "KubeVirt ready"
 }
 
@@ -453,9 +503,12 @@ platform::install_cdi() {
   fi
   platform::_kubectl -n cdi wait cdi cdi --for=condition=Available --timeout=600s
   log::info "Recycling CDI pods (fresh CNI routes after Cilium) …"
-  platform::_kubectl delete pods -n cdi --all --force --grace-period=0 &>/dev/null || true
-  platform::_kubectl wait --for=condition=Available deployment --all -n cdi --timeout=600s 2>/dev/null \
-    || platform::_kubectl wait --for=condition=Ready pod --all -n cdi --timeout=600s
+  platform::_kubectl rollout restart deployment -n cdi 2>/dev/null || true
+  for dep in cdi-apiserver cdi-deployment cdi-operator cdi-uploadproxy; do
+    platform::_kubectl rollout status "deployment/${dep}" -n cdi --timeout=300s 2>/dev/null || true
+  done
+  platform::_kubectl wait --for=condition=Available deployment --all -n cdi --timeout=300s 2>/dev/null \
+    || platform::_kubectl wait --for=condition=Ready pod --all -n cdi --timeout=300s 2>/dev/null || true
   log::ok "CDI ready"
 }
 
@@ -491,6 +544,11 @@ platform::install_kubevirt_csi() {
 platform::install_cnao() {
   [[ "${CNAO_ENABLED:-true}" == "true" ]] || return 0
   [[ "${KUBEVIRT_ENABLED:-false}" == "true" ]] || return 0
+  if platform::_kubectl get deployment cluster-network-addons-operator -n cluster-network-addons &>/dev/null; then
+    log::section "CNAO (Multus / advanced VM networking)"
+    log::ok "CNAO ready (already installed)"
+    return 0
+  fi
   log::section "CNAO (Multus / advanced VM networking)"
   local ver_arg chart_ref="kubevirt/cluster-network-addons-operator"
   ver_arg=$(platform::_helm_version_arg CNAO_CHART_VERSION)
@@ -509,9 +567,9 @@ platform::install_cnao() {
   local ver="${CNAO_MANIFEST_VERSION:-v0.102.0}"
   local base="https://github.com/kubevirt/cluster-network-addons-operator/releases/download/${ver}"
   log::warn "CNAO helm chart unavailable — applying manifest fallback ($ver)"
-  platform::_kubectl apply -f "${base}/namespace.yaml"
-  platform::_kubectl apply -f "${base}/network-addons-config.crd.yaml"
-  platform::_kubectl apply -f "${base}/operator.yaml"
+  platform::_kubectl apply --validate=false -f "${base}/namespace.yaml"
+  platform::_kubectl apply --validate=false -f "${base}/network-addons-config.crd.yaml"
+  platform::_kubectl apply --validate=false -f "${base}/operator.yaml"
   platform::_kubectl apply -f "$(platform::_repo_root)/config/k3s/cnao-network-addons-config.yaml"
   platform::_kubectl wait --for=condition=Available deployment/cluster-network-addons-operator \
     -n cluster-network-addons --timeout=600s 2>/dev/null \
@@ -520,9 +578,56 @@ platform::install_cnao() {
   log::ok "CNAO ready (manifests)"
 }
 
+platform::_ensure_ssp_webhook_cert() {
+  platform::_kubectl get secret ssp-webhook-server-cert -n kubevirt &>/dev/null && return 0
+  command -v openssl &>/dev/null || die "openssl required for SSP webhook TLS (install openssl)"
+  local tmpdir
+  tmpdir="$(mktemp -d)"
+  trap 'rm -rf "$tmpdir"' RETURN
+  log::info "Creating SSP webhook TLS secret (ssp-webhook-server-cert) …"
+  openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
+    -keyout "$tmpdir/tls.key" -out "$tmpdir/tls.crt" \
+    -subj "/CN=ssp-webhook-service.kubevirt.svc" \
+    -addext "subjectAltName=DNS:ssp-webhook-service.kubevirt.svc,DNS:ssp-webhook-service.kubevirt.svc.cluster.local" \
+    &>/dev/null
+  platform::_kubectl create secret tls ssp-webhook-server-cert \
+    -n kubevirt --key "$tmpdir/tls.key" --cert "$tmpdir/tls.crt"
+  if platform::_kubectl get deployment ssp-operator -n kubevirt &>/dev/null; then
+    platform::_kubectl rollout restart deployment/ssp-operator -n kubevirt &>/dev/null || true
+  fi
+}
+
+platform::_patch_ssp_webhook_cabundle() {
+  platform::_kubectl get validatingwebhookconfiguration ssp-validating-webhook-configuration &>/dev/null || return 0
+  local tmpdir cabundle i existing
+  tmpdir="$(mktemp -d)"
+  trap 'rm -rf "$tmpdir"' RETURN
+  platform::_kubectl get secret ssp-webhook-server-cert -n kubevirt \
+    -o jsonpath='{.data.tls\.crt}' | base64 -d > "$tmpdir/tls.crt" 2>/dev/null || return 0
+  cabundle="$(base64 < "$tmpdir/tls.crt" | tr -d '\n')"
+  [[ -n "$cabundle" ]] || return 0
+  local patch='['
+  for i in 0 1; do
+    existing=$(platform::_kubectl get validatingwebhookconfiguration ssp-validating-webhook-configuration \
+      -o "jsonpath={.webhooks[${i}].clientConfig.caBundle}" 2>/dev/null || true)
+    [[ -n "$existing" ]] && continue
+    [[ "$patch" != '[' ]] && patch+=','
+    patch+="{\"op\":\"add\",\"path\":\"/webhooks/${i}/clientConfig/caBundle\",\"value\":\"${cabundle}\"}"
+  done
+  patch+=']'
+  [[ "$patch" == '[]' ]] && return 0
+  platform::_kubectl patch validatingwebhookconfiguration ssp-validating-webhook-configuration \
+    --type=json -p "$patch" &>/dev/null || true
+}
+
 platform::install_ssp() {
   [[ "${SSP_ENABLED:-true}" == "true" ]] || return 0
   [[ "${KUBEVIRT_ENABLED:-false}" == "true" ]] || return 0
+  if platform::_kubectl get ssp -n kubevirt -o name &>/dev/null; then
+    log::section "SSP (KubeVirt templates)"
+    log::ok "SSP ready (already installed)"
+    return 0
+  fi
   log::section "SSP (KubeVirt templates)"
   local ver_arg chart_ref="kubevirt/ssp"
   ver_arg=$(platform::_helm_version_arg SSP_CHART_VERSION)
@@ -539,11 +644,27 @@ platform::install_ssp() {
   fi
   local ver="${SSP_MANIFEST_VERSION:-v0.25.0}"
   log::warn "SSP helm chart unavailable — applying manifest fallback ($ver)"
-  platform::_kubectl apply -f "https://github.com/kubevirt/ssp-operator/releases/download/${ver}/ssp-operator.yaml"
-  platform::_kubectl apply -f "$(platform::_repo_root)/config/k3s/ssp-cr.yaml"
-  platform::_kubectl wait --for=condition=Available deployment/ssp-operator-controller-manager \
+  platform::_kubectl apply --validate=false -f "https://github.com/kubevirt/ssp-operator/releases/download/${ver}/ssp-operator.yaml"
+  platform::_ensure_ssp_webhook_cert
+  log::info "Waiting for SSP webhook …"
+  platform::_kubectl wait --for=condition=Available deployment/ssp-operator \
+    -n kubevirt --timeout=600s 2>/dev/null \
+    || platform::_kubectl wait --for=condition=Ready pod -l control-plane=controller-manager \
     -n kubevirt --timeout=600s 2>/dev/null || true
-  log::ok "SSP ready (manifests)"
+  platform::_patch_ssp_webhook_cabundle
+  local attempt manifest
+  manifest="$(platform::_repo_root)/config/k3s/ssp-cr.yaml"
+  for attempt in 1 2 3 4 5 6; do
+    if platform::_kubectl apply -f "$manifest"; then
+      platform::_kubectl wait --for=condition=Available deployment/ssp-operator-controller-manager \
+        -n kubevirt --timeout=600s 2>/dev/null || true
+      log::ok "SSP ready (manifests)"
+      return 0
+    fi
+    log::warn "SSP CR apply failed (attempt $attempt/6) — retrying after webhook warm-up …"
+    sleep 15
+  done
+  die "SSP CR apply failed after retries (webhook may not be reachable yet)"
 }
 
 platform::install_longhorn() {

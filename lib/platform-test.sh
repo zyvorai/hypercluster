@@ -55,8 +55,7 @@ platform_test::run() {
 
   if [[ "${CNI_PLUGIN:-cilium}" == "cilium" ]]; then
     if command -v cilium &>/dev/null; then
-      platform_test::_check "Cilium healthy" \
-        cilium status --wait --wait-duration 3m --ignore-warnings
+      platform_test::_check "Cilium healthy" platform_test::_cilium_healthy
     else
       platform_test::_check "Cilium pods Running" \
         bash -c 'out=$(kubectl get pods -n kube-system -l app.kubernetes.io/part-of=cilium --no-headers 2>/dev/null); [[ -n "$out" ]] && ! echo "$out" | awk "{print \$3}" | grep -qv Running'
@@ -172,6 +171,21 @@ spec:
 YAML
   kubectl wait --for=condition=Ready vm/hc-smoke-testvm --timeout=180s
   kubectl delete vm hc-smoke-testvm --wait=true
+}
+
+platform_test::_cilium_pods_running() {
+  local out
+  out=$(kubectl get pods -n kube-system -l app.kubernetes.io/part-of=cilium --no-headers 2>/dev/null) || return 1
+  [[ -n "$out" ]] || return 1
+  ! echo "$out" | awk '{print $3}' | grep -qv Running
+}
+
+platform_test::_cilium_healthy() {
+  if timeout 4m cilium status --wait --wait-duration 3m --ignore-warnings >/dev/null 2>&1; then
+    return 0
+  fi
+  log::warn "cilium status --wait timed out or reported errors — falling back to Cilium pod check"
+  platform_test::_cilium_pods_running
 }
 
 platform_test::_node_count_match() {

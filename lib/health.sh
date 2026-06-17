@@ -146,13 +146,21 @@ health::run() {
   done
 
   if [[ "$json" == "1" ]]; then
-    HC_JSON=1 health::report_json ${with_test:+--with-test}
+    if [[ "$with_test" == "1" ]]; then
+      HC_JSON=1 health::report_json --with-test
+    else
+      HC_JSON=1 health::report_json
+    fi
     return 0
   fi
 
   log::section "Cluster health: $CLUSTER_NAME"
   local report
-  report="$(HC_JSON=1 health::report_json ${with_test:+--with-test})"
+  if [[ "$with_test" == "1" ]]; then
+    report="$(HC_JSON=1 health::report_json --with-test)"
+  else
+    report="$(HC_JSON=1 health::report_json)"
+  fi
   echo "$report" | python3 -c "
 import json, sys
 d = json.load(sys.stdin)

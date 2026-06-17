@@ -50,6 +50,7 @@ export type ClusterSpec = {
   cniPlugin: string
   containerManager: string
   ciliumHubble: boolean
+  ciliumKubeProxyReplacement: boolean
   ciliumBgp: boolean
   ciliumWireguard: boolean
   ciliumGatewayApi: boolean

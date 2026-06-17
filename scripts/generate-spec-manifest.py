@@ -23,6 +23,7 @@ SPEC_FIELDS = [
     ("cniPlugin", "CNI plugin", "Network", "CNI_PLUGIN", "string"),
     ("containerManager", "Container runtime", "Distro", "CONTAINER_MANAGER", "string"),
     ("ciliumHubble", "Cilium Hubble", "Network", "CILIUM_HUBBLE_ENABLED", "boolean"),
+    ("ciliumKubeProxyReplacement", "Cilium kube-proxy replacement", "Network", "CILIUM_KUBE_PROXY_REPLACEMENT", "boolean"),
     ("ciliumBgp", "Cilium BGP", "Network", "CILIUM_BGP_ENABLED", "boolean"),
     ("ciliumWireguard", "Cilium WireGuard", "Network", "CILIUM_WIREGUARD_ENABLED", "boolean"),
     ("ciliumGatewayApi", "Cilium Gateway API", "Network", "CILIUM_GATEWAY_API_ENABLED", "boolean"),

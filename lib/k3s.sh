@@ -66,6 +66,32 @@ k3s::_exec_args() {
   echo "$args"
 }
 
+# k3s agent rejects server-only flags (e.g. --flannel-backend, --disable-kube-proxy).
+k3s::_agent_exec_args() {
+  if [[ -n "${K3S_AGENT_EXEC_ARGS:-}" ]]; then
+    echo "${K3S_AGENT_EXEC_ARGS}"
+    return 0
+  fi
+  local args=""
+  [[ -n "${K3S_DATA_DIR:-}" ]] && args="--data-dir ${K3S_DATA_DIR}"
+  echo "$args"
+}
+
+k3s::_data_dir() {
+  echo "${K3S_DATA_DIR:-/var/lib/rancher/k3s}"
+}
+
+k3s::_agent_install_env() {
+  local exec_args="$1" token="$2" master_ip="$3"
+  local parts=()
+  [[ -n "${K3S_VERSION:-}" ]] && parts+=("INSTALL_K3S_VERSION='${K3S_VERSION}'")
+  [[ -n "${K3S_CHANNEL:-}" ]] && parts+=("INSTALL_K3S_CHANNEL='${K3S_CHANNEL}'")
+  parts+=("INSTALL_K3S_EXEC='agent ${exec_args}'")
+  parts+=("K3S_URL='https://${master_ip}:6443'")
+  parts+=("K3S_TOKEN='${token}'")
+  (IFS=' '; echo "${parts[*]}")
+}
+
 k3s::_all_ips() {
   echo "$CONTROL_PLANE_IPS $WORKER_IPS"
 }
@@ -128,7 +154,7 @@ k3s::_install_env() {
 
 k3s::server_running() {
   local ip="$1"
-  k3s::_ssh "$ip" "sudo /usr/local/bin/k3s kubectl get nodes -o jsonpath='{.items[0].status.conditions[?(@.type==\"Ready\")].status}'" 2>/dev/null | grep -q True
+  k3s::_ssh "$ip" "systemctl is-active k3s 2>/dev/null | grep -qx active" 2>/dev/null
 }
 
 k3s::install_server() {
@@ -165,10 +191,12 @@ k3s::join_workers() {
     log::info "No worker nodes — single-node cluster."
     return 0
   }
-  local master_ip token
+  local master_ip token data_dir exec_args install_env
   master_ip=$(k3s::_first_cp_ip)
-  token=$(k3s::_ssh "$master_ip" "sudo cat /var/lib/rancher/k3s/server/node-token")
-  [[ -n "$token" ]] || die "Could not read k3s node token from $master_ip"
+  data_dir="$(k3s::_data_dir)"
+  token=$(k3s::_ssh "$master_ip" "sudo cat ${data_dir}/server/node-token")
+  [[ -n "$token" ]] || die "Could not read k3s node token from ${master_ip}:${data_dir}/server/node-token"
+  exec_args=$(k3s::_agent_exec_args)
 
   log::section "Joining ${#workers[@]} worker(s) to k3s"
   local ip
@@ -179,8 +207,9 @@ k3s::join_workers() {
       log::warn "DRY RUN — skip join $ip"
       continue
     fi
-    k3s::_ssh "$ip" \
-      "curl -sfL https://get.k3s.io | sudo K3S_URL=https://${master_ip}:6443 K3S_TOKEN='${token}' sh -"
+    install_env=$(k3s::_agent_install_env "$exec_args" "$token" "$master_ip")
+    # shellcheck disable=SC2029
+    k3s::_ssh "$ip" "curl -sfL https://get.k3s.io | sudo ${install_env} sh -"
     log::ok "$ip joined"
   done
 }

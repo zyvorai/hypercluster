@@ -3,6 +3,24 @@
 
 kubeconfig::_patch_server() {
   local output="$1" first_cp_ip="$2"
+  if [[ -n "${K3S_API_LOCAL_PORT:-}" ]]; then
+    log::info "Patching server address → 127.0.0.1:${K3S_API_LOCAL_PORT} (SSH API tunnel)"
+    if [[ "$(uname)" == "Darwin" ]]; then
+      sed -i '' \
+        -e "s|https://127.0.0.1:[0-9]*|https://127.0.0.1:${K3S_API_LOCAL_PORT}|g" \
+        -e "s|https://localhost:[0-9]*|https://127.0.0.1:${K3S_API_LOCAL_PORT}|g" \
+        -e "s|https://${first_cp_ip}:6443|https://127.0.0.1:${K3S_API_LOCAL_PORT}|g" \
+        "$output"
+    else
+      sed -i.bak \
+        -e "s|https://127.0.0.1:[0-9]*|https://127.0.0.1:${K3S_API_LOCAL_PORT}|g" \
+        -e "s|https://localhost:[0-9]*|https://127.0.0.1:${K3S_API_LOCAL_PORT}|g" \
+        -e "s|https://${first_cp_ip}:6443|https://127.0.0.1:${K3S_API_LOCAL_PORT}|g" \
+        "$output"
+      rm -f "${output}.bak"
+    fi
+    return 0
+  fi
   log::info "Patching server address → $first_cp_ip"
   if [[ "$(uname)" == "Darwin" ]]; then
     sed -i '' \

@@ -61,3 +61,12 @@ print('  PASS: health degraded JSON')
 " <<< "$out3"
 
 echo "health JSON tests passed"
+
+# Regression: with_test=0 must not pass --with-test to report_json (${var:+word} treats 0 as set).
+out4=$(health::report_json)
+python3 -c "
+import json, sys
+data = json.loads(sys.stdin.read())
+assert data.get('tests') is None, data
+print('  PASS: health report_json skips platform tests by default')
+" <<< "$out4"
