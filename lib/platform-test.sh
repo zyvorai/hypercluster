@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # End-to-end smoke tests for k3s platform stack.
 
+if ! declare -f ssh::node_opts &>/dev/null; then
+  # shellcheck source=lib/ssh.sh
+  source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ssh.sh"
+fi
+
 platform_test::_kc() {
   echo "${KUBECONFIG_OUTPUT/#\~/$HOME}"
 }
@@ -199,12 +204,11 @@ platform_test::_node_count_match() {
 platform_test::_remote_kubectl() {
   local ip key opts out
   ip=$(echo "$CONTROL_PLANE_IPS" | awk '{print $1}')
-  key="${SSH_KEY/#\~/$HOME}"
-  opts=(-i "$key" -o BatchMode=yes -o ConnectTimeout=15 -o StrictHostKeyChecking=accept-new)
-  [[ -n "${SSH_PORT:-}" && "${SSH_PORT}" != "22" ]] && opts+=(-p "$SSH_PORT")
-  [[ -n "${SSH_EXTRA_ARGS:-}" ]] && opts+=(${SSH_EXTRA_ARGS})
+  key="$(ssh::_key)"
+  opts=()
+  ssh::node_opts opts "$key" "${SSH_PORT:-22}"
   # shellcheck disable=SC2029
-  out=$(timeout 30 ssh "${opts[@]}" "$SSH_USER@$ip" bash -s <<'REMOTE'
+  out=$(timeout 45 ssh "${opts[@]}" "$SSH_USER@$ip" bash -s <<'REMOTE'
 set -euo pipefail
 if [[ -f "$HOME/.kube/config" ]]; then
   export KUBECONFIG="$HOME/.kube/config"

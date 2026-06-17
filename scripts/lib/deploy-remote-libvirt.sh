@@ -189,6 +189,87 @@ printf '%s\n' "$ip"
 REMOTE
 }
 
+deploy_remote_libvirt::restart_vm() {
+  local target="$1" vm_name="$2"
+  deploy_remote_libvirt::ssh "$target" \
+    "VM_NAME=$(printf '%q' "$vm_name")" \
+    'bash -s' <<'REMOTE'
+set -euo pipefail
+VM_NAME="${VM_NAME:?}"
+if ! sudo virsh dominfo "$VM_NAME" >/dev/null 2>&1; then
+  echo "VM $VM_NAME not found" >&2
+  exit 1
+fi
+sudo virsh destroy "$VM_NAME" 2>/dev/null || true
+sleep 2
+sudo virsh start "$VM_NAME" >/dev/null
+echo "restarted $VM_NAME"
+REMOTE
+}
+
+# args: guest_ip guest_user [jump]
+deploy_remote_libvirt::probe_guest_ssh() {
+  local ip="$1" user="${2:-ubuntu}" jump="${3:-${HYPERVISOR_JUMP:-}}"
+  local opts=()
+  ssh::guest_opts opts "${DEPLOY_REMOTE_SSH_KEY:-}" "$jump"
+  ssh "${opts[@]}" "${user}@${ip}" 'echo ok' >/dev/null 2>&1
+}
+
+# Reboot guest VM on hypervisor when SSH is hung; then wait for SSH.
+deploy_remote_libvirt::wait_guest_ssh() {
+  local ip="$1" user="${2:-ubuntu}" vm_name="${3:-}" jump="${4:-${HYPERVISOR_JUMP:-}}"
+  local target="${5:-${HYPERVISOR:-$jump}}"
+  local tries=0 reboots=0 max_tries=36 max_reboots=2
+  local opts=()
+  ssh::guest_opts opts "${DEPLOY_REMOTE_SSH_KEY:-}" "$jump"
+
+  log::info "Waiting for SSH on ${user}@${ip} (via ${jump}) …"
+  while (( tries < max_tries )); do
+    if ssh "${opts[@]}" "${user}@${ip}" 'echo ok' >/dev/null 2>&1; then
+      log::ok "SSH ready on $ip"
+      return 0
+    fi
+    if (( tries > 0 && tries % 12 == 0 && reboots < max_reboots && -n "$vm_name" )); then
+      log::warn "SSH still down on $ip — restarting VM $vm_name on hypervisor …"
+      deploy_remote_libvirt::restart_vm "$target" "$vm_name" || true
+      reboots=$((reboots + 1))
+      sleep 15
+    fi
+    (( tries++ )) || true
+    sleep 5
+  done
+  die "SSH not reachable on ${user}@${ip} (via ${jump}) after ${max_reboots} VM restart(s)"
+}
+
+deploy_remote_libvirt::wait_api_ready() {
+  local kc="$1" port="${2:-16443}" timeout="${3:-300}"
+  local deadline=$((SECONDS + timeout))
+  export KUBECONFIG="$kc"
+  log::info "Waiting for Kubernetes API on 127.0.0.1:${port} …"
+  while (( SECONDS < deadline )); do
+    if kubectl get nodes --request-timeout=10s &>/dev/null; then
+      log::ok "Kubernetes API reachable"
+      return 0
+    fi
+    sleep 5
+  done
+  die "Kubernetes API not reachable via 127.0.0.1:${port} after ${timeout}s"
+}
+
+# Restart Multus/CNAO pods after guest VM reboot (common source of Cilium/Hubble flake).
+deploy_remote_libvirt::heal_cluster_network() {
+  local kc="$1"
+  export KUBECONFIG="$kc"
+  kubectl get ns cluster-network-addons &>/dev/null || return 0
+  log::info "Recycling Multus/CNAO pods (post-reboot network heal) …"
+  kubectl delete pods -n cluster-network-addons -l app=multus --force --grace-period=0 &>/dev/null || true
+  kubectl delete pods -n cluster-network-addons -l name=cluster-network-addons-operator \
+    --force --grace-period=0 &>/dev/null || true
+  kubectl rollout status deployment/cluster-network-addons-operator \
+    -n cluster-network-addons --timeout=180s &>/dev/null || true
+  kubectl -n kube-system rollout restart deployment/hubble-relay deployment/hubble-ui &>/dev/null || true
+}
+
 deploy_remote_libvirt::stop_api_tunnel() {
   local port="${1:-16443}" cp_ip="${2:-}"
   local pattern="127\\.0\\.0\\.1:${port}:"
@@ -200,21 +281,26 @@ deploy_remote_libvirt::stop_api_tunnel() {
 
 deploy_remote_libvirt::start_api_tunnel() {
   local cp_ip="$1" jump="$2" port="${3:-16443}"
-  if curl -sk --connect-timeout 3 "https://127.0.0.1:${port}/version" >/dev/null 2>&1; then
-    echo "ok"
-    return 0
-  fi
-  deploy_remote_libvirt::stop_api_tunnel "$port" "$cp_ip"
-  local opts=()
-  deploy_remote_libvirt::ssh_opts opts
-  ssh -f -N "${opts[@]}" -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 \
-    -L "127.0.0.1:${port}:${cp_ip}:6443" \
-    "$jump"
-  sleep 2
-  if curl -sk --connect-timeout 5 "https://127.0.0.1:${port}/version" >/dev/null 2>&1; then
-    echo "ok"
-    return 0
-  fi
+  local attempt
+  for attempt in 1 2 3 4 5; do
+    if curl -sk --connect-timeout 3 "https://127.0.0.1:${port}/version" >/dev/null 2>&1; then
+      echo "ok"
+      return 0
+    fi
+    deploy_remote_libvirt::stop_api_tunnel "$port" "$cp_ip"
+    local opts=()
+    deploy_remote_libvirt::ssh_opts opts
+    ssh -f -N "${opts[@]}" -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 \
+      -L "127.0.0.1:${port}:${cp_ip}:6443" \
+      "$jump" 2>/dev/null || true
+    sleep 3
+    if curl -sk --connect-timeout 8 "https://127.0.0.1:${port}/version" >/dev/null 2>&1; then
+      echo "ok"
+      return 0
+    fi
+    log::warn "API tunnel attempt $attempt/5 failed — retrying …"
+    sleep 5
+  done
   return 1
 }
 

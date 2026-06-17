@@ -94,6 +94,8 @@ esac
 # ── load libraries ───────────────────────────────────────────────────────────
 # shellcheck source=lib/log.sh
 source "$SCRIPT_DIR/lib/log.sh"
+# shellcheck source=lib/ssh.sh
+source "$SCRIPT_DIR/lib/ssh.sh"
 # shellcheck source=lib/wizard.sh
 source "$SCRIPT_DIR/lib/wizard.sh"
 # shellcheck source=lib/progress.sh

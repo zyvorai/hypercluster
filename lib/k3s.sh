@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # k3s cluster deployment over SSH — source this file.
 
+if ! declare -f ssh::node_opts &>/dev/null; then
+  # shellcheck source=lib/ssh.sh
+  source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ssh.sh"
+fi
+
 k3s::_key() { echo "${SSH_KEY/#\~/$HOME}"; }
 
 k3s::_resolve_ssh() {
@@ -35,15 +40,7 @@ k3s::_ssh_opts() {
   local -n _ref="$1"
   local key="$2"
   local port="$3"
-  _ref=(
-    -i "$key"
-    -o BatchMode=yes
-    -o ConnectTimeout=20
-    -o ServerAliveInterval=15
-    -o StrictHostKeyChecking=accept-new
-  )
-  [[ -n "$port" && "$port" != "22" ]] && _ref+=(-p "$port")
-  [[ -n "${SSH_EXTRA_ARGS:-}" ]] && _ref+=(${SSH_EXTRA_ARGS})
+  ssh::node_opts _ref "$key" "$port"
 }
 
 k3s::_ssh() {

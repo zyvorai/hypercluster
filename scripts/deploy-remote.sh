@@ -21,6 +21,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # shellcheck source=lib/log.sh
 source "$REPO_DIR/lib/log.sh"
+# shellcheck source=lib/ssh.sh
+source "$REPO_DIR/lib/ssh.sh"
 # shellcheck source=lib/deploy-remote-libvirt.sh
 source "$SCRIPT_DIR/lib/deploy-remote-libvirt.sh"
 
@@ -134,7 +136,7 @@ KUBE_SERVICE_ADDRESSES="10.43.0.0/16"
 SSH_USER="${SSH_USER_GUEST}"
 SSH_KEY="${DEPLOY_REMOTE_SSH_KEY}"
 SSH_PORT=22
-SSH_EXTRA_ARGS="-o StrictHostKeyChecking=accept-new -o ProxyJump=${HYPERVISOR_JUMP}"
+SSH_EXTRA_ARGS="-o StrictHostKeyChecking=accept-new"
 SSH_PROXY_JUMP="${HYPERVISOR_JUMP}"
 
 CONTROL_PLANE_IPS="${cp_ip}"
@@ -152,26 +154,49 @@ EOF
   log::info "Config: control-plane=$cp_ip worker=$worker_ip MetalLB=$pool"
 }
 
-wait_guest_ssh() {
-  local ip="$1"
-  local tries=0
-  local ssh_opts=(
-    -o BatchMode=yes
-    -o ConnectTimeout=10
-    -o StrictHostKeyChecking=accept-new
-    -o "ProxyJump=${HYPERVISOR_JUMP}"
-    -i "$DEPLOY_REMOTE_SSH_KEY"
-  )
-  log::info "Waiting for SSH on $ip (via ${HYPERVISOR_JUMP}) …"
-  while (( tries < 36 )); do
-    if ssh "${ssh_opts[@]}" "${SSH_USER_GUEST}@${ip}" 'echo ok' >/dev/null 2>&1; then
-      log::ok "SSH ready on $ip"
-      return 0
-    fi
-    (( tries++ )) || true
-    sleep 5
-  done
-  die "SSH not reachable on ${SSH_USER_GUEST}@${ip} (via ${HYPERVISOR_JUMP})"
+run_deploy() {
+  [[ -x "$HC" ]] || die "$HC not executable — run: chmod +x hypercluster"
+  local cp_ip tunnel_port=16443 test_json
+  cp_ip="$(grep '^CONTROL_PLANE_IPS=' "$REMOTE_CONF" 2>/dev/null | cut -d'"' -f2 || true)"
+  [[ -n "$cp_ip" ]] || die "control plane IP missing in $REMOTE_CONF"
+
+  "$HC" -c "$REMOTE_CONF" unlock 2>/dev/null || true
+
+  log::section "SSH API tunnel (127.0.0.1:${tunnel_port} → ${cp_ip}:6443 via ${HYPERVISOR_JUMP})"
+  deploy_remote_libvirt::start_api_tunnel "$cp_ip" "$HYPERVISOR_JUMP" "$tunnel_port" \
+    || die "API tunnel failed — cannot reach k3s from laptop"
+  log::ok "API tunnel up"
+  trap "deploy_remote_libvirt::stop_api_tunnel ${tunnel_port} ${cp_ip}" EXIT
+
+  deploy_remote_libvirt::wait_api_ready "$KUBECONFIG_OUT" "$tunnel_port" 300
+
+  log::section "hypercluster preflight"
+  "$HC" -c "$REMOTE_CONF" preflight
+  log::section "hypercluster deploy"
+  "$HC" -c "$REMOTE_CONF" deploy
+
+  deploy_remote_libvirt::heal_cluster_network "$KUBECONFIG_OUT"
+
+  log::section "hypercluster test"
+  if test_json="$("$HC" -c "$REMOTE_CONF" test --json 2>/dev/null)"; then
+    log::ok "Platform smoke passed"
+    printf '%s\n' "$test_json"
+  else
+    log::warn "test --json failed — recycling network components and retrying once …"
+    deploy_remote_libvirt::heal_cluster_network "$KUBECONFIG_OUT"
+    sleep 30
+    test_json="$("$HC" -c "$REMOTE_CONF" test --json 2>/dev/null)" \
+      || die "Platform smoke tests failed after retry — run: ./hypercluster -c cluster-remote.conf test"
+    log::ok "Platform smoke passed (after retry)"
+    printf '%s\n' "$test_json"
+  fi
+
+  log::section "hypercluster health"
+  if ! "$HC" -c "$REMOTE_CONF" health --json 2>/dev/null | python3 -c \
+    'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("state")=="healthy" else 1)'; then
+    die "health --json reported non-healthy state"
+  fi
+  log::ok "Cluster health: healthy"
 }
 
 create_vms() {
@@ -199,37 +224,14 @@ create_vms() {
   worker_ip="$(deploy_remote_libvirt::wait_vm_ip "$HYPERVISOR" "$VM_WORKER")"
   log::ok "$VM_WORKER → $worker_ip"
 
-  wait_guest_ssh "$cp_ip"
-  wait_guest_ssh "$worker_ip"
+  deploy_remote_libvirt::wait_guest_ssh "$cp_ip" "$SSH_USER_GUEST" "$VM_CP" "$HYPERVISOR_JUMP" "$HYPERVISOR"
+  deploy_remote_libvirt::wait_guest_ssh "$worker_ip" "$SSH_USER_GUEST" "$VM_WORKER" "$HYPERVISOR_JUMP" "$HYPERVISOR"
 
   write_cluster_conf "$cp_ip" "$worker_ip" "$METALLB_IP_POOL"
 
   log::section "VM summary"
   log::info "Control plane: ${SSH_USER_GUEST}@${cp_ip} ($VM_CP)"
   log::info "Worker:        ${SSH_USER_GUEST}@${worker_ip} ($VM_WORKER)"
-}
-
-run_deploy() {
-  [[ -x "$HC" ]] || die "$HC not executable — run: chmod +x hypercluster"
-  local cp_ip tunnel_port=16443
-  cp_ip="$(grep '^CONTROL_PLANE_IPS=' "$REMOTE_CONF" 2>/dev/null | cut -d'"' -f2 || true)"
-  [[ -n "$cp_ip" ]] || die "control plane IP missing in $REMOTE_CONF"
-  log::section "SSH API tunnel (127.0.0.1:${tunnel_port} → ${cp_ip}:6443 via ${HYPERVISOR_JUMP})"
-  deploy_remote_libvirt::start_api_tunnel "$cp_ip" "$HYPERVISOR_JUMP" "$tunnel_port" \
-    || die "API tunnel failed — cannot reach k3s from laptop"
-  log::ok "API tunnel up"
-  trap "deploy_remote_libvirt::stop_api_tunnel ${tunnel_port} ${cp_ip}" EXIT
-
-  log::section "hypercluster preflight"
-  "$HC" -c "$REMOTE_CONF" preflight
-  log::section "hypercluster deploy"
-  "$HC" -c "$REMOTE_CONF" deploy
-  log::section "hypercluster test"
-  if "$HC" -c "$REMOTE_CONF" test --json 2>/dev/null; then
-    log::ok "Platform smoke passed"
-  else
-    log::warn "test --json reported failures — check cluster manually"
-  fi
 }
 
 clean() {
