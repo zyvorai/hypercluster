@@ -66,6 +66,7 @@ cp config/cluster.conf.example cluster.conf
 |----------|------|
 | First cluster tutorial | [README § Tutorial](README.md) |
 | Zyvor platform stack | [docs/guides/zyvor-platform-stack.md](docs/guides/zyvor-platform-stack.md) |
+| Full platform architecture | [docs/PLATFORM_ARCHITECTURE.md](docs/PLATFORM_ARCHITECTURE.md) |
 | Desktop UX | [docs/guides/desktop-ux-guide.md](docs/guides/desktop-ux-guide.md) |
 | Config reference | [docs/generated/CONFIG-REFERENCE.md](docs/generated/CONFIG-REFERENCE.md) |
 
