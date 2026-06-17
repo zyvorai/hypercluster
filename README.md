@@ -260,7 +260,24 @@ Makefile aliases:
 ```bash
 make deploy-remote CONFIG=cluster.conf
 make test-remote CONFIG=cluster.conf
+make deploy-remote-vms HYPERVISOR=sus@175.110.114.93    # 2 libvirt VMs + k3s deploy
+make deploy-remote-vms-only HYPERVISOR=sus@175.110.114.93
 ```
+
+### Remote libvirt 2-VM quickstart
+
+Create **1 control-plane + 1 worker** as libvirt guests on a remote hypervisor, then deploy k3s + platform stack from your laptop:
+
+```bash
+chmod +x scripts/deploy-remote.sh
+./scripts/deploy-remote.sh sus 175.110.114.93              # full deploy
+./scripts/deploy-remote.sh sus@175.110.114.93 --vms-only   # VMs + cluster-remote.conf only
+./scripts/deploy-remote.sh sus 175.110.114.93 --clean      # tear down VMs + local conf
+```
+
+Requirements on the **hypervisor**: `libvirtd` active, `default` libvirt network, passwordless `sudo` for SSH user, `virt-install` + `qemu-img`. Guests use Ubuntu 22.04 cloud images with your SSH key injected via cloud-init. MetalLB pool is auto-detected from the libvirt `default` subnet (override with `METALLB_IP_POOL`). Guest VMs live on the hypervisor NAT network — `cluster-remote.conf` sets `ProxyJump` through the hypervisor for SSH from your laptop.
+
+Output: [`cluster-remote.conf`](cluster-remote.conf) (gitignored) and kubeconfig at `$HOME/.kube/hc-remote.yaml`.
 
 After deploy:
 
@@ -281,7 +298,7 @@ On macOS, run `./scripts/setup-macos.sh` first (installs bash 5, helm, kubectl).
 
 ---
 
-## Documentation
+**[Documentation index](docs/README.md)** · **[User stories](docs/USER_STORIES.md)** · ## Documentation
 
 | Document | Description |
 |----------|-------------|
