@@ -5,7 +5,8 @@
 #   ./scripts/deploy-remote.sh sus 175.110.114.93
 #   ./scripts/deploy-remote.sh sus@175.110.114.93
 #   ./scripts/deploy-remote.sh sus 175.110.114.93 --vms-only
-#   ./scripts/deploy-remote.sh sus 175.110.114.93 --clean
+#   ./scripts/deploy-remote.sh sus 175.110.114.93 --verify
+#   ./scripts/deploy-remote.sh --verify   # uses cluster-remote.conf + SSH_PROXY_JUMP
 #
 # Env: HYPERVISOR SSH_KEY CLUSTER_NAME METALLB_IP_POOL VM_CPUS VM_MEM VM_DISK
 set -euo pipefail
@@ -154,11 +155,21 @@ EOF
   log::info "Config: control-plane=$cp_ip worker=$worker_ip MetalLB=$pool"
 }
 
-run_deploy() {
-  [[ -x "$HC" ]] || die "$HC not executable — run: chmod +x hypercluster"
-  local cp_ip tunnel_port=16443 test_json
+load_remote_conf() {
+  [[ -f "$REMOTE_CONF" ]] || die "$REMOTE_CONF not found — run deploy-remote.sh without --verify first"
+  # shellcheck source=/dev/null
+  source "$REMOTE_CONF"
+  HYPERVISOR_JUMP="${HYPERVISOR_JUMP:-${SSH_PROXY_JUMP:-}}"
+  DEPLOY_REMOTE_SSH_KEY="${SSH_KEY:-$DEPLOY_REMOTE_SSH_KEY}"
+  KUBECONFIG_OUT="${KUBECONFIG_OUTPUT:-$KUBECONFIG_OUT}"
+  CLUSTER_NAME="${CLUSTER_NAME:-$CLUSTER_NAME}"
+}
+
+setup_api_tunnel() {
+  local cp_ip tunnel_port=16443
   cp_ip="$(grep '^CONTROL_PLANE_IPS=' "$REMOTE_CONF" 2>/dev/null | cut -d'"' -f2 || true)"
   [[ -n "$cp_ip" ]] || die "control plane IP missing in $REMOTE_CONF"
+  [[ -n "$HYPERVISOR_JUMP" ]] || die "SSH_PROXY_JUMP / hypervisor jump host not set"
 
   "$HC" -c "$REMOTE_CONF" unlock 2>/dev/null || true
 
@@ -169,12 +180,10 @@ run_deploy() {
   trap "deploy_remote_libvirt::stop_api_tunnel ${tunnel_port} ${cp_ip}" EXIT
 
   deploy_remote_libvirt::wait_api_ready "$KUBECONFIG_OUT" "$tunnel_port" 300
+}
 
-  log::section "hypercluster preflight"
-  "$HC" -c "$REMOTE_CONF" preflight
-  log::section "hypercluster deploy"
-  "$HC" -c "$REMOTE_CONF" deploy
-
+verify_cluster_tests() {
+  local test_json
   deploy_remote_libvirt::heal_cluster_network "$KUBECONFIG_OUT"
 
   log::section "hypercluster test"
@@ -186,7 +195,7 @@ run_deploy() {
     deploy_remote_libvirt::heal_cluster_network "$KUBECONFIG_OUT"
     sleep 30
     test_json="$("$HC" -c "$REMOTE_CONF" test --json 2>/dev/null)" \
-      || die "Platform smoke tests failed after retry — run: ./hypercluster -c cluster-remote.conf test"
+      || die "Platform smoke tests failed after retry"
     log::ok "Platform smoke passed (after retry)"
     printf '%s\n' "$test_json"
   fi
@@ -197,6 +206,29 @@ run_deploy() {
     die "health --json reported non-healthy state"
   fi
   log::ok "Cluster health: healthy"
+}
+
+verify_cluster() {
+  [[ -x "$HC" ]] || die "$HC not executable — run: chmod +x hypercluster"
+  setup_api_tunnel
+  verify_cluster_tests
+}
+
+run_deploy() {
+  [[ -x "$HC" ]] || die "$HC not executable — run: chmod +x hypercluster"
+  setup_api_tunnel
+  log::section "hypercluster preflight"
+  "$HC" -c "$REMOTE_CONF" preflight
+  log::section "hypercluster deploy"
+  "$HC" -c "$REMOTE_CONF" deploy
+  verify_cluster_tests
+}
+
+run_verify() {
+  load_remote_conf
+  verify_cluster
+  log::section "Verify OK"
+  log::info "Kubeconfig: $KUBECONFIG_OUT"
 }
 
 create_vms() {
@@ -248,6 +280,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help) usage ;;
     --vms-only) MODE="vms-only"; shift ;;
+    --verify) MODE="verify"; shift ;;
     --clean) MODE="clean"; shift ;;
     --*) die "Unknown option: $1" ;;
     *) POSITIONAL+=("$1"); shift ;;
@@ -256,6 +289,8 @@ done
 
 if [[ ${#POSITIONAL[@]} -ge 1 ]]; then
   parse_target "${POSITIONAL[0]:-}" "${POSITIONAL[1]:-}"
+elif [[ "$MODE" == "verify" ]]; then
+  :
 elif [[ -z "$HYPERVISOR" ]]; then
   usage
 fi
@@ -265,6 +300,9 @@ ensure_ssh_key
 case "$MODE" in
   clean)
     clean
+    ;;
+  verify)
+    run_verify
     ;;
   vms-only)
     create_vms

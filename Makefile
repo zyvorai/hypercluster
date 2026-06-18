@@ -10,7 +10,7 @@ FLAGS   ?=
 .PHONY: help init preflight deploy deploy-remote deploy-remote-vms scale upgrade remove-node \
         fetch-kubeconfig merge-kubeconfig install-kubevirt status destroy check-deps \
         lint test-smoke test-inventory test-platform-config test-platform-json test-platform-health-json test-ssh-opts test-preflight-json test-python-pip test-python-resolve test-runtime-paths test-forge-handoff test-local test-podman \
-        test-remote dry-deploy unlock wizard desktop-dev desktop-build desktop-pkg desktop-install desktop-uninstall desktop-brand desktop-icons desktop-preflight desktop-check docs docs-venv \
+        test-remote verify-remote-vms dry-deploy unlock wizard desktop-dev desktop-build desktop-pkg desktop-install desktop-uninstall desktop-brand desktop-icons desktop-preflight desktop-check docs docs-venv \
         lab-setup lab-storage lab-tune lab-storage-status test-lab-config
 
 help: ## 📖  Show this help
@@ -46,6 +46,10 @@ deploy-remote-vms: ## 🖥️  Create 2 libvirt VMs + k3s cluster (HYPERVISOR=su
 deploy-remote-vms-only: ## 🖥️  Libvirt VMs only — no hypercluster deploy
 	chmod +x scripts/deploy-remote.sh
 	./scripts/deploy-remote.sh $(HYPERVISOR) --vms-only $(DEPLOY_REMOTE_FLAGS)
+
+verify-remote-vms: ## ✅  Tunnel + test + health for existing cluster-remote.conf
+	chmod +x scripts/deploy-remote.sh
+	./scripts/deploy-remote.sh $(HYPERVISOR) --verify $(DEPLOY_REMOTE_FLAGS)
 
 test-remote: check-deps ## 🧪  Platform smoke tests (k3s)
 	$(HC) -c $(CONFIG) $(FLAGS) test
