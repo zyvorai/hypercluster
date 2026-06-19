@@ -25,6 +25,11 @@ jobs:
           cache: "npm"
           cache-dependency-path: desktop/package-lock.json
 
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
       - name: Install frontend deps
         working-directory: desktop
         run: npm ci
@@ -39,11 +44,27 @@ jobs:
 
       - name: cargo test paths (Windows)
         working-directory: desktop/src-tauri
-        run: cargo test --target x86_64-pc-windows-msvc -- paths::
+        run: "cargo test --target x86_64-pc-windows-msvc -- paths::"
+
+      - name: Build Python CLI (hypercluster.exe)
+        working-directory: cli
+        shell: pwsh
+        run: |
+          python -m venv .venv
+          .venv\Scripts\python.exe -m pip install --upgrade pip --quiet
+          .venv\Scripts\pip.exe install -e ".[dev]" --quiet
+          .venv\Scripts\pyinstaller.exe hypercluster-windows.spec
+
+      - name: Upload CLI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hypercluster-cli-windows
+          path: cli/dist/hypercluster.exe
+          if-no-files-found: error
 
       - name: Stage CLI runtime resources
         shell: pwsh
-        run: scripts/windows/stage-cli-resources.ps1
+        run: .\scripts\windows\stage-cli-resources.ps1
 
       - name: Build NSIS installer
         working-directory: desktop

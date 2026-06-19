@@ -81,9 +81,7 @@ def fetch(kubespray_dir: Path, cfg: ClusterConfig) -> None:
         shutil.copy2(str(artifacts_kc), str(output))
     else:
         log.info(f"Artifacts copy not found — copying via SCP from {first_cp} …")
-        key = cfg.resolved_ssh_key()
         with make_client(first_cp, cfg) as c:
-            ftp = c._connect() or c  # reuse connection
             r = c.run("cat /etc/kubernetes/admin.conf")
             if not r.ok:
                 log.die(f"Could not fetch admin.conf from {first_cp}")
