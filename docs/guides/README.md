@@ -33,6 +33,7 @@ Task-oriented guides for hypercluster CLI and Desktop UX.
 |-------|----------|
 | [Zyvor platform stack](zyvor-platform-stack.md) | Ecosystem map, Day 2 install order, sibling products |
 | [Lab operations](lab-ops.md) | Secondary disk for KubeVirt, single-node memory tune |
+| [Remote libvirt deploy](remote-libvirt-deploy.md) | User story: 2 VM k3s lab on remote hypervisor, zero-touch E2E |
 | [Main README](../../README.md) | Install, tutorial, troubleshooting |
 | [Release checklist](../../RELEASE.md) | Version bump and QA |
 
@@ -40,7 +41,7 @@ Task-oriented guides for hypercluster CLI and Desktop UX.
 
 | Task | Guide | Time |
 |------|-------|------|
-| First remote k3s cluster | [README — k3s quickstart](../../README.md#remote-k3s-platform-quickstart) | 30–60 min |
+| First remote k3s cluster | [README — k3s quickstart](../../README.md#remote-k3s-platform-quickstart) or [Remote libvirt deploy](remote-libvirt-deploy.md) | 30–60 min |
 | Use Desktop instead of CLI | [Desktop UX guide](desktop-ux-guide.md) | 10 min |
 | Discover nodes for Studio | [CLI guide — discover](cli/hypercluster-guide.md#discover-no-clusterconf) | 5 min |
 | Automate smoke tests | [CLI guide — JSON](cli/hypercluster-guide.md#json-output) | 5 min |

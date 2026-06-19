@@ -35,7 +35,7 @@ ssh::node_opts() {
     -o ControlPath=none
   )
   [[ -n "$port" && "$port" != "22" ]] && _ref+=(-p "$port")
-  ssh::append_extra_opts _ref
+  ssh::append_extra_opts "$1"
 }
 
 # opts for SSH to libvirt guests via hypervisor jump.
@@ -56,6 +56,6 @@ ssh::guest_opts() {
   if [[ -n "$jump" ]]; then
     _ref+=(-o "ProxyJump=${jump}")
   else
-    ssh::append_extra_opts _ref
+    ssh::append_extra_opts "$1"
   fi
 }

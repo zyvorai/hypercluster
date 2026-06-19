@@ -3,6 +3,8 @@
 
 # shellcheck source=lib/python-pip.sh
 source "${HYPERCLUSTER_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}/lib/python-pip.sh"
+# shellcheck source=lib/ssh.sh
+source "${HYPERCLUSTER_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}/lib/ssh.sh"
 
 preflight::_json_mode() { [[ "${HC_JSON:-0}" == "1" ]]; }
 
@@ -80,10 +82,8 @@ preflight::check_ssh_connectivity() {
 
   for ip in "${ips[@]}"; do
     log::info "Testing SSH → $user@$ip …"
-    local ssh_opts=(-i "$key" -o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=accept-new)
-    [[ -n "${SSH_PORT:-}" && "${SSH_PORT}" != "22" ]] && ssh_opts+=(-p "$SSH_PORT")
-    [[ -n "${SSH_EXTRA_ARGS:-}" ]] && ssh_opts+=(${SSH_EXTRA_ARGS})
-    # shellcheck disable=SC2086
+    local ssh_opts=()
+    ssh::node_opts ssh_opts "$key" "${SSH_PORT:-22}"
     if ! ssh "${ssh_opts[@]}" "$user@$ip" "echo ok" &>/dev/null; then
       preflight::_fail "SSH connectivity: $user@$ip"
       (( failed++ )) || true
@@ -96,11 +96,9 @@ preflight::check_ssh_connectivity() {
 }
 
 preflight::_ssh_first_cp() {
-  local key="${SSH_KEY/#\~/$HOME}" ip
+  local key="${SSH_KEY/#\~/$HOME}" ip opts=()
   ip=$(echo "$CONTROL_PLANE_IPS" | awk '{print $1}')
-  local opts=(-i "$key" -o BatchMode=yes -o ConnectTimeout=15 -o StrictHostKeyChecking=accept-new)
-  [[ -n "${SSH_PORT:-}" && "${SSH_PORT}" != "22" ]] && opts+=(-p "$SSH_PORT")
-  [[ -n "${SSH_EXTRA_ARGS:-}" ]] && opts+=(${SSH_EXTRA_ARGS})
+  ssh::node_opts opts "$key" "${SSH_PORT:-22}"
   # shellcheck disable=SC2029
   ssh "${opts[@]}" "$SSH_USER@$ip" "$@"
 }

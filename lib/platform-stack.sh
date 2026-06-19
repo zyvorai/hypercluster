@@ -94,9 +94,25 @@ platform::ensure_helm_repos() {
   fi
 }
 
+platform::_helm_unstick() {
+  local release="$1" namespace="$2"
+  local status=""
+  status="$(platform::_helm status "$release" -n "$namespace" -o json 2>/dev/null \
+    | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("info",{}).get("status",""))' 2>/dev/null \
+    || true)"
+  case "$status" in
+    pending-install|pending-upgrade|pending-rollback|uninstalling|failed)
+      log::warn "Clearing stuck Helm release $release ($status) in $namespace …"
+      platform::_helm uninstall "$release" -n "$namespace" --no-hooks 2>/dev/null || true
+      sleep 3
+      ;;
+  esac
+}
+
 platform::_helm_wait_or_ready() {
   local release="$1" namespace="$2" timeout="${3:-10m}"
   shift 3
+  platform::_helm_unstick "$release" "$namespace"
   if platform::_helm upgrade --install "$release" "$@" \
     --namespace "$namespace" \
     --create-namespace \
@@ -104,10 +120,15 @@ platform::_helm_wait_or_ready() {
     return 0
   fi
   log::warn "$release helm --wait failed — verifying workloads in $namespace …"
-  platform::_kubectl wait --for=condition=Available deployment --all -n "$namespace" --timeout=600s 2>/dev/null \
-    || platform::_kubectl wait --for=condition=Ready pod --all -n "$namespace" --timeout=600s
+  if platform::_kubectl wait --for=condition=Available deployment --all -n "$namespace" --timeout=600s 2>/dev/null \
+    || platform::_kubectl wait --for=condition=Ready pod --all -n "$namespace" --timeout=600s 2>/dev/null; then
+    log::ok "$release workloads ready (skipping stuck helm reconcile)"
+    return 0
+  fi
+  platform::_helm_unstick "$release" "$namespace"
   platform::_helm upgrade --install "$release" "$@" \
     --namespace "$namespace" \
+    --create-namespace \
     --timeout 5m
 }
 
@@ -134,12 +155,21 @@ platform::install_cilium() {
   values="$(mktemp)"
   platform::_gen_cilium_values "$values"
   ver_arg=$(platform::_helm_version_arg CILIUM_CHART_VERSION)
+  platform::_helm_unstick cilium kube-system
   # shellcheck disable=SC2086
-  platform::_helm upgrade --install cilium cilium/cilium \
+  if ! platform::_helm upgrade --install cilium cilium/cilium \
     --namespace kube-system \
     ${ver_arg} \
     --values "$values" \
-    --wait --timeout 25m
+    --wait --timeout 25m; then
+    log::warn "Cilium install failed — clearing stuck release and retrying once …"
+    platform::_helm_unstick cilium kube-system
+    platform::_helm upgrade --install cilium cilium/cilium \
+      --namespace kube-system \
+      ${ver_arg} \
+      --values "$values" \
+      --wait --timeout 25m
+  fi
   rm -f "$values"
   if command -v cilium &>/dev/null; then
     platform::_export_kc
@@ -245,6 +275,7 @@ platform::ensure_storage() {
 platform::install_metrics_server() {
   [[ "${METRICS_SERVER_ENABLED:-true}" == "true" ]] || return 0
   log::section "metrics-server"
+  platform::_kubectl delete deployment metrics-server -n kube-system --ignore-not-found 2>/dev/null || true
   platform::_kubectl apply -f - <<'EOF'
 apiVersion: v1
 kind: ServiceAccount
@@ -479,6 +510,9 @@ platform::install_kubevirt() {
     || platform::_kubectl wait --for=condition=Ready \
     pod -l 'kubevirt.io in (virt-api,virt-controller,virt-operator,virt-handler)' \
     -n kubevirt --timeout=600s
+  if [[ "${KUBEVIRT_API_REPLICAS:-}" == "1" ]]; then
+    platform::_kubectl scale deployment virt-api -n kubevirt --replicas=1 2>/dev/null || true
+  fi
   log::ok "KubeVirt ready"
 }
 
@@ -620,6 +654,18 @@ platform::_patch_ssp_webhook_cabundle() {
     --type=json -p "$patch" &>/dev/null || true
 }
 
+platform::_patch_ssp_control_plane() {
+  platform::_kubectl get deployment ssp-operator -n kubevirt &>/dev/null || return 0
+  platform::_kubectl patch deployment ssp-operator -n kubevirt --type=json -p='[
+    {"op":"add","path":"/spec/template/spec/nodeSelector","value":{"node-role.kubernetes.io/control-plane":"true"}},
+    {"op":"add","path":"/spec/template/spec/tolerations","value":[
+      {"key":"node-role.kubernetes.io/control-plane","operator":"Exists","effect":"NoSchedule"},
+      {"key":"node-role.kubernetes.io/master","operator":"Exists","effect":"NoSchedule"}
+    ]}
+  ]' &>/dev/null || true
+  platform::_kubectl rollout status deployment/ssp-operator -n kubevirt --timeout=300s &>/dev/null || true
+}
+
 platform::install_ssp() {
   [[ "${SSP_ENABLED:-true}" == "true" ]] || return 0
   [[ "${KUBEVIRT_ENABLED:-false}" == "true" ]] || return 0
@@ -646,6 +692,7 @@ platform::install_ssp() {
   log::warn "SSP helm chart unavailable — applying manifest fallback ($ver)"
   platform::_kubectl apply --validate=false -f "https://github.com/kubevirt/ssp-operator/releases/download/${ver}/ssp-operator.yaml"
   platform::_ensure_ssp_webhook_cert
+  platform::_patch_ssp_control_plane
   log::info "Waiting for SSP webhook …"
   platform::_kubectl wait --for=condition=Available deployment/ssp-operator \
     -n kubevirt --timeout=600s 2>/dev/null \
@@ -654,17 +701,19 @@ platform::install_ssp() {
   platform::_patch_ssp_webhook_cabundle
   local attempt manifest
   manifest="$(platform::_repo_root)/config/k3s/ssp-cr.yaml"
-  for attempt in 1 2 3 4 5 6; do
+  for attempt in 1 2 3 4 5 6 7 8 9 10; do
     if platform::_kubectl apply -f "$manifest"; then
       platform::_kubectl wait --for=condition=Available deployment/ssp-operator-controller-manager \
         -n kubevirt --timeout=600s 2>/dev/null || true
       log::ok "SSP ready (manifests)"
       return 0
     fi
-    log::warn "SSP CR apply failed (attempt $attempt/6) — retrying after webhook warm-up …"
+    log::warn "SSP CR apply failed (attempt $attempt/10) — retrying after webhook warm-up …"
+    platform::_patch_ssp_control_plane
+    platform::_patch_ssp_webhook_cabundle
     sleep 15
   done
-  die "SSP CR apply failed after retries (webhook may not be reachable yet)"
+  log::warn "SSP CR apply failed after retries — continuing (SSP is optional for core platform)"
 }
 
 platform::install_longhorn() {

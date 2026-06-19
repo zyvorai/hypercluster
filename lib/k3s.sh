@@ -37,10 +37,7 @@ PY
 }
 
 k3s::_ssh_opts() {
-  local -n _ref="$1"
-  local key="$2"
-  local port="$3"
-  ssh::node_opts _ref "$key" "$port"
+  ssh::node_opts "$1" "$2" "$3"
 }
 
 k3s::_ssh() {
@@ -237,15 +234,16 @@ k3s::wait_api() {
   kc="${KUBECONFIG_OUTPUT/#\~/$HOME}"
   [[ -f "$kc" ]] || return 0
   log::info "Waiting for Kubernetes API (kubeconfig) …"
-  local i
-  for i in $(seq 1 60); do
+  local i max=60
+  [[ -n "${K3S_API_LOCAL_PORT:-}" ]] && max=150
+  for i in $(seq 1 "$max"); do
     if KUBECONFIG="$kc" kubectl get nodes &>/dev/null; then
       log::ok "API reachable via kubeconfig"
       return 0
     fi
     sleep 2
   done
-  die "API not reachable via $kc after 120s"
+  die "API not reachable via $kc after $((max * 2))s"
 }
 
 # Legacy wrapper — platform-stack installs Cilium via Helm.

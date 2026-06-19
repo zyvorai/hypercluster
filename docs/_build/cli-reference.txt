@@ -40,6 +40,7 @@ Options:
 ── parse options ───────────────────────────────────────────────────────────
 ── load libraries ───────────────────────────────────────────────────────────
 shellcheck source=lib/log.sh
+shellcheck source=lib/ssh.sh
 shellcheck source=lib/wizard.sh
 shellcheck source=lib/progress.sh
 shellcheck source=lib/postdeploy.sh

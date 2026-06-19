@@ -3,11 +3,11 @@
 
 _ts() { date '+%H:%M:%S'; }
 
-log::info()    { printf "[%s] ➜  %s\n"   "$(_ts)" "$*"; }
-log::ok()      { printf "[%s] ✅  %s\n"   "$(_ts)" "$*"; }
+log::info()    { printf "[%s] ➜  %s\n"   "$(_ts)" "$*" >&2; }
+log::ok()      { printf "[%s] ✅  %s\n"   "$(_ts)" "$*" >&2; }
 log::warn()    { printf "[%s] ⚠️   %s\n"  "$(_ts)" "$*" >&2; }
 log::error()   { printf "[%s] ❌  %s\n"   "$(_ts)" "$*" >&2; }
-log::section() { printf "\n🔷  %s\n%s\n\n" "$*" "$(printf '─%.0s' {1..60})"; }
+log::section() { printf "\n🔷  %s\n%s\n\n" "$*" "$(printf '─%.0s' {1..60})" >&2; }
 log::debug()   {
   [[ "${VERBOSE:-0}" == "1" ]] && printf "[%s] 🐛  %s\n" "$(_ts)" "$*" >&2 || true
 }

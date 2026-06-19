@@ -6,9 +6,9 @@
 #   ./scripts/deploy-remote.sh sus@175.110.114.93
 #   ./scripts/deploy-remote.sh sus 175.110.114.93 --vms-only
 #   ./scripts/deploy-remote.sh sus 175.110.114.93 --verify
-#   ./scripts/deploy-remote.sh --verify   # uses cluster-remote.conf + SSH_PROXY_JUMP
+#   ./scripts/deploy-remote.sh sus 175.110.114.93 --deploy-only
 #
-# Env: HYPERVISOR SSH_KEY CLUSTER_NAME METALLB_IP_POOL VM_CPUS VM_MEM VM_DISK
+# Env: HYPERVISOR SSH_KEY CLUSTER_NAME METALLB_IP_POOL VM_CPUS VM_CP_MEM VM_WORKER_MEM VM_DISK
 set -euo pipefail
 
 if [[ "$(uname)" == "Darwin" && "${BASH_VERSINFO[0]:-3}" -lt 4 ]]; then
@@ -34,7 +34,8 @@ KUBECONFIG_OUT="${KUBECONFIG_OUTPUT:-$HOME/.kube/hc-remote.yaml}"
 VM_CP="${VM_CP:-hc-cp-1}"
 VM_WORKER="${VM_WORKER:-hc-worker-1}"
 VM_CPUS="${VM_CPUS:-2}"
-VM_MEM="${VM_MEM:-3072}"
+VM_CP_MEM="${VM_CP_MEM:-${VM_MEM:-8192}}"
+VM_WORKER_MEM="${VM_WORKER_MEM:-${VM_MEM:-4096}}"
 VM_DISK="${VM_DISK:-20}"
 CLUSTER_NAME="${CLUSTER_NAME:-hc-remote}"
 SSH_USER_GUEST="${SSH_USER_GUEST:-ubuntu}"
@@ -53,7 +54,7 @@ Examples:
   ./scripts/deploy-remote.sh sus@175.110.114.93 --vms-only
   METALLB_IP_POOL=192.168.122.240-192.168.122.250 ./scripts/deploy-remote.sh sus@host
 
-Env: HYPERVISOR SSH_KEY CLUSTER_NAME METALLB_IP_POOL VM_CPUS VM_MEM VM_DISK
+Env: HYPERVISOR SSH_KEY CLUSTER_NAME METALLB_IP_POOL VM_CPUS VM_CP_MEM VM_WORKER_MEM VM_DISK
 EOF
   exit 0
 }
@@ -111,7 +112,7 @@ CLUSTER_NAME="${CLUSTER_NAME}"
 K8S_DISTRO="k3s"
 K3S_DATA_DIR="/data/k3s"
 K3S_VERSION=""
-K3S_EXEC_ARGS="--flannel-backend=none --disable-network-policy --disable traefik --disable servicelb --disable-kube-proxy"
+K3S_EXEC_ARGS="--flannel-backend=none --disable-network-policy --disable traefik --disable servicelb --disable metrics-server --disable-kube-proxy"
 CILIUM_HUBBLE_ENABLED="true"
 CILIUM_KUBE_PROXY_REPLACEMENT="true"
 CILIUM_BGP_ENABLED="false"
@@ -147,6 +148,7 @@ KUBEVIRT_ENABLED="true"
 KUBEVIRT_VERSION="v1.8.3"
 CDI_VERSION="v1.65.0"
 METRICS_SERVER_ENABLED="true"
+KUBEVIRT_API_REPLICAS="1"
 
 KUBECONFIG_OUTPUT="${KUBECONFIG_OUT}"
 KUBECONFIG_MERGE_DEFAULT="false"
@@ -180,6 +182,18 @@ setup_api_tunnel() {
   trap "deploy_remote_libvirt::stop_api_tunnel ${tunnel_port} ${cp_ip}" EXIT
 
   deploy_remote_libvirt::wait_api_ready "$KUBECONFIG_OUT" "$tunnel_port" 300
+}
+
+ensure_api_tunnel() {
+  local cp_ip tunnel_port=16443
+  cp_ip="$(grep '^CONTROL_PLANE_IPS=' "$REMOTE_CONF" 2>/dev/null | cut -d'"' -f2 || true)"
+  [[ -n "$cp_ip" ]] || die "control plane IP missing in $REMOTE_CONF"
+  [[ -n "$HYPERVISOR_JUMP" ]] || die "SSH_PROXY_JUMP / hypervisor jump host not set"
+  log::section "SSH API tunnel (pre-deploy → ${cp_ip}:6443)"
+  deploy_remote_libvirt::ensure_api_tunnel "$cp_ip" "$HYPERVISOR_JUMP" "$tunnel_port" \
+    || die "API tunnel SSH forward failed"
+  log::ok "API tunnel forward active (k3s API may not be ready yet)"
+  trap "deploy_remote_libvirt::stop_api_tunnel ${tunnel_port} ${cp_ip}" EXIT
 }
 
 verify_cluster_tests() {
@@ -216,11 +230,13 @@ verify_cluster() {
 
 run_deploy() {
   [[ -x "$HC" ]] || die "$HC not executable — run: chmod +x hypercluster"
-  setup_api_tunnel
+  "$HC" -c "$REMOTE_CONF" unlock 2>/dev/null || true
   log::section "hypercluster preflight"
   "$HC" -c "$REMOTE_CONF" preflight
+  ensure_api_tunnel
   log::section "hypercluster deploy"
   "$HC" -c "$REMOTE_CONF" deploy
+  setup_api_tunnel
   verify_cluster_tests
 }
 
@@ -247,17 +263,20 @@ create_vms() {
   log::info "MetalLB pool: $METALLB_IP_POOL"
 
   log::section "Creating control-plane VM ($VM_CP)"
-  deploy_remote_libvirt::ensure_vm "$HYPERVISOR" "$VM_CP" "$pubkey" "$VM_CPUS" "$VM_MEM" "$VM_DISK"
+  deploy_remote_libvirt::ensure_vm "$HYPERVISOR" "$VM_CP" "$pubkey" "$VM_CPUS" "$VM_CP_MEM" "$VM_DISK"
   cp_ip="$(deploy_remote_libvirt::wait_vm_ip "$HYPERVISOR" "$VM_CP")"
   log::ok "$VM_CP → $cp_ip"
 
   log::section "Creating worker VM ($VM_WORKER)"
-  deploy_remote_libvirt::ensure_vm "$HYPERVISOR" "$VM_WORKER" "$pubkey" "$VM_CPUS" "$VM_MEM" "$VM_DISK"
+  deploy_remote_libvirt::ensure_vm "$HYPERVISOR" "$VM_WORKER" "$pubkey" "$VM_CPUS" "$VM_WORKER_MEM" "$VM_DISK"
   worker_ip="$(deploy_remote_libvirt::wait_vm_ip "$HYPERVISOR" "$VM_WORKER")"
   log::ok "$VM_WORKER → $worker_ip"
 
-  deploy_remote_libvirt::wait_guest_ssh "$cp_ip" "$SSH_USER_GUEST" "$VM_CP" "$HYPERVISOR_JUMP" "$HYPERVISOR"
-  deploy_remote_libvirt::wait_guest_ssh "$worker_ip" "$SSH_USER_GUEST" "$VM_WORKER" "$HYPERVISOR_JUMP" "$HYPERVISOR"
+  log::info "Waiting 90s for guest cloud-init …"
+  sleep 90
+
+  cp_ip="$(deploy_remote_libvirt::wait_guest_ssh "$cp_ip" "$SSH_USER_GUEST" "$VM_CP" "$HYPERVISOR_JUMP" "$HYPERVISOR")"
+  worker_ip="$(deploy_remote_libvirt::wait_guest_ssh "$worker_ip" "$SSH_USER_GUEST" "$VM_WORKER" "$HYPERVISOR_JUMP" "$HYPERVISOR")"
 
   write_cluster_conf "$cp_ip" "$worker_ip" "$METALLB_IP_POOL"
 
@@ -281,6 +300,7 @@ while [[ $# -gt 0 ]]; do
     -h|--help) usage ;;
     --vms-only) MODE="vms-only"; shift ;;
     --verify) MODE="verify"; shift ;;
+    --deploy-only) MODE="deploy-only"; shift ;;
     --clean) MODE="clean"; shift ;;
     --*) die "Unknown option: $1" ;;
     *) POSITIONAL+=("$1"); shift ;;
@@ -289,7 +309,7 @@ done
 
 if [[ ${#POSITIONAL[@]} -ge 1 ]]; then
   parse_target "${POSITIONAL[0]:-}" "${POSITIONAL[1]:-}"
-elif [[ "$MODE" == "verify" ]]; then
+elif [[ "$MODE" == "verify" || "$MODE" == "deploy-only" ]]; then
   :
 elif [[ -z "$HYPERVISOR" ]]; then
   usage
@@ -303,6 +323,11 @@ case "$MODE" in
     ;;
   verify)
     run_verify
+    ;;
+  deploy-only)
+    load_remote_conf
+    run_deploy
+    log::section "Done"
     ;;
   vms-only)
     create_vms

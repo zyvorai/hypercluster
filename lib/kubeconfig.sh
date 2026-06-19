@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # kubeconfig retrieval and merge helpers — source this file.
 
+if ! declare -f ssh::node_opts &>/dev/null; then
+  # shellcheck source=lib/ssh.sh
+  source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ssh.sh"
+fi
+
 kubeconfig::_patch_server() {
   local output="$1" first_cp_ip="$2"
   if [[ -n "${K3S_API_LOCAL_PORT:-}" ]]; then
@@ -41,9 +46,6 @@ kubeconfig::fetch_k3s() {
   first_cp_ip=$(echo "$CONTROL_PLANE_IPS" | awk '{print $1}')
   local key="${SSH_KEY/#\~/$HOME}"
   local output="${KUBECONFIG_OUTPUT/#\~/$HOME}"
-  local scp_opts=(-i "$key" -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15)
-  [[ -n "${SSH_PORT:-}" && "${SSH_PORT}" != "22" ]] && scp_opts+=(-P "$SSH_PORT")
-  [[ -n "${SSH_EXTRA_ARGS:-}" ]] && scp_opts+=(${SSH_EXTRA_ARGS})
 
   log::section "Fetching k3s kubeconfig"
   mkdir -p "$(dirname "$output")"
@@ -54,8 +56,17 @@ kubeconfig::fetch_k3s() {
   fi
 
   log::info "Reading /etc/rancher/k3s/k3s.yaml from $first_cp_ip …"
-  # shellcheck disable=SC2086,SC2029
-  ssh "${scp_opts[@]}" "$SSH_USER@$first_cp_ip" "sudo cat /etc/rancher/k3s/k3s.yaml" > "$output"
+  local ssh_opts=() attempt raw=""
+  ssh::node_opts ssh_opts "$key" "${SSH_PORT:-22}"
+  for attempt in 1 2 3 4 5 6; do
+    if raw="$(ssh "${ssh_opts[@]}" "$SSH_USER@$first_cp_ip" "sudo cat /etc/rancher/k3s/k3s.yaml" 2>/dev/null)"; then
+      printf '%s\n' "$raw" > "$output"
+      break
+    fi
+    log::warn "kubeconfig fetch attempt $attempt/6 failed — retrying …"
+    sleep 10
+  done
+  [[ -s "$output" ]] || die "failed to fetch kubeconfig from $first_cp_ip"
   chmod 600 "$output"
   kubeconfig::_patch_server "$output" "$first_cp_ip"
 

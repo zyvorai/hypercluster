@@ -30,6 +30,17 @@ systemctl is-active libvirtd >/dev/null 2>&1 || { echo "libvirtd not active" >&2
 sudo virsh net-list --name 2>/dev/null | grep -qx default || { echo "libvirt default network missing" >&2; exit 1; }
 command -v virt-install >/dev/null 2>&1 || { echo "virt-install not found" >&2; exit 1; }
 command -v qemu-img >/dev/null 2>&1 || { echo "qemu-img not found" >&2; exit 1; }
+if ! command -v cloud-localds >/dev/null 2>&1; then
+  echo "Installing cloud-image-utils (cloud-localds) …" >&2
+  if command -v apt-get >/dev/null 2>&1; then
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y cloud-image-utils >/dev/null 2>&1 || true
+  elif command -v dnf >/dev/null 2>&1; then
+    sudo dnf install -y cloud-image-utils genisoimage >/dev/null 2>&1 || true
+  fi
+fi
+command -v cloud-localds >/dev/null 2>&1 \
+  || command -v genisoimage >/dev/null 2>&1 \
+  || { echo "need cloud-localds or genisoimage on hypervisor" >&2; exit 1; }
 echo ok
 REMOTE
 }
@@ -84,6 +95,15 @@ META_DATA="${IMG_DIR}/${VM_NAME}-meta-data.yaml"
 
 log() { printf '→ %s\n' "$*"; }
 
+make_seed_iso() {
+  if command -v cloud-localds >/dev/null 2>&1; then
+    sudo cloud-localds "$SEED" "$USER_DATA" "$META_DATA"
+  else
+    sudo genisoimage -output "$SEED" -volid cidata -joliet -rock \
+      -graft-points "user-data=${USER_DATA}" "meta-data=${META_DATA}"
+  fi
+}
+
 if sudo virsh dominfo "$VM_NAME" >/dev/null 2>&1; then
   state="$(sudo virsh domstate "$VM_NAME" 2>/dev/null || true)"
   if [[ "$state" != "running" ]]; then
@@ -130,32 +150,23 @@ instance-id: ${VM_NAME}
 local-hostname: ${VM_NAME}
 EOF
 
-if command -v cloud-localds >/dev/null 2>&1; then
-  sudo cloud-localds "$SEED" "$USER_DATA" "$META_DATA"
-  sudo virt-install \
-    --name "$VM_NAME" \
-    --memory "$VM_MEM_MB" \
-    --vcpus "$VM_CPUS" \
-    --disk path="$DISK",format=qcow2 \
-    --disk path="$SEED",device=cdrom \
-    --import \
-    --os-variant ubuntu22.04 \
-    --network network=default \
-    --graphics none \
-    --noautoconsole
-else
-  sudo virt-install \
-    --name "$VM_NAME" \
-    --memory "$VM_MEM_MB" \
-    --vcpus "$VM_CPUS" \
-    --disk path="$DISK",format=qcow2 \
-    --import \
-    --os-variant ubuntu22.04 \
-    --network network=default \
-    --graphics none \
-    --noautoconsole \
-    --cloud-init "user-data=${USER_DATA},meta-data=${META_DATA}"
+if ! command -v cloud-localds >/dev/null 2>&1 && ! command -v genisoimage >/dev/null 2>&1; then
+  log "cloud-localds or genisoimage required on hypervisor" >&2
+  exit 1
 fi
+
+make_seed_iso
+sudo virt-install \
+  --name "$VM_NAME" \
+  --memory "$VM_MEM_MB" \
+  --vcpus "$VM_CPUS" \
+  --disk path="$DISK",format=qcow2 \
+  --disk path="$SEED",device=cdrom \
+  --import \
+  --os-variant ubuntu22.04 \
+  --network network=default \
+  --graphics none \
+  --noautoconsole
 REMOTE
 }
 
@@ -215,30 +226,29 @@ deploy_remote_libvirt::probe_guest_ssh() {
   ssh "${opts[@]}" "${user}@${ip}" 'echo ok' >/dev/null 2>&1
 }
 
-# Reboot guest VM on hypervisor when SSH is hung; then wait for SSH.
+# stdout: guest IP when SSH is ready
 deploy_remote_libvirt::wait_guest_ssh() {
   local ip="$1" user="${2:-ubuntu}" vm_name="${3:-}" jump="${4:-${HYPERVISOR_JUMP:-}}"
   local target="${5:-${HYPERVISOR:-$jump}}"
-  local tries=0 reboots=0 max_tries=36 max_reboots=2
+  local tries=0 max_tries=60
   local opts=()
   ssh::guest_opts opts "${DEPLOY_REMOTE_SSH_KEY:-}" "$jump"
 
   log::info "Waiting for SSH on ${user}@${ip} (via ${jump}) …"
   while (( tries < max_tries )); do
-    if ssh "${opts[@]}" "${user}@${ip}" 'echo ok' >/dev/null 2>&1; then
-      log::ok "SSH ready on $ip"
-      return 0
+    if (( tries > 0 && tries % 6 == 0 )) && [[ -n "$vm_name" ]]; then
+      ip="$(deploy_remote_libvirt::wait_vm_ip "$target" "$vm_name" 90)" || true
+      log::info "$vm_name address → ${ip:-unknown}"
     fi
-    if (( tries > 0 && tries % 12 == 0 && reboots < max_reboots && -n "$vm_name" )); then
-      log::warn "SSH still down on $ip — restarting VM $vm_name on hypervisor …"
-      deploy_remote_libvirt::restart_vm "$target" "$vm_name" || true
-      reboots=$((reboots + 1))
-      sleep 15
+    if [[ -n "$ip" ]] && ssh "${opts[@]}" "${user}@${ip}" 'echo ok' >/dev/null 2>&1; then
+      log::ok "SSH ready on $ip"
+      printf '%s\n' "$ip"
+      return 0
     fi
     (( tries++ )) || true
     sleep 5
   done
-  die "SSH not reachable on ${user}@${ip} (via ${jump}) after ${max_reboots} VM restart(s)"
+  die "SSH not reachable on ${user}@${ip:-?} (via ${jump})"
 }
 
 deploy_remote_libvirt::wait_api_ready() {
@@ -272,33 +282,42 @@ deploy_remote_libvirt::heal_cluster_network() {
 
 deploy_remote_libvirt::stop_api_tunnel() {
   local port="${1:-16443}" cp_ip="${2:-}"
+  local pid pids
+  pids="$(lsof -ti "tcp:${port}" -sTCP:LISTEN 2>/dev/null || true)"
+  for pid in $pids; do
+    kill "$pid" 2>/dev/null || true
+  done
   local pattern="127\\.0\\.0\\.1:${port}:"
   [[ -n "$cp_ip" ]] && pattern="${pattern}${cp_ip}:6443"
-  local pid
   pid="$(pgrep -f "$pattern" 2>/dev/null | head -1 || true)"
   [[ -n "$pid" ]] && kill "$pid" 2>/dev/null || true
+  sleep 1
+}
+
+deploy_remote_libvirt::ensure_api_tunnel() {
+  local cp_ip="$1" jump="$2" port="${3:-16443}"
+  deploy_remote_libvirt::stop_api_tunnel "$port" "$cp_ip"
+  local opts=()
+  deploy_remote_libvirt::ssh_opts opts
+  ssh -f -N "${opts[@]}" \
+    -o ControlMaster=no -o ControlPath=none \
+    -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 \
+    -L "127.0.0.1:${port}:${cp_ip}:6443" \
+    "$jump" || return 1
+  sleep 1
+  pgrep -f "127\\.0\\.0\\.1:${port}:${cp_ip}:6443" >/dev/null
 }
 
 deploy_remote_libvirt::start_api_tunnel() {
   local cp_ip="$1" jump="$2" port="${3:-16443}"
   local attempt
   for attempt in 1 2 3 4 5; do
-    if curl -sk --connect-timeout 3 "https://127.0.0.1:${port}/version" >/dev/null 2>&1; then
-      echo "ok"
-      return 0
-    fi
-    deploy_remote_libvirt::stop_api_tunnel "$port" "$cp_ip"
-    local opts=()
-    deploy_remote_libvirt::ssh_opts opts
-    ssh -f -N "${opts[@]}" -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 \
-      -L "127.0.0.1:${port}:${cp_ip}:6443" \
-      "$jump" 2>/dev/null || true
-    sleep 3
+    deploy_remote_libvirt::ensure_api_tunnel "$cp_ip" "$jump" "$port" || true
     if curl -sk --connect-timeout 8 "https://127.0.0.1:${port}/version" >/dev/null 2>&1; then
       echo "ok"
       return 0
     fi
-    log::warn "API tunnel attempt $attempt/5 failed — retrying …"
+    log::warn "API tunnel attempt $attempt/5 — waiting for k3s API …"
     sleep 5
   done
   return 1
