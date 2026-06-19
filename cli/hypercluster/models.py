@@ -81,7 +81,7 @@ class ClusterConfig(BaseModel):
     LAB_MEMORY_TUNE_ENABLED: bool = False
     LAB_AUTO_SETUP: bool = False
 
-    model_config = {"extra": "allow"}
+    model_config = {"extra": "ignore"}
 
     @field_validator("K8S_DISTRO", mode="before")
     @classmethod
