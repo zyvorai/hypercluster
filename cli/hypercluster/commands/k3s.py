@@ -196,6 +196,8 @@ def wait_api(cfg: ClusterConfig) -> None:
     kc = cfg.resolved_kubeconfig()
     if not Path(kc).is_file():
         return
+    if proc.DRY_RUN:
+        return
     log.info("Waiting for Kubernetes API (kubeconfig) …")
     max_tries = 150 if cfg.K3S_API_LOCAL_PORT else 60
     env = dict(os.environ, KUBECONFIG=kc)

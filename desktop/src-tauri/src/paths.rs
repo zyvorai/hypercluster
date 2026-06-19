@@ -235,14 +235,22 @@ pub fn resolve_python() -> Option<PathBuf> {
         }
     }
 
+    // Windows names the executable python.exe / python3.exe; Unix uses python3.
+    #[cfg(target_os = "windows")]
+    let python_names = ["python3.exe", "python.exe"];
+    #[cfg(not(target_os = "windows"))]
+    let python_names = ["python3"];
+
     for seg in env::var("PATH")
         .unwrap_or_default()
         .split(PATH_SEP)
         .filter(|s| !s.is_empty())
     {
-        let p = PathBuf::from(seg).join("python3");
-        if p.is_file() {
-            return Some(p);
+        for name in python_names {
+            let p = PathBuf::from(seg).join(name);
+            if p.is_file() {
+                return Some(p);
+            }
         }
     }
     None

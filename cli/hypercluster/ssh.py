@@ -60,9 +60,19 @@ class SSHClient:
             key_path = Path(self.key_file).expanduser()
             try:
                 kwargs["pkey"] = paramiko.Ed25519Key.from_private_key_file(str(key_path))
+            except paramiko.PasswordRequiredException:
+                raise RuntimeError(
+                    f"SSH key {key_path} requires a passphrase — "
+                    "set SSH_KEY to an unencrypted key or use ssh-agent"
+                )
             except paramiko.SSHException:
                 try:
                     kwargs["pkey"] = paramiko.RSAKey.from_private_key_file(str(key_path))
+                except paramiko.PasswordRequiredException:
+                    raise RuntimeError(
+                        f"SSH key {key_path} requires a passphrase — "
+                        "set SSH_KEY to an unencrypted key or use ssh-agent"
+                    )
                 except paramiko.SSHException:
                     kwargs["key_filename"] = str(key_path)
         client.connect(**kwargs)

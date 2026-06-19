@@ -4,7 +4,8 @@ import appIconUrl from '../assets/brand/app-icon.svg'
 import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 
-const deviceWord = /^Mac/.test(navigator.platform) ? 'Mac' : 'PC'
+const isMac = /^Mac/.test(navigator.platform)
+const deviceWord = isMac ? 'Mac' : 'PC'
 
 type TrialStatus = {
   active: boolean
@@ -58,7 +59,8 @@ export function EulaGate({ children }: { children: React.ReactNode }) {
     ;(async () => {
       try {
         const arch = await invoke<string>('host_cpu_arch_cmd')
-        const needsArm = await invoke<boolean>('macos_arm64_required_cmd')
+        // ARM64 requirement only applies on macOS; skip the check on Windows/Linux.
+        const needsArm = isMac ? await invoke<boolean>('macos_arm64_required_cmd') : false
         if (cancelled) return
         setHostArch(arch)
         if (needsArm) {

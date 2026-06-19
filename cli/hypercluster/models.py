@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Literal, Optional
 from pydantic import BaseModel, field_validator
 
@@ -103,10 +104,10 @@ class ClusterConfig(BaseModel):
         return ips[0]
 
     def resolved_ssh_key(self) -> str:
-        return str(self.SSH_KEY).replace("~", str(__import__("pathlib").Path.home()))
+        return str(Path(self.SSH_KEY).expanduser())
 
     def resolved_kubeconfig(self) -> str:
-        return str(self.KUBECONFIG_OUTPUT).replace("~", str(__import__("pathlib").Path.home()))
+        return str(Path(self.KUBECONFIG_OUTPUT).expanduser())
 
     def distro(self) -> str:
         d = self.K8S_DISTRO
