@@ -107,11 +107,14 @@ pub async fn run_hypercluster(
         ));
     }
 
-    let bash = paths::resolve_bash();
+    let (interp, prefix_args) = paths::bash_invoke_args();
     let shell_cmd = build_shell_command(&req, &bin);
 
-    let mut child = Command::new(&bash);
+    let mut child = Command::new(&interp);
     apply_shell_spawn_env(&mut child);
+    for a in &prefix_args {
+        child.arg(a);
+    }
     let mut child = child
         .arg("-lc")
         .arg(&shell_cmd)
@@ -253,6 +256,12 @@ pub fn cancel_run(manager: &ProcessManager, cluster_name: &str) -> Result<(), St
             unsafe {
                 libc::kill(pid as i32, libc::SIGTERM);
             }
+            #[cfg(target_os = "windows")]
+            {
+                let _ = std::process::Command::new("taskkill")
+                    .args(["/F", "/PID", &pid.to_string()])
+                    .status();
+            }
         }
         Ok(())
     } else {
@@ -270,12 +279,15 @@ pub async fn get_run_status(
 
 pub async fn run_sync_no_config(command: &str, args: &[String]) -> Result<String, String> {
     let bin = hypercluster_bin();
-    let bash = paths::resolve_bash();
+    let (interp, prefix_args) = paths::bash_invoke_args();
     let mut parts = vec![format!("\"{}\"", bin.display()), command.into()];
     parts.extend(args.iter().cloned());
     let shell_cmd = format!("exec {}", parts.join(" "));
-    let mut cmd = Command::new(&bash);
+    let mut cmd = Command::new(&interp);
     apply_shell_spawn_env(&mut cmd);
+    for a in &prefix_args {
+        cmd.arg(a);
+    }
     let output = cmd
         .arg("-lc")
         .arg(&shell_cmd)
@@ -296,7 +308,7 @@ pub async fn run_sync(
     json: bool,
 ) -> Result<String, String> {
     let bin = hypercluster_bin();
-    let bash = paths::resolve_bash();
+    let (interp, prefix_args) = paths::bash_invoke_args();
     let mut parts = vec![
         format!("\"{}\"", bin.display()),
         "-c".into(),
@@ -308,8 +320,11 @@ pub async fn run_sync(
     }
     parts.extend(args.iter().cloned());
     let shell_cmd = format!("exec {}", parts.join(" "));
-    let mut cmd = Command::new(&bash);
+    let mut cmd = Command::new(&interp);
     apply_shell_spawn_env(&mut cmd);
+    for a in &prefix_args {
+        cmd.arg(a);
+    }
     let output = cmd
         .arg("-lc")
         .arg(&shell_cmd)

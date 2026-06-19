@@ -58,6 +58,9 @@ import type {
   WorkloadsJson,
 } from './lib/types'
 
+const isMac = /^Mac/.test(navigator.platform)
+const MOD = isMac ? '⌘' : 'Ctrl+'
+
 export default function App() {
   const [view, setView] = useState<View>('dashboard')
   const [clusters, setClusters] = useState<ClusterEntry[]>([])
@@ -655,9 +658,9 @@ export default function App() {
           onClick={() => setCopilotOpen((o) => !o)}
         >
           <span className="w-4 shrink-0 text-center text-xs text-glass-purple">✦</span>
-          AI Copilot ⌘J
+          AI Copilot {MOD}J
         </button>
-        <p className="mt-auto px-2 text-[10px] text-glass-muted">⌘K palette · ⌘J AI · Esc back</p>
+        <p className="mt-auto px-2 text-[10px] text-glass-muted">{MOD}K palette · {MOD}J AI · Esc back</p>
         <ZyvorFooter className="px-2" />
       </aside>
 

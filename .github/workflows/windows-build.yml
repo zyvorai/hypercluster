@@ -1,0 +1,62 @@
+name: Windows Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  windows-desktop-build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Install frontend deps
+        working-directory: desktop
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: desktop
+        run: npm run build
+
+      - name: cargo check (Windows)
+        working-directory: desktop/src-tauri
+        run: cargo check --target x86_64-pc-windows-msvc
+
+      - name: cargo test paths (Windows)
+        working-directory: desktop/src-tauri
+        run: cargo test --target x86_64-pc-windows-msvc -- paths::
+
+      - name: Stage CLI runtime resources
+        shell: pwsh
+        run: scripts/windows/stage-cli-resources.ps1
+
+      - name: Build NSIS installer
+        working-directory: desktop
+        run: npx tauri build --bundles nsis --target x86_64-pc-windows-msvc
+        env:
+          # Set signing secrets here when code signing is available:
+          # TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.WINDOWS_CERTIFICATE }}
+          # TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+          TAURI_SKIP_DEVSERVER_CHECK: "true"
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hypercluster-windows-installer
+          path: desktop/distribution/Hypercluster-*-x86_64-Setup.exe
+          if-no-files-found: error

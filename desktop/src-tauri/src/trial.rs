@@ -1,7 +1,8 @@
 //! 30-day trial for Hypercluster Desktop.
 //!
-//! Trial start is stored in macOS Keychain (survives app uninstall/reinstall) with a
-//! `~/.hypercluster/trial.json` mirror. Reinstalling the app does not reset the trial.
+//! Trial start is stored in the OS credential store (macOS Keychain, Windows Credential Manager,
+//! Linux SecretService) via the `keyring` crate, with a `~/.hypercluster/trial.json` mirror.
+//! Reinstalling the app does not reset the trial.
 
 use crate::license;
 use chrono::{DateTime, Duration, Utc};
@@ -76,7 +77,24 @@ pub fn machine_id() -> String {
             }
         }
     }
+    #[cfg(target_os = "windows")]
+    {
+        if let Some(guid) = windows_machine_guid() {
+            return guid;
+        }
+    }
     format!("host-{}", hostname())
+}
+
+#[cfg(target_os = "windows")]
+fn windows_machine_guid() -> Option<String> {
+    use winreg::enums::HKEY_LOCAL_MACHINE;
+    use winreg::RegKey;
+    let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    let key = hklm
+        .open_subkey("SOFTWARE\\Microsoft\\Cryptography")
+        .ok()?;
+    key.get_value("MachineGuid").ok()
 }
 
 fn hostname() -> String {
@@ -88,58 +106,16 @@ fn hostname() -> String {
 }
 
 fn read_keychain_trial() -> Option<TrialRecord> {
-    #[cfg(target_os = "macos")]
-    {
-        let out = std::process::Command::new("security")
-            .args([
-                "find-generic-password",
-                "-a",
-                KEYCHAIN_ACCOUNT,
-                "-s",
-                KEYCHAIN_SERVICE,
-                "-w",
-            ])
-            .output()
-            .ok()?;
-        if !out.status.success() {
-            return None;
-        }
-        let raw = String::from_utf8_lossy(&out.stdout).trim().to_string();
-        return serde_json::from_str(&raw).ok();
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        None
-    }
+    let entry = keyring::Entry::new(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT).ok()?;
+    let raw = entry.get_password().ok()?;
+    serde_json::from_str(&raw).ok()
 }
 
 fn write_keychain_trial(record: &TrialRecord) -> Result<(), String> {
-    #[cfg(target_os = "macos")]
-    {
-        let json = serde_json::to_string(record).map_err(|e| e.to_string())?;
-        let status = std::process::Command::new("security")
-            .args([
-                "add-generic-password",
-                "-a",
-                KEYCHAIN_ACCOUNT,
-                "-s",
-                KEYCHAIN_SERVICE,
-                "-w",
-                &json,
-                "-U",
-            ])
-            .status()
-            .map_err(|e| e.to_string())?;
-        if status.success() {
-            return Ok(());
-        }
-        return Err("failed to store trial in Keychain".to_string());
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        let _ = record;
-        Ok(())
-    }
+    let json = serde_json::to_string(record).map_err(|e| e.to_string())?;
+    let entry = keyring::Entry::new(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
+        .map_err(|e| e.to_string())?;
+    entry.set_password(&json).map_err(|e| e.to_string())
 }
 
 fn read_file_trial() -> Option<TrialRecord> {

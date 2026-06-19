@@ -10,8 +10,9 @@ FLAGS   ?=
 .PHONY: help init preflight deploy deploy-remote deploy-remote-vms scale upgrade remove-node \
         fetch-kubeconfig merge-kubeconfig install-kubevirt status destroy check-deps \
         lint test-smoke test-inventory test-platform-config test-platform-json test-platform-health-json test-ssh-opts test-preflight-json test-python-pip test-python-resolve test-runtime-paths test-forge-handoff test-local test-podman \
-        test-remote verify-remote-vms dry-deploy unlock wizard desktop-dev desktop-build desktop-pkg desktop-install desktop-uninstall desktop-brand desktop-icons desktop-preflight desktop-check docs docs-venv \
-        lab-setup lab-storage lab-tune lab-storage-status test-lab-config
+        test-remote verify-remote-vms dry-deploy unlock wizard desktop-dev desktop-build desktop-pkg desktop-install desktop-uninstall desktop-brand desktop-icons desktop-preflight desktop-check \
+        desktop-pkg-windows desktop-build-windows desktop-preflight-windows desktop-install-windows desktop-uninstall-windows \
+        docs docs-venv lab-setup lab-storage lab-tune lab-storage-status test-lab-config
 
 help: ## 📖  Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -208,6 +209,21 @@ desktop-brand: ## 🖥️  Sync Zyvor logos from hypersdk-web
 desktop-icons: ## 🖥️  Regenerate app icons from app-icon.svg (Tauri)
 	chmod +x scripts/macos/generate-desktop-icons.sh
 	./scripts/macos/generate-desktop-icons.sh
+
+desktop-pkg-windows: ## 🪟  Stage CLI + build Windows NSIS installer (.exe)
+	powershell -ExecutionPolicy Bypass -File scripts/windows/build-hypercluster-installer.ps1
+
+desktop-build-windows: ## 🪟  Build Windows NSIS installer (skip staging step)
+	powershell -ExecutionPolicy Bypass -File scripts/windows/build-hypercluster-installer.ps1 -SkipStage
+
+desktop-preflight-windows: ## 🪟  Windows preflight: WSL2, Python, tools, WebView2
+	powershell -ExecutionPolicy Bypass -File scripts/windows/desktop-preflight.ps1
+
+desktop-install-windows: ## 🪟  Install built NSIS package on Windows
+	powershell -ExecutionPolicy Bypass -File scripts/windows/install-hypercluster-app.ps1
+
+desktop-uninstall-windows: ## 🪟  Uninstall Hypercluster Desktop on Windows
+	powershell -ExecutionPolicy Bypass -File scripts/windows/uninstall-hypercluster-app.ps1
 
 desktop-check: ## 🖥️  Typecheck + cargo check desktop app
 	cd desktop && npm install && npm run build

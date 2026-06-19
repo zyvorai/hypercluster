@@ -4,6 +4,8 @@ import appIconUrl from '../assets/brand/app-icon.svg'
 import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 
+const deviceWord = /^Mac/.test(navigator.platform) ? 'Mac' : 'PC'
+
 type TrialStatus = {
   active: boolean
   expired: boolean
@@ -144,8 +146,8 @@ export function EulaGate({ children }: { children: React.ReactNode }) {
       <GatePanel>
         <h1 className="mb-2 text-xl font-semibold">Trial expired</h1>
         <p className="mb-4 text-sm text-glass-muted">
-          Your {trialDays}-day Hypercluster Desktop trial on this Mac has ended. Reinstalling the app
-          does not start a new trial.
+          Your {trialDays}-day Hypercluster Desktop trial on this {deviceWord} has ended. Reinstalling
+          the app does not start a new trial.
         </p>
         <p className="mb-4 text-sm text-glass-muted">
           To continue using Hypercluster Desktop, contact Zyvor sales for a license:
@@ -188,7 +190,7 @@ export function EulaGate({ children }: { children: React.ReactNode }) {
         ). You must accept the license before using the application.
       </p>
       <p className="mb-4 rounded-xl border border-glass-accent/20 bg-glass-accent/5 px-3 py-2 text-sm text-glass-muted">
-        Includes a <strong>{trialStatus?.trialDays ?? 30}-day trial</strong> on this Mac. The trial
+        Includes a <strong>{trialStatus?.trialDays ?? 30}-day trial</strong> on this {deviceWord}. The trial
         starts when you accept and cannot be reset by uninstalling and reinstalling.
       </p>
       <pre className="mb-4 max-h-64 overflow-y-auto rounded-xl border border-glass-border bg-black/30 p-3 text-xs leading-relaxed text-glass-muted whitespace-pre-wrap">

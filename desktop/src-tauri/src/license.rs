@@ -31,13 +31,24 @@ pub fn license_record_path() -> PathBuf {
 
 fn license_text_path() -> Option<PathBuf> {
     if let Ok(exe) = std::env::current_exe() {
-        let resources = exe.parent()?.parent()?.join("Resources");
-        for name in [
-            "HYPERCLUSTER-EULA.txt",
-            "_up_/distribution/HYPERCLUSTER-EULA.txt",
-            "../distribution/HYPERCLUSTER-EULA.txt",
-        ] {
-            let p = resources.join(name);
+        #[cfg(target_os = "macos")]
+        // macOS .app bundle: exe is at Contents/MacOS/, resources at Contents/Resources/
+        let resource_dirs: Vec<PathBuf> = exe
+            .parent()
+            .and_then(|p| p.parent())
+            .map(|p| vec![p.join("Resources")])
+            .unwrap_or_default();
+
+        #[cfg(not(target_os = "macos"))]
+        // NSIS (Windows): exe is at install_dir/, resources at install_dir/resources/
+        // Linux AppImage / deb: exe is at usr/bin/, resources typically alongside
+        let resource_dirs: Vec<PathBuf> = exe
+            .parent()
+            .map(|p| vec![p.to_path_buf(), p.join("resources")])
+            .unwrap_or_default();
+
+        for dir in &resource_dirs {
+            let p = dir.join("HYPERCLUSTER-EULA.txt");
             if p.is_file() {
                 return Some(p);
             }
@@ -134,7 +145,7 @@ fn macos_is_arm64_hardware() -> bool {
 
 #[cfg(not(target_os = "macos"))]
 pub fn host_cpu_arch() -> String {
-    "unknown".to_string()
+    std::env::consts::ARCH.to_string()
 }
 
 pub fn macos_arm64_required() -> bool {

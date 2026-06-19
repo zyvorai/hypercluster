@@ -28,7 +28,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["app", "dmg"],
+    "targets": ["app", "dmg", "nsis"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -40,12 +40,28 @@
     "category": "DeveloperTool",
     "shortDescription": "Kubernetes cluster lifecycle desktop for hypercluster",
     "longDescription": "Hypercluster Desktop — Liquid Glass UI for k3s and Kubespray. Proprietary software by ZyvorAI Labs (zyvor.dev).",
+    "licenseFile": "../distribution/HYPERCLUSTER-EULA.txt",
     "macOS": {
       "minimumSystemVersion": "11.0",
       "infoPlist": "Info.plist"
     },
+    "windows": {
+      "digestAlgorithm": "sha256",
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "displayLanguageSelector": false,
+        "languages": ["English"],
+        "installerIcon": "icons/icon.ico",
+        "installMode": "currentUser",
+        "compression": "lzma"
+      }
+    },
     "resources": [
-      "../distribution/HYPERCLUSTER-EULA.txt"
+      "../distribution/HYPERCLUSTER-EULA.txt",
+      "resources/hypercluster-runtime/**/*"
     ]
   }
 }

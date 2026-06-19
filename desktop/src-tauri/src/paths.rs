@@ -3,6 +3,11 @@
 use std::env;
 use std::path::{Path, PathBuf};
 
+#[cfg(target_os = "windows")]
+const PATH_SEP: char = ';';
+#[cfg(not(target_os = "windows"))]
+const PATH_SEP: char = ':';
+
 pub fn app_data_dir() -> PathBuf {
     if cfg!(target_os = "macos") {
         dirs::home_dir()
@@ -29,15 +34,38 @@ pub fn settings_path() -> PathBuf {
 
 pub fn bundled_hypercluster_bin() -> Option<PathBuf> {
     let exe = env::current_exe().ok()?;
-    let candidate = exe
-        .parent()?
-        .parent()?
-        .join("Resources/hypercluster-runtime/hypercluster");
-    if candidate.is_file() {
-        Some(candidate)
-    } else {
-        None
+    #[cfg(target_os = "macos")]
+    {
+        // macOS .app bundle: Contents/MacOS/<exe> → Contents/Resources/hypercluster-runtime/
+        let candidate = exe
+            .parent()?
+            .parent()?
+            .join("Resources/hypercluster-runtime/hypercluster");
+        if candidate.is_file() {
+            return Some(candidate);
+        }
     }
+    #[cfg(target_os = "windows")]
+    {
+        // NSIS installer: {install_dir}\<exe> → {install_dir}\resources\hypercluster-runtime\
+        let candidate = exe
+            .parent()?
+            .join("resources\\hypercluster-runtime\\hypercluster.bat");
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        // Linux AppImage/deb: exe dir or resources/ subdir
+        for rel in ["resources/hypercluster-runtime/hypercluster", "hypercluster-runtime/hypercluster"] {
+            let candidate = exe.parent()?.join(rel);
+            if candidate.is_file() {
+                return Some(candidate);
+            }
+        }
+    }
+    None
 }
 
 pub fn resolve_hypercluster_bin(settings_bin: Option<&str>) -> PathBuf {
@@ -75,16 +103,41 @@ pub fn resolve_hypercluster_bin(settings_bin: Option<&str>) -> PathBuf {
 }
 
 /// Homebrew bash 5 on Apple Silicon, then Intel Homebrew, then system bash.
+/// On Windows, returns the WSL2 dispatcher (wsl.exe); use bash_invoke_args() for prefix args.
 pub fn resolve_bash() -> PathBuf {
-    if cfg!(target_os = "macos") {
+    #[cfg(target_os = "macos")]
+    {
         for candidate in ["/opt/homebrew/bin/bash", "/usr/local/bin/bash"] {
             let p = PathBuf::from(candidate);
             if p.is_file() {
                 return p;
             }
         }
+        return PathBuf::from("/bin/bash");
     }
+    #[cfg(target_os = "windows")]
+    {
+        let wsl = PathBuf::from("C:\\Windows\\System32\\wsl.exe");
+        if wsl.is_file() {
+            return wsl;
+        }
+        return PathBuf::from("wsl");
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     PathBuf::from("/bin/bash")
+}
+
+/// Returns (interpreter, leading_args) for spawning a bash -lc command.
+/// On Windows with WSL2: (wsl.exe, ["--", "/bin/bash"])
+/// On macOS/Linux:       (bash_path, [])
+pub fn bash_invoke_args() -> (PathBuf, Vec<&'static str>) {
+    let interp = resolve_bash();
+    #[cfg(target_os = "windows")]
+    {
+        return (interp, vec!["--", "/bin/bash"]);
+    }
+    #[cfg(not(target_os = "windows"))]
+    (interp, vec![])
 }
 
 #[cfg(target_os = "macos")]
@@ -146,7 +199,7 @@ pub fn resolve_python() -> Option<PathBuf> {
 
     for seg in env::var("PATH")
         .unwrap_or_default()
-        .split(':')
+        .split(PATH_SEP)
         .filter(|s| !s.is_empty())
     {
         let p = PathBuf::from(seg).join("python3");
@@ -178,13 +231,13 @@ pub fn macos_subprocess_path() -> String {
         }
     }
     if let Ok(existing) = env::var("PATH") {
-        for seg in existing.split(':').filter(|s| !s.is_empty()) {
+        for seg in existing.split(PATH_SEP).filter(|s| !s.is_empty()) {
             if !parts.iter().any(|p| p == seg) {
                 parts.push(seg.to_string());
             }
         }
     }
-    parts.join(":")
+    parts.join(&PATH_SEP.to_string())
 }
 
 #[cfg(not(target_os = "macos"))]
@@ -198,15 +251,15 @@ pub fn shell_spawn_env() -> Vec<(String, String)> {
     if let Some(py) = resolve_python() {
         if let Some(bin_dir) = py.parent() {
             let bin = bin_dir.to_string_lossy().into_owned();
-            if !path.split(':').any(|seg| seg == bin) {
-                path = format!("{bin}:{path}");
+            if !path.split(PATH_SEP).any(|seg| seg == bin) {
+                path = format!("{bin}{PATH_SEP}{path}");
             }
         }
     }
 
     let mut vars = vec![("PATH".into(), path)];
 
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
     {
         let data = app_data_dir();
         vars.push((
@@ -240,10 +293,13 @@ mod tests {
     #[test]
     fn macos_path_includes_standard_prefixes() {
         let p = macos_subprocess_path();
+        #[cfg(not(target_os = "windows"))]
         assert!(
             p.contains("/usr/bin") && p.contains("/bin"),
-            "expected standard macOS PATH segments, got: {p}"
+            "expected standard PATH segments, got: {p}"
         );
+        #[cfg(target_os = "windows")]
+        assert!(!p.is_empty(), "expected non-empty PATH on Windows, got empty string");
         #[cfg(target_os = "macos")]
         assert!(
             p.contains("/opt/homebrew/bin") || p.contains("/usr/local/bin"),
