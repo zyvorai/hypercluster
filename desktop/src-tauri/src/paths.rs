@@ -47,14 +47,17 @@ pub fn bundled_hypercluster_bin() -> Option<PathBuf> {
     }
     #[cfg(target_os = "windows")]
     {
-        // NSIS installer: {install_dir}\<exe> → {install_dir}\resources\hypercluster-runtime\
-        // Return the bare bash script; the Rust backend invokes it via WSL2/bash directly.
-        // hypercluster.bat is only for CMD/PowerShell users, not for the Tauri backend.
-        let candidate = exe
-            .parent()?
-            .join("resources\\hypercluster-runtime\\hypercluster");
-        if candidate.is_file() {
-            return Some(candidate);
+        // NSIS installer: {install_dir}\resources\hypercluster-runtime\
+        // Prefer the Python-built native .exe (no WSL2 needed).
+        // Fall back to bash script for backward compatibility (WSL2 path).
+        let base = exe.parent()?.join("resources\\hypercluster-runtime");
+        let py_exe = base.join("hypercluster.exe");
+        if py_exe.is_file() {
+            return Some(py_exe);
+        }
+        let bash_script = base.join("hypercluster");
+        if bash_script.is_file() {
+            return Some(bash_script);
         }
     }
     #[cfg(not(any(target_os = "macos", target_os = "windows")))]
@@ -142,6 +145,23 @@ pub fn to_wsl_path(p: &Path) -> String {
         format!("/mnt/{}{}", drive, &s[2..])
     } else {
         s
+    }
+}
+
+/// Returns true when the binary is a native executable that can be invoked directly
+/// without a bash/WSL2 wrapper. On Windows this is any `.exe`; on Unix every
+/// file is assumed to be a script or binary that exec can handle via the shebang.
+pub fn bin_is_native(bin: &Path) -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        bin.extension()
+            .map(|e| e.eq_ignore_ascii_case("exe"))
+            .unwrap_or(false)
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = bin;
+        false // bash scripts always go through the shell wrapper on Unix
     }
 }
 

@@ -1,0 +1,78 @@
+# PyInstaller spec for hypercluster (macOS / Linux)
+# Build: pyinstaller hypercluster.spec
+
+import os
+from pathlib import Path
+
+block_cipher = None
+
+a = Analysis(
+    ['hypercluster/__main__.py'],
+    pathex=['.'],
+    binaries=[],
+    datas=[
+        ('../config', 'config'),
+    ],
+    hiddenimports=[
+        'hypercluster.commands.k3s',
+        'hypercluster.commands.kubespray',
+        'hypercluster.commands.kubeconfig',
+        'hypercluster.commands.platform_stack',
+        'hypercluster.commands.platform_tools',
+        'hypercluster.commands.platform_test',
+        'hypercluster.commands.preflight',
+        'hypercluster.commands.deploy',
+        'hypercluster.commands.wizard',
+        'hypercluster.commands.discover',
+        'hypercluster.commands.health',
+        'hypercluster.commands.status',
+        'hypercluster.commands.vms',
+        'hypercluster.commands.workloads',
+        'hypercluster.commands.lab',
+        'hypercluster.commands.forge_handoff',
+        'hypercluster.commands.postdeploy',
+        'hypercluster.commands.progress',
+        'hypercluster.commands.inventory',
+        'hypercluster.commands.rke2',
+        'hypercluster.commands.microk8s',
+        'hypercluster.commands.talos',
+        'paramiko',
+        'cryptography',
+        'pydantic',
+        'click',
+        'yaml',
+        'platformdirs',
+    ],
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[],
+    win_no_prefer_redirects=False,
+    win_private_assemblies=False,
+    cipher=block_cipher,
+    noarchive=False,
+)
+
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    [],
+    name='hypercluster',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=True,
+    upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
+    console=True,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+)

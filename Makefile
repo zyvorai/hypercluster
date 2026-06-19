@@ -12,6 +12,7 @@ FLAGS   ?=
         lint test-smoke test-inventory test-platform-config test-platform-json test-platform-health-json test-ssh-opts test-preflight-json test-python-pip test-python-resolve test-runtime-paths test-forge-handoff test-local test-podman \
         test-remote verify-remote-vms dry-deploy unlock wizard desktop-dev desktop-build desktop-pkg desktop-install desktop-uninstall desktop-brand desktop-icons desktop-preflight desktop-check \
         desktop-pkg-windows desktop-build-windows desktop-preflight-windows desktop-install-windows desktop-uninstall-windows \
+        cli-build cli-build-windows \
         docs docs-venv lab-setup lab-storage lab-tune lab-storage-status test-lab-config
 
 help: ## 📖  Show this help
@@ -210,7 +211,14 @@ desktop-icons: ## 🖥️  Regenerate app icons from app-icon.svg (Tauri)
 	chmod +x scripts/macos/generate-desktop-icons.sh
 	./scripts/macos/generate-desktop-icons.sh
 
-desktop-pkg-windows: ## 🪟  Stage CLI + build Windows NSIS installer (.exe)
+cli-build: ## 🐍  Build native hypercluster binary (macOS/Linux) via PyInstaller
+	cd cli && bash scripts/build-macos.sh
+
+cli-build-windows: ## 🪟  Build hypercluster.exe (Windows) via PyInstaller — run in PowerShell on Windows
+	powershell -ExecutionPolicy Bypass -File cli/scripts/build-windows.ps1
+
+desktop-pkg-windows: ## 🪟  Build Python CLI .exe, stage CLI, build Windows NSIS installer
+	powershell -ExecutionPolicy Bypass -File cli/scripts/build-windows.ps1
 	powershell -ExecutionPolicy Bypass -File scripts/windows/build-hypercluster-installer.ps1
 
 desktop-build-windows: ## 🪟  Build Windows NSIS installer (skip staging step)

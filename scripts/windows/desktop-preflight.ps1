@@ -14,38 +14,55 @@ Write-Host "Hypercluster Desktop -- Windows preflight"
 Write-Host "Host arch: $env:PROCESSOR_ARCHITECTURE"
 Write-Host ""
 
-# WSL2
-if (Get-Command wsl -ErrorAction SilentlyContinue) {
-    $distros = (wsl --list --quiet 2>&1 | Out-String).Trim()
-    if ($distros -ne "") {
-        ok "WSL2 available with distributions: $($distros -replace '\r?\n', ', ')"
-    } else {
-        warn "WSL2 installed but no distributions -- run: wsl --install -d Ubuntu"
+# Detect whether native Python CLI is available (no WSL2 needed)
+$HcPath = "$env:LOCALAPPDATA\Programs\Hypercluster\resources\hypercluster-runtime\hypercluster.exe"
+$HcNative = Test-Path $HcPath
+
+if ($HcNative) {
+    ok "Native hypercluster.exe found (Python build — no WSL2 required)"
+    # Check native kubectl + helm
+    foreach ($tool in @("kubectl", "helm")) {
+        if (Get-Command $tool -ErrorAction SilentlyContinue) {
+            ok "$tool found natively"
+        } else {
+            warn "$tool not found natively -- install from https://kubernetes.io/docs/tasks/tools/"
+        }
     }
 } else {
-    fail "WSL2 not found -- required for Hypercluster CLI. Install: https://aka.ms/wsl"
-}
-
-# Python 3.11+ in WSL2
-if (Get-Command wsl -ErrorAction SilentlyContinue) {
-    $pyver = (wsl -- python3 --version 2>&1 | Out-String).Trim()
-    if ($pyver -match "Python 3\.(1[1-9]|[2-9]\d)") {
-        ok "Python in WSL2: $pyver"
-    } elseif ($pyver -ne "") {
-        warn "Python in WSL2: $pyver (need 3.11+) -- run in WSL2: sudo apt install python3.12"
-    } else {
-        warn "python3 not found in WSL2 -- run in WSL2: sudo apt install python3.12"
-    }
-}
-
-# kubectl, helm, ssh, git in WSL2
-foreach ($tool in @("kubectl", "helm", "ssh", "git", "ansible")) {
+    warn "Native hypercluster.exe not found -- falling back to WSL2 bash CLI"
+    # WSL2
     if (Get-Command wsl -ErrorAction SilentlyContinue) {
-        $found = (wsl -- which $tool 2>&1 | Out-String).Trim()
-        if ($found -and -not $found.StartsWith("which:")) {
-            ok "$tool in WSL2 ($found)"
+        $distros = (wsl --list --quiet 2>&1 | Out-String).Trim()
+        if ($distros -ne "") {
+            ok "WSL2 available with distributions: $($distros -replace '\r?\n', ', ')"
         } else {
-            warn "$tool not found in WSL2 -- needed for deploy"
+            warn "WSL2 installed but no distributions -- run: wsl --install -d Ubuntu"
+        }
+    } else {
+        fail "Neither native hypercluster.exe nor WSL2 found. Install WSL2: https://aka.ms/wsl or build the Python CLI: cd cli && pwsh scripts/build-windows.ps1"
+    }
+
+    # Python 3.11+ in WSL2
+    if (Get-Command wsl -ErrorAction SilentlyContinue) {
+        $pyver = (wsl -- python3 --version 2>&1 | Out-String).Trim()
+        if ($pyver -match "Python 3\.(1[1-9]|[2-9]\d)") {
+            ok "Python in WSL2: $pyver"
+        } elseif ($pyver -ne "") {
+            warn "Python in WSL2: $pyver (need 3.11+) -- run in WSL2: sudo apt install python3.12"
+        } else {
+            warn "python3 not found in WSL2 -- run in WSL2: sudo apt install python3.12"
+        }
+    }
+
+    # kubectl, helm, ssh, git in WSL2
+    foreach ($tool in @("kubectl", "helm", "ssh", "git", "ansible")) {
+        if (Get-Command wsl -ErrorAction SilentlyContinue) {
+            $found = (wsl -- which $tool 2>&1 | Out-String).Trim()
+            if ($found -and -not $found.StartsWith("which:")) {
+                ok "$tool in WSL2 ($found)"
+            } else {
+                warn "$tool not found in WSL2 -- needed for deploy"
+            }
         }
     }
 }
@@ -72,9 +89,12 @@ if ($wv2) {
 $appPath = "$env:LOCALAPPDATA\Programs\Hypercluster\Hypercluster.exe"
 if (Test-Path $appPath) {
     ok "Hypercluster.exe installed at $appPath"
-    $hcPath = "$env:LOCALAPPDATA\Programs\Hypercluster\resources\hypercluster-runtime\hypercluster"
-    if (Test-Path $hcPath) {
-        ok "Bundled CLI runtime present"
+    $hcNativePath = "$env:LOCALAPPDATA\Programs\Hypercluster\resources\hypercluster-runtime\hypercluster.exe"
+    $hcBashPath   = "$env:LOCALAPPDATA\Programs\Hypercluster\resources\hypercluster-runtime\hypercluster"
+    if (Test-Path $hcNativePath) {
+        ok "Bundled CLI runtime present (native Python .exe — no WSL2 required)"
+    } elseif (Test-Path $hcBashPath) {
+        ok "Bundled CLI runtime present (bash script — WSL2 required)"
     } else {
         warn "Bundled CLI runtime not found -- reinstall with: make desktop-pkg-windows"
     }

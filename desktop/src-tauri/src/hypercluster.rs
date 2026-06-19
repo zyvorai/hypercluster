@@ -82,6 +82,26 @@ fn config_path_for_shell(config_path: &str) -> String {
     { config_path.to_string() }
 }
 
+/// Build argv for direct native binary invocation (Python port, no bash wrapper).
+fn build_direct_args(req: &RunRequest) -> Vec<String> {
+    let mut args = vec![
+        "-c".into(),
+        req.config_path.clone(),
+    ];
+    if req.dry_run {
+        args.push("-n".into());
+    }
+    if req.verbose {
+        args.push("-v".into());
+    }
+    if req.force {
+        args.push("-f".into());
+    }
+    args.push(req.command.clone());
+    args.extend(req.args.clone());
+    args
+}
+
 fn build_shell_command(req: &RunRequest, bin: &PathBuf) -> String {
     let mut parts = vec![
         format!("\"{}\"", bin_shell_path(bin)),
@@ -125,22 +145,33 @@ pub async fn run_hypercluster(
         ));
     }
 
-    let (interp, prefix_args) = paths::bash_invoke_args();
-    let shell_cmd = build_shell_command(&req, &bin);
-
-    let mut child = Command::new(&interp);
-    apply_shell_spawn_env(&mut child);
-    for a in &prefix_args {
-        child.arg(a);
-    }
-    let mut child = child
-        .arg("-lc")
-        .arg(&shell_cmd)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .kill_on_drop(true)
-        .spawn()
-        .map_err(|e| format!("Failed to spawn hypercluster: {e}"))?;
+    let mut child = if paths::bin_is_native(&bin) {
+        // Python-built native binary (hypercluster.exe on Windows, or a native Unix binary):
+        // invoke directly — no bash wrapper, no WSL2.
+        let mut cmd = Command::new(&bin);
+        apply_shell_spawn_env(&mut cmd);
+        cmd.args(build_direct_args(&req));
+        cmd.stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .kill_on_drop(true)
+            .spawn()
+            .map_err(|e| format!("Failed to spawn hypercluster: {e}"))?
+    } else {
+        let (interp, prefix_args) = paths::bash_invoke_args();
+        let shell_cmd = build_shell_command(&req, &bin);
+        let mut cmd = Command::new(&interp);
+        apply_shell_spawn_env(&mut cmd);
+        for a in &prefix_args {
+            cmd.arg(a);
+        }
+        cmd.arg("-lc")
+            .arg(&shell_cmd)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .kill_on_drop(true)
+            .spawn()
+            .map_err(|e| format!("Failed to spawn hypercluster: {e}"))?
+    };
 
     let pid = child.id();
     let cancel = Arc::new(AtomicBool::new(false));
@@ -299,21 +330,22 @@ pub async fn get_run_status(
 
 pub async fn run_sync_no_config(command: &str, args: &[String]) -> Result<String, String> {
     let bin = hypercluster_bin();
-    let (interp, prefix_args) = paths::bash_invoke_args();
-    let mut parts = vec![format!("\"{}\"", bin_shell_path(&bin)), command.into()];
-    parts.extend(args.iter().cloned());
-    let shell_cmd = format!("exec {}", parts.join(" "));
-    let mut cmd = Command::new(&interp);
-    apply_shell_spawn_env(&mut cmd);
-    for a in &prefix_args {
-        cmd.arg(a);
-    }
-    let output = cmd
-        .arg("-lc")
-        .arg(&shell_cmd)
-        .output()
-        .await
-        .map_err(|e| e.to_string())?;
+    let output = if paths::bin_is_native(&bin) {
+        let mut cmd = Command::new(&bin);
+        apply_shell_spawn_env(&mut cmd);
+        cmd.arg(command);
+        for a in args { cmd.arg(a); }
+        cmd.output().await.map_err(|e| e.to_string())?
+    } else {
+        let (interp, prefix_args) = paths::bash_invoke_args();
+        let mut parts = vec![format!("\"{}\"", bin_shell_path(&bin)), command.into()];
+        parts.extend(args.iter().cloned());
+        let shell_cmd = format!("exec {}", parts.join(" "));
+        let mut cmd = Command::new(&interp);
+        apply_shell_spawn_env(&mut cmd);
+        for a in &prefix_args { cmd.arg(a); }
+        cmd.arg("-lc").arg(&shell_cmd).output().await.map_err(|e| e.to_string())?
+    };
     if output.status.success() {
         Ok(String::from_utf8_lossy(&output.stdout).to_string())
     } else {
@@ -328,29 +360,29 @@ pub async fn run_sync(
     json: bool,
 ) -> Result<String, String> {
     let bin = hypercluster_bin();
-    let (interp, prefix_args) = paths::bash_invoke_args();
-    let mut parts = vec![
-        format!("\"{}\"", bin_shell_path(&bin)),
-        "-c".into(),
-        format!("\"{}\"", config_path_for_shell(config_path)),
-        command.into(),
-    ];
-    if json {
-        parts.push("--json".into());
-    }
-    parts.extend(args.iter().cloned());
-    let shell_cmd = format!("exec {}", parts.join(" "));
-    let mut cmd = Command::new(&interp);
-    apply_shell_spawn_env(&mut cmd);
-    for a in &prefix_args {
-        cmd.arg(a);
-    }
-    let output = cmd
-        .arg("-lc")
-        .arg(&shell_cmd)
-        .output()
-        .await
-        .map_err(|e| e.to_string())?;
+    let output = if paths::bin_is_native(&bin) {
+        let mut cmd = Command::new(&bin);
+        apply_shell_spawn_env(&mut cmd);
+        cmd.arg("-c").arg(config_path).arg(command);
+        if json { cmd.arg("--json"); }
+        for a in args { cmd.arg(a); }
+        cmd.output().await.map_err(|e| e.to_string())?
+    } else {
+        let (interp, prefix_args) = paths::bash_invoke_args();
+        let mut parts = vec![
+            format!("\"{}\"", bin_shell_path(&bin)),
+            "-c".into(),
+            format!("\"{}\"", config_path_for_shell(config_path)),
+            command.into(),
+        ];
+        if json { parts.push("--json".into()); }
+        parts.extend(args.iter().cloned());
+        let shell_cmd = format!("exec {}", parts.join(" "));
+        let mut cmd = Command::new(&interp);
+        apply_shell_spawn_env(&mut cmd);
+        for a in &prefix_args { cmd.arg(a); }
+        cmd.arg("-lc").arg(&shell_cmd).output().await.map_err(|e| e.to_string())?
+    };
     if output.status.success() {
         Ok(String::from_utf8_lossy(&output.stdout).to_string())
     } else {

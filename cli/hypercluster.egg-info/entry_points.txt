@@ -1,0 +1,2 @@
+[console_scripts]
+hypercluster = hypercluster.cli:main
