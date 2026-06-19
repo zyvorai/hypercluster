@@ -64,7 +64,6 @@ export function NodeCanvas({
   const [discovering, setDiscovering] = useState(false)
   const [discovered, setDiscovered] = useState<DiscoverNode[]>([])
   const [discoverValidations, setDiscoverValidations] = useState<DiscoverJson['validations']>()
-  const [validateHosts, setValidateHosts] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -80,12 +79,7 @@ export function NodeCanvas({
     try {
       const result = await discoverJson({
         source: discoverSource,
-        cidr: discoverSource === 'ssh-scan' ? discoverCidr : undefined,
-        validate: validateHosts,
-        probe: validateHosts,
-        sshUser: spec.sshUser,
-        sshKey: spec.sshKey,
-        sshPort: spec.sshPort,
+        hosts: discoverSource === 'ssh-scan' ? discoverCidr : undefined,
       })
       setDiscovered(result.nodes)
       setDiscoverValidations(result.validations)
@@ -189,16 +183,6 @@ export function NodeCanvas({
             <button type="button" className="btn-primary text-sm" disabled={discovering} onClick={runDiscover}>
               {discovering ? 'Scanning…' : 'Discover'}
             </button>
-          )}
-          {discoverSource !== 'csv' && (
-            <label className="flex items-center gap-2 text-xs text-glass-muted">
-              <input
-                type="checkbox"
-                checked={validateHosts}
-                onChange={(e) => setValidateHosts(e.target.checked)}
-              />
-              Validate hosts (KVM, VT-x, IOMMU…)
-            </label>
           )}
         </div>
         {discovered.length > 0 && (

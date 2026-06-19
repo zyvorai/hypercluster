@@ -226,50 +226,21 @@ async fn hc_preflight_json(config_path: String) -> Result<String, String> {
 #[tauri::command]
 async fn hc_discover_json(
     source: String,
-    uri: Option<String>,
-    host: Option<String>,
-    cidr: Option<String>,
-    csv: Option<String>,
-    validate: Option<bool>,
-    probe: Option<bool>,
-    ssh_user: Option<String>,
-    ssh_key: Option<String>,
-    ssh_port: Option<u16>,
+    hosts: Option<String>,
+    csv_file: Option<String>,
 ) -> Result<String, String> {
     let mut args = vec!["--json".into(), "--source".into(), source];
-    if validate == Some(true) {
-        args.push("--validate".into());
+    if let Some(h) = hosts {
+        if !h.is_empty() {
+            args.push("--hosts".into());
+            args.push(h);
+        }
     }
-    if probe == Some(true) {
-        args.push("--probe".into());
-    }
-    if let Some(u) = uri {
-        args.push("--uri".into());
-        args.push(u);
-    }
-    if let Some(h) = host {
-        args.push("--host".into());
-        args.push(h);
-    }
-    if let Some(c) = cidr {
-        args.push("--cidr".into());
-        args.push(c);
-    }
-    if let Some(p) = csv {
-        args.push("--csv".into());
-        args.push(p);
-    }
-    if let Some(u) = ssh_user {
-        args.push("--ssh-user".into());
-        args.push(u);
-    }
-    if let Some(k) = ssh_key {
-        args.push("--ssh-key".into());
-        args.push(k);
-    }
-    if let Some(p) = ssh_port {
-        args.push("--ssh-port".into());
-        args.push(p.to_string());
+    if let Some(f) = csv_file {
+        if !f.is_empty() {
+            args.push("--csv-file".into());
+            args.push(f);
+        }
     }
     run_sync_no_config("discover", &args).await
 }

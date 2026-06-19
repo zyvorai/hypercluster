@@ -159,27 +159,13 @@ export async function revealConfig(configPath: string): Promise<void> {
 
 export async function discoverJson(opts: {
   source: string
-  uri?: string
-  host?: string
-  cidr?: string
-  csv?: string
-  validate?: boolean
-  probe?: boolean
-  sshUser?: string
-  sshKey?: string
-  sshPort?: number
+  hosts?: string
+  csvFile?: string
 }): Promise<DiscoverJson> {
   const raw = await invoke<string>('hc_discover_json', {
     source: opts.source,
-    uri: opts.uri ?? null,
-    host: opts.host ?? null,
-    cidr: opts.cidr ?? null,
-    csv: opts.csv ?? null,
-    validate: opts.validate ?? null,
-    probe: opts.probe ?? null,
-    ssh_user: opts.sshUser ?? null,
-    ssh_key: opts.sshKey ?? null,
-    ssh_port: opts.sshPort ?? null,
+    hosts: opts.hosts ?? null,
+    csvFile: opts.csvFile ?? null,
   })
   return JSON.parse(raw)
 }

@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 from pathlib import Path
 
-from hypercluster import log, proc
+from hypercluster import log
 
 
 def run(source: str = "libvirt", json_mode: bool = False, **kwargs) -> dict:
@@ -28,7 +27,7 @@ def _discover_libvirt(json_mode: bool) -> dict:
         capture_output=True, text=True,
     )
     if r.returncode != 0:
-        result = {"ok": False, "source": "libvirt", "hosts": [],
+        result = {"ok": False, "source": "libvirt", "nodes": [], "validations": [],
                   "error": "virsh not available or libvirt not running"}
         if json_mode:
             print(json.dumps(result))
@@ -51,7 +50,7 @@ def _discover_libvirt(json_mode: bool) -> dict:
                 break
         hosts.append({"name": name, "ip": ip, "source": "libvirt"})
 
-    result = {"ok": True, "source": "libvirt", "hosts": hosts}
+    result = {"ok": True, "source": "libvirt", "nodes": hosts, "validations": []}
     if json_mode:
         print(json.dumps(result))
     else:
@@ -64,7 +63,7 @@ def _discover_libvirt(json_mode: bool) -> dict:
 def _discover_ssh_scan(hosts_str: str, json_mode: bool) -> dict:
     if not hosts_str:
         log.die("--hosts required for ssh-scan discover (e.g. 192.168.1.0/24 or IP1,IP2)")
-    result = {"ok": True, "source": "ssh-scan", "hosts": [], "message": f"Scan range: {hosts_str}"}
+    result = {"ok": True, "source": "ssh-scan", "nodes": [], "validations": [], "message": f"Scan range: {hosts_str}"}
     if json_mode:
         print(json.dumps(result))
     else:
@@ -81,7 +80,7 @@ def _discover_csv(csv_file: str, json_mode: bool) -> dict:
         reader = csv_mod.DictReader(f)
         for row in reader:
             hosts.append({"name": row.get("name", ""), "ip": row.get("ip", ""), "source": "csv"})
-    result = {"ok": True, "source": "csv", "hosts": hosts}
+    result = {"ok": True, "source": "csv", "nodes": hosts, "validations": []}
     if json_mode:
         print(json.dumps(result))
     else:
