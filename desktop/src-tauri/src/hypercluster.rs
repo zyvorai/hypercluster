@@ -64,6 +64,12 @@ fn apply_shell_spawn_env(cmd: &mut Command) {
     }
 }
 
+/// Single-quote a string for safe embedding in a bash -lc command.
+/// Handles paths with spaces, $, backticks, and other shell metacharacters.
+fn shell_quote(s: &str) -> String {
+    format!("'{}'", s.replace('\'', "'\\''"))
+}
+
 /// Returns the shell-executable path for a binary.
 /// On Windows/WSL2 the Windows path is translated to a /mnt/... WSL path so that
 /// bash inside WSL2 can resolve it.
@@ -104,9 +110,9 @@ fn build_direct_args(req: &RunRequest) -> Vec<String> {
 
 fn build_shell_command(req: &RunRequest, bin: &PathBuf) -> String {
     let mut parts = vec![
-        format!("\"{}\"", bin_shell_path(bin)),
+        shell_quote(&bin_shell_path(bin)),
         "-c".into(),
-        format!("\"{}\"", config_path_for_shell(&req.config_path)),
+        shell_quote(&config_path_for_shell(&req.config_path)),
     ];
     if req.dry_run {
         parts.push("-n".into());
@@ -342,7 +348,7 @@ pub async fn run_sync_no_config(command: &str, args: &[String]) -> Result<String
         cmd.output().await.map_err(|e| e.to_string())?
     } else {
         let (interp, prefix_args) = paths::bash_invoke_args();
-        let mut parts = vec![format!("\"{}\"", bin_shell_path(&bin)), command.into()];
+        let mut parts = vec![shell_quote(&bin_shell_path(&bin)), command.into()];
         parts.extend(args.iter().cloned());
         let shell_cmd = format!("exec {}", parts.join(" "));
         let mut cmd = Command::new(&interp);
@@ -376,9 +382,9 @@ pub async fn run_sync(
     } else {
         let (interp, prefix_args) = paths::bash_invoke_args();
         let mut parts = vec![
-            format!("\"{}\"", bin_shell_path(&bin)),
+            shell_quote(&bin_shell_path(&bin)),
             "-c".into(),
-            format!("\"{}\"", config_path_for_shell(config_path)),
+            shell_quote(&config_path_for_shell(config_path)),
             command.into(),
         ];
         if json { parts.push("--json".into()); }
