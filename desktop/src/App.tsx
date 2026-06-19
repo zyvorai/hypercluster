@@ -615,7 +615,9 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen">
-      <aside className="glass-panel app-sidebar m-3 flex w-60 flex-col gap-1 p-3">
+      <aside className="glass-panel app-sidebar m-3 flex w-60 flex-col gap-1 p-3" data-tauri-drag-region>
+        {/* Traffic-light clearance on macOS borderless window */}
+        {isMac && <div className="h-6 shrink-0" data-tauri-drag-region />}
         <AppBrandHeader />
         {fleetHealthSummary.total > 0 && (
           <div className="mb-2 rounded-xl border border-glass-border bg-black/20 px-3 py-2">
@@ -676,6 +678,7 @@ export default function App() {
               liveLoading={liveLoading}
               healthByCluster={healthByCluster}
               insights={fleetInsights}
+              mod={MOD}
               onRefresh={() => void reloadNodeStats(clusters)}
               onOpenCopilot={() => openCopilot()}
             />

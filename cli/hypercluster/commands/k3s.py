@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import time
 from pathlib import Path
 
@@ -197,7 +198,7 @@ def wait_api(cfg: ClusterConfig) -> None:
         return
     log.info("Waiting for Kubernetes API (kubeconfig) …")
     max_tries = 150 if cfg.K3S_API_LOCAL_PORT else 60
-    env = dict(__import__("os").environ, KUBECONFIG=kc)
+    env = dict(os.environ, KUBECONFIG=kc)
     for _ in range(max_tries):
         r = subprocess.run(["kubectl", "get", "nodes"], env=env,
                            capture_output=True)
@@ -234,11 +235,15 @@ def destroy(cfg: ClusterConfig, force: bool = False) -> None:
 
 def _destroy_platform(cfg: ClusterConfig) -> None:
     import subprocess
+    import os
     kc = cfg.resolved_kubeconfig()
     if not Path(kc).is_file():
         return
+    if proc.DRY_RUN:
+        log.warn("DRY RUN — skipping platform Helm uninstalls.")
+        return
     log.section("Removing Helm platform releases")
-    env = dict(__import__("os").environ, KUBECONFIG=kc)
+    env = dict(os.environ, KUBECONFIG=kc)
     releases = [
         ("kubevirt", "kubevirt"),
         ("cdi", "cdi"),

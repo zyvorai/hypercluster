@@ -30,6 +30,7 @@ export default {
           'BlinkMacSystemFont',
           'SF Pro Display',
           'SF Pro Text',
+          'Segoe UI',
           'system-ui',
           'sans-serif',
         ],

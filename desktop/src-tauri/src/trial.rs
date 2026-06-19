@@ -159,12 +159,16 @@ fn write_file_trial(record: &TrialRecord) -> Result<(), String> {
 fn load_trial_record() -> Option<TrialRecord> {
     match (read_keychain_trial(), read_file_trial()) {
         (Some(kc), Some(file)) => {
-            let kc_start = parse_rfc3339(&kc.trial_started_at).ok()?;
-            let file_start = parse_rfc3339(&file.trial_started_at).ok()?;
-            if kc_start <= file_start {
-                Some(kc)
-            } else {
-                Some(file)
+            // Parse each timestamp independently; if one is corrupt, prefer the other.
+            // Both corrupt: fall back to keychain record (tamper-resistant store).
+            match (
+                parse_rfc3339(&kc.trial_started_at).ok(),
+                parse_rfc3339(&file.trial_started_at).ok(),
+            ) {
+                (Some(kt), Some(ft)) => Some(if kt <= ft { kc } else { file }),
+                (Some(_), None) => Some(kc),
+                (None, Some(_)) => Some(file),
+                (None, None) => Some(kc),
             }
         }
         (Some(kc), None) => Some(kc),

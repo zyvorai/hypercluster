@@ -18,7 +18,7 @@
         "minWidth": 960,
         "minHeight": 640,
         "resizable": true,
-        "decorations": true,
+        "decorations": false,
         "transparent": false
       }
     ],
@@ -61,7 +61,8 @@
     },
     "resources": [
       "../distribution/HYPERCLUSTER-EULA.txt",
-      "resources/hypercluster-runtime/**/*"
+      "resources/hypercluster-runtime/**/*",
+      "../distribution/windows/hypercluster.bat"
     ]
   }
 }

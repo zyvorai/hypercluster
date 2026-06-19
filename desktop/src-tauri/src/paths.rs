@@ -300,10 +300,8 @@ pub fn shell_spawn_env() -> Vec<(String, String)> {
     #[cfg(any(target_os = "macos", target_os = "windows"))]
     {
         let data = app_data_dir();
-        // On Windows the subprocess runs inside WSL2 — translate the Windows path to /mnt/...
-        #[cfg(target_os = "windows")]
-        let data_str = to_wsl_path(&data);
-        #[cfg(not(target_os = "windows"))]
+        // Always emit the native OS path. WSL2 spawn sites override this with the
+        // /mnt/... translation via to_wsl_path() so Linux subprocesses can resolve it.
         let data_str = data.to_string_lossy().into_owned();
         vars.push(("HYPERCLUSTER_DATA_DIR".into(), data_str));
     }

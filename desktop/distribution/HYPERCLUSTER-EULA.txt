@@ -18,10 +18,10 @@ IF YOU DO NOT AGREE, DO NOT INSTALL OR USE THE SOFTWARE.
    revocable license to use the Software for Licensee's internal business
    operations, subject to this Agreement and any separate written order.
 
-   EVALUATION: New installations include a one-time 30-day trial per Mac.
+   EVALUATION: New installations include a one-time 30-day trial per device.
    After the trial expires, continued use requires a paid license from
    Zyvor (contact sales@zyvor.dev). Uninstalling and reinstalling does not
-   reset the trial period on the same Mac.
+   reset the trial period on the same device.
 
 2. RESTRICTIONS
    Licensee shall not copy, distribute, publish, sublicense, sell, rent,

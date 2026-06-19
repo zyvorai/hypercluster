@@ -21,8 +21,9 @@ if (Test-Path $PyExe) {
 } else {
     Write-Host "  -> Python .exe not found; staging bash script + WSL2 launcher"
     Copy-Item "$Root\hypercluster" "$Stage\hypercluster" -Force
-    Copy-Item "$Root\desktop\distribution\windows\hypercluster.bat" "$Stage\hypercluster.bat" -Force
 }
+# Always stage the .bat launcher as a WSL2 fallback regardless of whether .exe was built.
+Copy-Item "$Root\desktop\distribution\windows\hypercluster.bat" "$Stage\hypercluster.bat" -Force
 
 # Library and config directories — always clean stale staged copies first so a
 # removed source directory doesn't leave orphan files in the installer bundle.

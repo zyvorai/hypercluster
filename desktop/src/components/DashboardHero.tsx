@@ -54,6 +54,7 @@ export function DashboardHero({
   liveLoading,
   healthByCluster,
   insights,
+  mod: modKey,
   onRefresh,
   onOpenCopilot,
 }: {
@@ -64,6 +65,7 @@ export function DashboardHero({
   liveLoading: boolean
   healthByCluster: Record<string, HealthJson | null>
   insights: AiInsight[]
+  mod: string
   onRefresh: () => void
   onOpenCopilot: () => void
 }) {
@@ -114,7 +116,7 @@ export function DashboardHero({
             )}
           </button>
           <button type="button" className="btn-ghost text-sm" onClick={onOpenCopilot}>
-            AI Copilot ⌘J
+            AI Copilot {modKey}J
           </button>
           {running && (
             <span className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-200">

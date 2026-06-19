@@ -161,6 +161,10 @@ pub async fn run_hypercluster(
         let shell_cmd = build_shell_command(&req, &bin);
         let mut cmd = Command::new(&interp);
         apply_shell_spawn_env(&mut cmd);
+        // WSL2 subprocess needs Linux-format paths; override the native Windows path
+        // that shell_spawn_env() emits for HYPERCLUSTER_DATA_DIR.
+        #[cfg(target_os = "windows")]
+        cmd.env("HYPERCLUSTER_DATA_DIR", paths::to_wsl_path(&paths::app_data_dir()));
         for a in &prefix_args {
             cmd.arg(a);
         }
@@ -343,6 +347,8 @@ pub async fn run_sync_no_config(command: &str, args: &[String]) -> Result<String
         let shell_cmd = format!("exec {}", parts.join(" "));
         let mut cmd = Command::new(&interp);
         apply_shell_spawn_env(&mut cmd);
+        #[cfg(target_os = "windows")]
+        cmd.env("HYPERCLUSTER_DATA_DIR", paths::to_wsl_path(&paths::app_data_dir()));
         for a in &prefix_args { cmd.arg(a); }
         cmd.arg("-lc").arg(&shell_cmd).output().await.map_err(|e| e.to_string())?
     };
@@ -380,6 +386,8 @@ pub async fn run_sync(
         let shell_cmd = format!("exec {}", parts.join(" "));
         let mut cmd = Command::new(&interp);
         apply_shell_spawn_env(&mut cmd);
+        #[cfg(target_os = "windows")]
+        cmd.env("HYPERCLUSTER_DATA_DIR", paths::to_wsl_path(&paths::app_data_dir()));
         for a in &prefix_args { cmd.arg(a); }
         cmd.arg("-lc").arg(&shell_cmd).output().await.map_err(|e| e.to_string())?
     };

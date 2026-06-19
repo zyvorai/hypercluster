@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Generator
@@ -88,16 +89,21 @@ class SSHClient:
             err_lines: list[str] = []
             chan = stdout_fh.channel
             while not chan.exit_status_ready():
+                got_data = False
                 if chan.recv_ready():
                     data = chan.recv(4096).decode(errors="replace")
                     sys.stdout.write(data)
                     sys.stdout.flush()
                     out_lines.append(data)
+                    got_data = True
                 if chan.recv_stderr_ready():
                     data = chan.recv_stderr(4096).decode(errors="replace")
                     sys.stderr.write(data)
                     sys.stderr.flush()
                     err_lines.append(data)
+                    got_data = True
+                if not got_data:
+                    time.sleep(0.01)
             while chan.recv_ready():
                 data = chan.recv(4096).decode(errors="replace")
                 sys.stdout.write(data)
