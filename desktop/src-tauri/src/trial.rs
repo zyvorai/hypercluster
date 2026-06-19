@@ -106,9 +106,35 @@ fn hostname() -> String {
 }
 
 fn read_keychain_trial() -> Option<TrialRecord> {
-    let entry = keyring::Entry::new(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT).ok()?;
-    let raw = entry.get_password().ok()?;
-    serde_json::from_str(&raw).ok()
+    // Primary path: keyring crate (macOS Keychain / Windows Credential Manager / Linux SecretService)
+    if let Ok(entry) = keyring::Entry::new(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT) {
+        if let Ok(raw) = entry.get_password() {
+            if let Ok(rec) = serde_json::from_str::<TrialRecord>(&raw) {
+                return Some(rec);
+            }
+        }
+    }
+    // macOS migration: fall back to the legacy `security` CLI for entries written by
+    // app versions that predated the keyring crate. On next persist_trial the keyring
+    // entry will be (re-)written in the new format.
+    #[cfg(target_os = "macos")]
+    if let Ok(out) = std::process::Command::new("security")
+        .args([
+            "find-generic-password",
+            "-a", KEYCHAIN_ACCOUNT,
+            "-s", KEYCHAIN_SERVICE,
+            "-w",
+        ])
+        .output()
+    {
+        if out.status.success() {
+            let raw = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if let Ok(rec) = serde_json::from_str::<TrialRecord>(&raw) {
+                return Some(rec);
+            }
+        }
+    }
+    None
 }
 
 fn write_keychain_trial(record: &TrialRecord) -> Result<(), String> {
@@ -149,7 +175,11 @@ fn load_trial_record() -> Option<TrialRecord> {
 
 fn persist_trial(record: &TrialRecord) -> Result<(), String> {
     write_file_trial(record)?;
-    write_keychain_trial(record)?;
+    // Keychain write is best-effort: the file mirror already guarantees persistence.
+    // On headless Linux (no SecretService) or misconfigured keyring, log and continue.
+    if let Err(e) = write_keychain_trial(record) {
+        eprintln!("hypercluster: keyring write skipped: {e}");
+    }
     Ok(())
 }
 

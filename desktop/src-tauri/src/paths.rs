@@ -48,9 +48,11 @@ pub fn bundled_hypercluster_bin() -> Option<PathBuf> {
     #[cfg(target_os = "windows")]
     {
         // NSIS installer: {install_dir}\<exe> → {install_dir}\resources\hypercluster-runtime\
+        // Return the bare bash script; the Rust backend invokes it via WSL2/bash directly.
+        // hypercluster.bat is only for CMD/PowerShell users, not for the Tauri backend.
         let candidate = exe
             .parent()?
-            .join("resources\\hypercluster-runtime\\hypercluster.bat");
+            .join("resources\\hypercluster-runtime\\hypercluster");
         if candidate.is_file() {
             return Some(candidate);
         }
@@ -125,6 +127,22 @@ pub fn resolve_bash() -> PathBuf {
     }
     #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     PathBuf::from("/bin/bash")
+}
+
+/// Translates a Windows absolute path to its WSL2 mount path.
+/// "C:\foo\bar" → "/mnt/c/foo/bar"
+/// Used when a Windows path must be embedded in a bash command run inside WSL2.
+#[cfg(target_os = "windows")]
+pub fn to_wsl_path(p: &Path) -> String {
+    let s = p.to_string_lossy();
+    let s = s.trim_start_matches(r"\\?\");
+    let s = s.replace('\\', "/");
+    if s.len() >= 2 && s.as_bytes()[1] == b':' {
+        let drive = (s.as_bytes()[0] as char).to_ascii_lowercase();
+        format!("/mnt/{}{}", drive, &s[2..])
+    } else {
+        s
+    }
 }
 
 /// Returns (interpreter, leading_args) for spawning a bash -lc command.
@@ -262,26 +280,32 @@ pub fn shell_spawn_env() -> Vec<(String, String)> {
     #[cfg(any(target_os = "macos", target_os = "windows"))]
     {
         let data = app_data_dir();
-        vars.push((
-            "HYPERCLUSTER_DATA_DIR".into(),
-            data.to_string_lossy().into_owned(),
-        ));
+        // On Windows the subprocess runs inside WSL2 — translate the Windows path to /mnt/...
+        #[cfg(target_os = "windows")]
+        let data_str = to_wsl_path(&data);
+        #[cfg(not(target_os = "windows"))]
+        let data_str = data.to_string_lossy().into_owned();
+        vars.push(("HYPERCLUSTER_DATA_DIR".into(), data_str));
     }
 
-    if let Some(py) = resolve_python() {
-        vars.push((
-            "HYPERCLUSTER_PYTHON".into(),
-            py.to_string_lossy().into_owned(),
-        ));
-    }
-
-    if let Ok(sock) = env::var("SSH_AUTH_SOCK") {
-        if !sock.is_empty() {
-            vars.push(("SSH_AUTH_SOCK".into(), sock));
+    // On Windows the subprocess is a WSL2 bash process; Windows-format paths are not
+    // usable inside the Linux VFS, so skip HYPERCLUSTER_PYTHON, HOME, and SSH_AUTH_SOCK.
+    #[cfg(not(target_os = "windows"))]
+    {
+        if let Some(py) = resolve_python() {
+            vars.push((
+                "HYPERCLUSTER_PYTHON".into(),
+                py.to_string_lossy().into_owned(),
+            ));
         }
-    }
-    if let Some(home) = dirs::home_dir() {
-        vars.push(("HOME".into(), home.to_string_lossy().into_owned()));
+        if let Ok(sock) = env::var("SSH_AUTH_SOCK") {
+            if !sock.is_empty() {
+                vars.push(("SSH_AUTH_SOCK".into(), sock));
+            }
+        }
+        if let Some(home) = dirs::home_dir() {
+            vars.push(("HOME".into(), home.to_string_lossy().into_owned()));
+        }
     }
     vars
 }

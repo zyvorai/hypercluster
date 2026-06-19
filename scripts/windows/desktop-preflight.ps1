@@ -50,13 +50,16 @@ foreach ($tool in @("kubectl", "helm", "ssh", "git", "ansible")) {
     }
 }
 
-# WebView2 runtime
-$wv2 = Get-ItemProperty `
-    "HKCU:\Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" `
+# WebView2 runtime — check all three install locations: per-user, machine 64-bit, machine 32-bit
+$wv2Guid = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
+$wv2 = Get-ItemProperty "HKCU:\Software\Microsoft\EdgeUpdate\Clients\$wv2Guid" `
     -ErrorAction SilentlyContinue
 if (-not $wv2) {
-    $wv2 = Get-ItemProperty `
-        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" `
+    $wv2 = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\EdgeUpdate\Clients\$wv2Guid" `
+        -ErrorAction SilentlyContinue
+}
+if (-not $wv2) {
+    $wv2 = Get-ItemProperty "HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\$wv2Guid" `
         -ErrorAction SilentlyContinue
 }
 if ($wv2) {
@@ -69,8 +72,8 @@ if ($wv2) {
 $appPath = "$env:LOCALAPPDATA\Programs\Hypercluster\Hypercluster.exe"
 if (Test-Path $appPath) {
     ok "Hypercluster.exe installed at $appPath"
-    $batPath = "$env:LOCALAPPDATA\Programs\Hypercluster\resources\hypercluster-runtime\hypercluster.bat"
-    if (Test-Path $batPath) {
+    $hcPath = "$env:LOCALAPPDATA\Programs\Hypercluster\resources\hypercluster-runtime\hypercluster"
+    if (Test-Path $hcPath) {
         ok "Bundled CLI runtime present"
     } else {
         warn "Bundled CLI runtime not found -- reinstall with: make desktop-pkg-windows"

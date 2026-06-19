@@ -19,14 +19,14 @@ Copy-Item "$Root\hypercluster" "$Stage\hypercluster" -Force
 # Windows launcher wrapper
 Copy-Item "$Root\desktop\distribution\windows\hypercluster.bat" "$Stage\hypercluster.bat" -Force
 
-# Library and config directories
-if (Test-Path "$Root\lib") {
-    if (Test-Path "$Stage\lib") { Remove-Item "$Stage\lib" -Recurse -Force }
-    Copy-Item "$Root\lib" "$Stage\lib" -Recurse -Force
-}
-if (Test-Path "$Root\config") {
-    if (Test-Path "$Stage\config") { Remove-Item "$Stage\config" -Recurse -Force }
-    Copy-Item "$Root\config" "$Stage\config" -Recurse -Force
+# Library and config directories — always clean stale staged copies first so a
+# removed source directory doesn't leave orphan files in the installer bundle.
+foreach ($dir in @("lib", "config")) {
+    $staged = "$Stage\$dir"
+    if (Test-Path $staged) { Remove-Item $staged -Recurse -Force }
+    if (Test-Path "$Root\$dir") {
+        Copy-Item "$Root\$dir" $staged -Recurse -Force
+    }
 }
 if (Test-Path "$Root\VERSION") {
     Copy-Item "$Root\VERSION" "$Stage\VERSION" -Force

@@ -5,7 +5,7 @@ use crate::log_parser::{parse_stage_line, strip_ansi};
 use crate::paths;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -64,11 +64,29 @@ fn apply_shell_spawn_env(cmd: &mut Command) {
     }
 }
 
+/// Returns the shell-executable path for a binary.
+/// On Windows/WSL2 the Windows path is translated to a /mnt/... WSL path so that
+/// bash inside WSL2 can resolve it.
+fn bin_shell_path(bin: &Path) -> String {
+    #[cfg(target_os = "windows")]
+    { paths::to_wsl_path(bin) }
+    #[cfg(not(target_os = "windows"))]
+    { bin.display().to_string() }
+}
+
+/// Returns the shell-executable path for a config file path string.
+fn config_path_for_shell(config_path: &str) -> String {
+    #[cfg(target_os = "windows")]
+    { paths::to_wsl_path(std::path::Path::new(config_path)) }
+    #[cfg(not(target_os = "windows"))]
+    { config_path.to_string() }
+}
+
 fn build_shell_command(req: &RunRequest, bin: &PathBuf) -> String {
     let mut parts = vec![
-        format!("\"{}\"", bin.display()),
+        format!("\"{}\"", bin_shell_path(bin)),
         "-c".into(),
-        format!("\"{}\"", req.config_path),
+        format!("\"{}\"", config_path_for_shell(&req.config_path)),
     ];
     if req.dry_run {
         parts.push("-n".into());
@@ -258,8 +276,10 @@ pub fn cancel_run(manager: &ProcessManager, cluster_name: &str) -> Result<(), St
             }
             #[cfg(target_os = "windows")]
             {
+                // /T kills the wsl.exe process tree; WSL2 terminates the associated
+                // Linux session when its relay process exits.
                 let _ = std::process::Command::new("taskkill")
-                    .args(["/F", "/PID", &pid.to_string()])
+                    .args(["/F", "/T", "/PID", &pid.to_string()])
                     .status();
             }
         }
@@ -280,7 +300,7 @@ pub async fn get_run_status(
 pub async fn run_sync_no_config(command: &str, args: &[String]) -> Result<String, String> {
     let bin = hypercluster_bin();
     let (interp, prefix_args) = paths::bash_invoke_args();
-    let mut parts = vec![format!("\"{}\"", bin.display()), command.into()];
+    let mut parts = vec![format!("\"{}\"", bin_shell_path(&bin)), command.into()];
     parts.extend(args.iter().cloned());
     let shell_cmd = format!("exec {}", parts.join(" "));
     let mut cmd = Command::new(&interp);
@@ -310,9 +330,9 @@ pub async fn run_sync(
     let bin = hypercluster_bin();
     let (interp, prefix_args) = paths::bash_invoke_args();
     let mut parts = vec![
-        format!("\"{}\"", bin.display()),
+        format!("\"{}\"", bin_shell_path(&bin)),
         "-c".into(),
-        format!("\"{}\"", config_path),
+        format!("\"{}\"", config_path_for_shell(config_path)),
         command.into(),
     ];
     if json {
