@@ -266,7 +266,7 @@ platform::ensure_storage() {
     return 0
   fi
   log::info "Installing rancher local-path-provisioner …"
-  platform::_kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.30/deploy/local-path-storage.yaml
+  platform::_kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/${LOCAL_PATH_PROVISIONER_VERSION:-v0.0.31}/deploy/local-path-storage.yaml
   platform::_kubectl annotate storageclass local-path \
     storageclass.kubernetes.io/is-default-class=true --overwrite 2>/dev/null || true
   log::ok "local-path StorageClass ready"
@@ -276,7 +276,8 @@ platform::install_metrics_server() {
   [[ "${METRICS_SERVER_ENABLED:-true}" == "true" ]] || return 0
   log::section "metrics-server"
   platform::_kubectl delete deployment metrics-server -n kube-system --ignore-not-found 2>/dev/null || true
-  platform::_kubectl apply -f - <<'EOF'
+  local _ms_ver="${METRICS_SERVER_VERSION:-v0.7.2}"
+  platform::_kubectl apply -f - <<EOF
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -404,7 +405,7 @@ spec:
             - --kubelet-use-node-status-port
             - --metric-resolution=15s
             - --kubelet-insecure-tls
-          image: registry.k8s.io/metrics-server/metrics-server:v0.7.2
+          image: registry.k8s.io/metrics-server/metrics-server:${_ms_ver}
           imagePullPolicy: IfNotPresent
           livenessProbe:
             failureThreshold: 3
@@ -598,7 +599,7 @@ platform::install_cnao() {
     log::ok "CNAO ready (Helm)"
     return 0
   fi
-  local ver="${CNAO_MANIFEST_VERSION:-v0.102.0}"
+  local ver="${CNAO_MANIFEST_VERSION:-v0.105.0}"
   local base="https://github.com/kubevirt/cluster-network-addons-operator/releases/download/${ver}"
   log::warn "CNAO helm chart unavailable — applying manifest fallback ($ver)"
   platform::_kubectl apply --validate=false -f "${base}/namespace.yaml"
@@ -688,7 +689,7 @@ platform::install_ssp() {
     log::ok "SSP ready (Helm)"
     return 0
   fi
-  local ver="${SSP_MANIFEST_VERSION:-v0.25.0}"
+  local ver="${SSP_MANIFEST_VERSION:-v0.26.0}"
   log::warn "SSP helm chart unavailable — applying manifest fallback ($ver)"
   platform::_kubectl apply --validate=false -f "https://github.com/kubevirt/ssp-operator/releases/download/${ver}/ssp-operator.yaml"
   platform::_ensure_ssp_webhook_cert

@@ -96,8 +96,8 @@ DASHBOARD_ENABLED="false"
 # Set to "true" to install KubeVirt operator + CDI after cluster bootstrap.
 # ---------------------------------------------------------------------------
 KUBEVIRT_ENABLED="true"
-KUBEVIRT_VERSION="v1.3.1"          # k3s platform: v1.8.x tested on k8s v1.35.x
-CDI_VERSION="v1.59.0"              # k3s platform: v1.65.x tested with KubeVirt 1.8
+KUBEVIRT_VERSION="v1.8.4"          # k3s platform: v1.8.x tested on k8s v1.35.x
+CDI_VERSION="v1.65.1"              # k3s platform: v1.65.x tested with KubeVirt 1.8
 
 # ---------------------------------------------------------------------------
 # kubeconfig output
