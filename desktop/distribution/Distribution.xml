@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <installer-gui-script minSpecVersion="2">
-    <title>Hypercluster</title>
+    <title>Hypercluster — Kubernetes Cluster Lifecycle</title>
     <organization>dev.hypercluster</organization>
     <domains enable_localSystem="true"/>
     <options customize="never" require-scripts="false" rootVolumeOnly="true"/>
+    <background file="bg.png" mime-type="image/png" alignment="bottomleft" scaling="tofit"/>
+    <background-darkAqua file="bg.png" mime-type="image/png" alignment="bottomleft" scaling="tofit"/>
     <license file="EULA.rtf"/>
-    <welcome file="Welcome.html"/>
-    <conclusion file="Conclusion.html"/>
+    <welcome file="Welcome.html" mime-type="text/html"/>
+    <conclusion file="Conclusion.html" mime-type="text/html"/>
     <choices-outline>
         <line choice="default">
             <line choice="dev.hypercluster.desktop"/>
