@@ -1,0 +1,1380 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>Page-by-Page Product Manual — HyperCluster</title>
+<style>
+@page{size:A4;margin:15mm 16mm}*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:'Segoe UI',system-ui,sans-serif;color:#1f2937;line-height:1.58;font-size:10.5pt}
+.cover{height:262mm;margin:-15mm -16mm 0;background:linear-gradient(135deg,#052e16,#14532d,#0d1b2a);color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;page-break-after:always;position:relative}
+.cover .kicker{letter-spacing:5px;text-transform:uppercase;opacity:.72;margin-bottom:1.4em}
+.cover h1{font-size:3.2em;font-weight:800;letter-spacing:-2px}
+.cover h1 span{color:#34d399}
+.cover .sub{font-size:1.3em;font-weight:300;opacity:.93;margin:1em 0;max-width:24em}
+.cover .badge{display:inline-block;background:rgba(96,165,250,.2);border:1px solid #34d399;padding:8px 22px;border-radius:20px;margin-top:2em}
+.cover .foot{position:absolute;bottom:34px;font-size:.82em;opacity:.6}
+h2{page-break-before:always;margin:0 0 .35em;font-size:1.55em;font-weight:750;color:#12203a;border-bottom:2px solid #e5edfb;padding-bottom:.28em}
+h2:first-of-type{page-break-before:avoid}
+h3{margin:1.1em 0 .4em;font-size:1.12em;font-weight:700}
+p,li{margin:.4em 0}ul,ol{margin:.5em 0 .9em 1.4em}
+a{color:#2563eb;text-decoration:none}
+code{background:#eef2f7;padding:1px 6px;border-radius:4px;font-size:.86em;font-family:ui-monospace,Menlo,monospace}
+pre{background:#0f172a;color:#e2e8f0;padding:12px 15px;border-radius:9px;overflow-x:auto;margin:.8em 0}
+table{width:100%;border-collapse:collapse;margin:.8em 0 1.1em;font-size:9.5pt}
+th,td{border:1px solid #e5e7eb;padding:6px 8px;text-align:left;vertical-align:top}th{background:#f1f5f9}
+hr{border:none;border-top:1px solid #e5e7eb;margin:1.2em 0}
+</style></head><body>
+<section class="cover"><div class="kicker">ZyvorAI Labs · Customer Documentation</div>
+<h1>Hyper<span>Cluster</span></h1>
+<div class="sub">Page-by-Page Product Manual</div>
+<div class="badge">2026-07-26</div>
+<div class="foot">zyvor.dev · Confidential — for licensed customers</div></section>
+<main><h2>Page-by-page guides</h2>
+<p>Each guide follows: Purpose → When to use it → How to get there → What you can do → Related pages.</p>
+<p>Every route is also listed in the <a href="../PAGE_INDEX.md">complete page index</a>.</p>
+<h3>Cli</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="cli/cli-discover.md">Discovery &amp; Preflight</a></td>
+<td>Discovery sources and preflight checks before deploy.</td>
+</tr>
+<tr>
+<td><a href="cli/cli-health.md">Health &amp; Status</a></td>
+<td>health / status / test / forge-handoff JSON ops.</td>
+</tr>
+<tr>
+<td><a href="cli/cli-lab.md">Lab Mode</a></td>
+<td>Lab mode storage/tune/setup helpers.</td>
+</tr>
+<tr>
+<td><a href="cli/cli-lifecycle.md">Node Lifecycle</a></td>
+<td>Scale, upgrade, destroy, unlock via hypercluster CLI.</td>
+</tr>
+<tr>
+<td><a href="cli/cli-provision.md">CLI Provisioning</a></td>
+<td>CLI deploy / wizard / profiles for bare-metal Kubernetes.</td>
+</tr>
+<tr>
+<td><a href="cli/cli-ssh.md">SSH &amp; Kubeconfig</a></td>
+<td>SSH, jump hosts, kubeconfig fetch/merge, API tunnels.</td>
+</tr>
+<tr>
+<td><a href="cli/cli-zyvor-handoff.md">Zyvor Platform Handoff</a></td>
+<td>Hand off a ready cluster to the Zyvor product stack.</td>
+</tr>
+</tbody></table>
+<h3>Cockpit</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="cockpit/cluster-backups.md">Backups</a></td>
+<td>Backup and etcd/snapshot related ops.</td>
+</tr>
+<tr>
+<td><a href="cockpit/cluster-gpu.md">GPU</a></td>
+<td>GPU node and operator status.</td>
+</tr>
+<tr>
+<td><a href="cockpit/cluster-instruments.md">Instruments</a></td>
+<td>Instrument / telemetry panels for the cluster.</td>
+</tr>
+<tr>
+<td><a href="cockpit/cluster-network.md">Networking</a></td>
+<td>CNI / MetalLB / ingress networking status.</td>
+</tr>
+<tr>
+<td><a href="cockpit/cluster-nodes.md">Nodes</a></td>
+<td>Node inventory, SSH status, and scale actions.</td>
+</tr>
+<tr>
+<td><a href="cockpit/cluster-observability.md">Observability</a></td>
+<td>Observability stack status (metrics, logs).</td>
+</tr>
+<tr>
+<td><a href="cockpit/cluster-overview.md">Overview</a></td>
+<td>Cluster overview — health, version, and capacity summary.</td>
+</tr>
+<tr>
+<td><a href="cockpit/cluster-platform.md">Platform</a></td>
+<td>Zyvor platform components installed on the cluster.</td>
+</tr>
+<tr>
+<td><a href="cockpit/cluster-security.md">Security</a></td>
+<td>Security posture and hardening checklist.</td>
+</tr>
+<tr>
+<td><a href="cockpit/cluster-settings.md">Cluster Settings</a></td>
+<td>Per-cluster settings and conf linkage.</td>
+</tr>
+<tr>
+<td><a href="cockpit/cluster-storage.md">Storage</a></td>
+<td>Storage classes and CSI status.</td>
+</tr>
+<tr>
+<td><a href="cockpit/cluster-templates.md">Templates</a></td>
+<td>Cluster / workload templates.</td>
+</tr>
+<tr>
+<td><a href="cockpit/cluster-upgrades.md">Upgrades</a></td>
+<td>Upgrade paths for k3s/Kubespray clusters.</td>
+</tr>
+<tr>
+<td><a href="cockpit/cluster-vms.md">Virtual Machines</a></td>
+<td>KubeVirt VMs when virtualization add-ons are installed.</td>
+</tr>
+<tr>
+<td><a href="cockpit/cluster-workloads.md">Workloads</a></td>
+<td>Workloads running on the provisioned cluster.</td>
+</tr>
+</tbody></table>
+<h3>Create</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="create/quick-deploy.md">Quick Deploy</a></td>
+<td>Opinionated quick path for a standard cluster profile.</td>
+</tr>
+<tr>
+<td><a href="create/studio.md">Cluster Studio</a></td>
+<td>Full Cluster Studio wizard (nodes → storage → network → validate → deploy).</td>
+</tr>
+</tbody></table>
+<h3>Edit</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="edit/editor.md">Conf editor</a></td>
+<td>Raw cluster.conf editor with validation.</td>
+</tr>
+</tbody></table>
+<h3>Nav</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="nav/cluster.md">Cluster detail</a></td>
+<td>Cluster cockpit — open a selected cluster into overview and day-2 tabs.</td>
+</tr>
+<tr>
+<td><a href="nav/copilot.md">Ask Zeus</a></td>
+<td>Ask Zeus / Copilot overlay for cluster-grounded assistance.</td>
+</tr>
+<tr>
+<td><a href="nav/dashboard.md">Dashboard</a></td>
+<td>Fleet home for Hypercluster Desktop — registered clusters and deploy shortcuts.</td>
+</tr>
+<tr>
+<td><a href="nav/operations.md">Advanced ops</a></td>
+<td>Advanced Day-2 operations against the selected cluster.</td>
+</tr>
+<tr>
+<td><a href="nav/settings.md">Settings</a></td>
+<td>Desktop app settings, providers, and trial/license status.</td>
+</tr>
+<tr>
+<td><a href="nav/studio-hub.md">Create Cluster</a></td>
+<td>Create Cluster hub — pick Kubernetes, virtualization, AI, or edge intent.</td>
+</tr>
+</tbody></table>
+<h3>Ops</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="ops/deploy.md">Deploy console</a></td>
+<td>Live deploy console — pipeline logs and stage status.</td>
+</tr>
+</tbody></table>
+<hr>
+<p>32 guides. Regenerate: <code>node scripts/customer-docs/generate-guide-index.mjs</code>.</p>
+<hr>
+<h2>Discovery &amp; Preflight</h2>
+<h3>Purpose</h3>
+<p>Discovery sources and preflight checks before deploy.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cli/discover</code></li>
+<li>Nav: <strong>CLI → Discovery &amp; Preflight</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cli/discover</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Health &amp; Status</h2>
+<h3>Purpose</h3>
+<p>health / status / test / forge-handoff JSON ops.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cli/health</code></li>
+<li>Nav: <strong>CLI → Health &amp; Status</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cli/health</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Lab Mode</h2>
+<h3>Purpose</h3>
+<p>Lab mode storage/tune/setup helpers.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cli/lab</code></li>
+<li>Nav: <strong>CLI → Lab Mode</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cli/lab</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Node Lifecycle</h2>
+<h3>Purpose</h3>
+<p>Scale, upgrade, destroy, unlock via hypercluster CLI.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cli/lifecycle</code></li>
+<li>Nav: <strong>CLI → Node Lifecycle</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cli/lifecycle</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>CLI Provisioning</h2>
+<h3>Purpose</h3>
+<p>CLI deploy / wizard / profiles for bare-metal Kubernetes.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cli/provision</code></li>
+<li>Nav: <strong>CLI → CLI Provisioning</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cli/provision</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>SSH &amp; Kubeconfig</h2>
+<h3>Purpose</h3>
+<p>SSH, jump hosts, kubeconfig fetch/merge, API tunnels.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cli/ssh</code></li>
+<li>Nav: <strong>CLI → SSH &amp; Kubeconfig</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cli/ssh</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Zyvor Platform Handoff</h2>
+<h3>Purpose</h3>
+<p>Hand off a ready cluster to the Zyvor product stack.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cli/zyvor-handoff</code></li>
+<li>Nav: <strong>CLI → Zyvor Platform Handoff</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cli/zyvor-handoff</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Backups</h2>
+<h3>Purpose</h3>
+<p>Backup and etcd/snapshot related ops.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cluster/backups</code></li>
+<li>Nav: <strong>Cockpit → Backups</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cluster/backups</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>GPU</h2>
+<h3>Purpose</h3>
+<p>GPU node and operator status.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cluster/gpu</code></li>
+<li>Nav: <strong>Cockpit → GPU</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cluster/gpu</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Instruments</h2>
+<h3>Purpose</h3>
+<p>Instrument / telemetry panels for the cluster.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cluster/instruments</code></li>
+<li>Nav: <strong>Cockpit → Instruments</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cluster/instruments</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Networking</h2>
+<h3>Purpose</h3>
+<p>CNI / MetalLB / ingress networking status.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cluster/network</code></li>
+<li>Nav: <strong>Cockpit → Networking</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cluster/network</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Nodes</h2>
+<h3>Purpose</h3>
+<p>Node inventory, SSH status, and scale actions.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cluster/nodes</code></li>
+<li>Nav: <strong>Cockpit → Nodes</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cluster/nodes</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Observability</h2>
+<h3>Purpose</h3>
+<p>Observability stack status (metrics, logs).</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cluster/observability</code></li>
+<li>Nav: <strong>Cockpit → Observability</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cluster/observability</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Overview</h2>
+<h3>Purpose</h3>
+<p>Cluster overview — health, version, and capacity summary.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cluster/overview</code></li>
+<li>Nav: <strong>Cockpit → Overview</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cluster/overview</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Platform</h2>
+<h3>Purpose</h3>
+<p>Zyvor platform components installed on the cluster.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cluster/platform</code></li>
+<li>Nav: <strong>Cockpit → Platform</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cluster/platform</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Security</h2>
+<h3>Purpose</h3>
+<p>Security posture and hardening checklist.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cluster/security</code></li>
+<li>Nav: <strong>Cockpit → Security</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cluster/security</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Cluster Settings</h2>
+<h3>Purpose</h3>
+<p>Per-cluster settings and conf linkage.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cluster/settings</code></li>
+<li>Nav: <strong>Cockpit → Cluster Settings</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cluster/settings</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Storage</h2>
+<h3>Purpose</h3>
+<p>Storage classes and CSI status.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cluster/storage</code></li>
+<li>Nav: <strong>Cockpit → Storage</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cluster/storage</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Templates</h2>
+<h3>Purpose</h3>
+<p>Cluster / workload templates.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cluster/templates</code></li>
+<li>Nav: <strong>Cockpit → Templates</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cluster/templates</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Upgrades</h2>
+<h3>Purpose</h3>
+<p>Upgrade paths for k3s/Kubespray clusters.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cluster/upgrades</code></li>
+<li>Nav: <strong>Cockpit → Upgrades</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cluster/upgrades</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Virtual Machines</h2>
+<h3>Purpose</h3>
+<p>KubeVirt VMs when virtualization add-ons are installed.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cluster/vms</code></li>
+<li>Nav: <strong>Cockpit → Virtual Machines</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cluster/vms</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Workloads</h2>
+<h3>Purpose</h3>
+<p>Workloads running on the provisioned cluster.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cluster/workloads</code></li>
+<li>Nav: <strong>Cockpit → Workloads</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cluster/workloads</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Quick Deploy</h2>
+<h3>Purpose</h3>
+<p>Opinionated quick path for a standard cluster profile.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>quick-deploy</code></li>
+<li>Nav: <strong>Create → Quick Deploy</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>quick-deploy</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Cluster Studio</h2>
+<h3>Purpose</h3>
+<p>Full Cluster Studio wizard (nodes → storage → network → validate → deploy).</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>studio</code></li>
+<li>Nav: <strong>Create → Cluster Studio</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>studio</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Conf editor</h2>
+<h3>Purpose</h3>
+<p>Raw cluster.conf editor with validation.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>editor</code></li>
+<li>Nav: <strong>Edit → Conf editor</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>editor</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Cluster detail</h2>
+<h3>Purpose</h3>
+<p>Cluster cockpit — open a selected cluster into overview and day-2 tabs.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>cluster</code></li>
+<li>Nav: <strong>Nav → Cluster detail</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>cluster</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Ask Zeus</h2>
+<h3>Purpose</h3>
+<p>Ask Zeus / Copilot overlay for cluster-grounded assistance.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>copilot</code></li>
+<li>Nav: <strong>Nav → Ask Zeus</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>copilot</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Dashboard</h2>
+<h3>Purpose</h3>
+<p>Fleet home for Hypercluster Desktop — registered clusters and deploy shortcuts.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>dashboard</code></li>
+<li>Nav: <strong>Nav → Dashboard</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>dashboard</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Advanced ops</h2>
+<h3>Purpose</h3>
+<p>Advanced Day-2 operations against the selected cluster.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>operations</code></li>
+<li>Nav: <strong>Nav → Advanced ops</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>operations</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Settings</h2>
+<h3>Purpose</h3>
+<p>Desktop app settings, providers, and trial/license status.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>settings</code></li>
+<li>Nav: <strong>Nav → Settings</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>settings</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Create Cluster</h2>
+<h3>Purpose</h3>
+<p>Create Cluster hub — pick Kubernetes, virtualization, AI, or edge intent.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>studio-hub</code></li>
+<li>Nav: <strong>Nav → Create Cluster</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>studio-hub</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>Deploy console</h2>
+<h3>Purpose</h3>
+<p>Live deploy console — pipeline logs and stage status.</p>
+<h3>When to use it</h3>
+<ul>
+<li>Open this surface when the job matches the purpose above</li>
+<li>Start from the product home / dashboard if you are unsure where to begin</li>
+<li>Confirm auth and that required backends/operators are reachable if data looks empty</li>
+</ul>
+<h3>How to get there</h3>
+<ul>
+<li>Route / id: <code>deploy</code></li>
+<li>Nav: <strong>Ops → Deploy console</strong> (sidebar, command palette, or desktop nav)</li>
+</ul>
+<h3>What you can do</h3>
+<ol>
+<li>Open <code>deploy</code> and wait for live data from HyperCluster.</li>
+<li>Use filters and search when the page provides them.</li>
+<li>Drill into a row or card for detail, then jump to related surfaces.</li>
+<li>For mutating actions: review impact, role gates, and confirmation dialogs first.</li>
+</ol>
+<p>If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.</p>
+<h3>Related pages</h3>
+<ul>
+<li><a href="../../getting-started.md">Getting Started</a></li>
+<li><a href="../../PAGE_INDEX.md">Page index</a></li>
+</ul>
+<hr>
+<h2>HyperCluster — Complete page index</h2>
+<p>Every primary navigable dashboard route.</p>
+<p><em>Generated: 2026-07-26 · 32 routes</em></p>
+<p>Regenerate: <code>node scripts/customer-docs/generate-page-index.mjs</code></p>
+<h3>Nav</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Route</th>
+<th>Purpose</th>
+<th>Guide</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Dashboard</td>
+<td><code>dashboard</code></td>
+<td>Fleet home for Hypercluster Desktop — registered clusters and deploy shortcuts.</td>
+<td><a href="pages/nav/dashboard.md">Open</a></td>
+</tr>
+<tr>
+<td>Cluster detail</td>
+<td><code>cluster</code></td>
+<td>Cluster cockpit — open a selected cluster into overview and day-2 tabs.</td>
+<td><a href="pages/nav/cluster.md">Open</a></td>
+</tr>
+<tr>
+<td>Create Cluster</td>
+<td><code>studio-hub</code></td>
+<td>Create Cluster hub — pick Kubernetes, virtualization, AI, or edge intent.</td>
+<td><a href="pages/nav/studio-hub.md">Open</a></td>
+</tr>
+<tr>
+<td>Advanced ops</td>
+<td><code>operations</code></td>
+<td>Advanced Day-2 operations against the selected cluster.</td>
+<td><a href="pages/nav/operations.md">Open</a></td>
+</tr>
+<tr>
+<td>Settings</td>
+<td><code>settings</code></td>
+<td>Desktop app settings, providers, and trial/license status.</td>
+<td><a href="pages/nav/settings.md">Open</a></td>
+</tr>
+<tr>
+<td>Ask Zeus</td>
+<td><code>copilot</code></td>
+<td>Ask Zeus / Copilot overlay for cluster-grounded assistance.</td>
+<td><a href="pages/nav/copilot.md">Open</a></td>
+</tr>
+</tbody></table>
+<h3>Create</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Route</th>
+<th>Purpose</th>
+<th>Guide</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Cluster Studio</td>
+<td><code>studio</code></td>
+<td>Full Cluster Studio wizard (nodes → storage → network → validate → deploy).</td>
+<td><a href="pages/create/studio.md">Open</a></td>
+</tr>
+<tr>
+<td>Quick Deploy</td>
+<td><code>quick-deploy</code></td>
+<td>Opinionated quick path for a standard cluster profile.</td>
+<td><a href="pages/create/quick-deploy.md">Open</a></td>
+</tr>
+</tbody></table>
+<h3>Edit</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Route</th>
+<th>Purpose</th>
+<th>Guide</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Conf editor</td>
+<td><code>editor</code></td>
+<td>Raw cluster.conf editor with validation.</td>
+<td><a href="pages/edit/editor.md">Open</a></td>
+</tr>
+</tbody></table>
+<h3>Ops</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Route</th>
+<th>Purpose</th>
+<th>Guide</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Deploy console</td>
+<td><code>deploy</code></td>
+<td>Live deploy console — pipeline logs and stage status.</td>
+<td><a href="pages/ops/deploy.md">Open</a></td>
+</tr>
+</tbody></table>
+<h3>Cockpit</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Route</th>
+<th>Purpose</th>
+<th>Guide</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Overview</td>
+<td><code>cluster/overview</code></td>
+<td>Cluster overview — health, version, and capacity summary.</td>
+<td><a href="pages/cockpit/cluster-overview.md">Open</a></td>
+</tr>
+<tr>
+<td>Nodes</td>
+<td><code>cluster/nodes</code></td>
+<td>Node inventory, SSH status, and scale actions.</td>
+<td><a href="pages/cockpit/cluster-nodes.md">Open</a></td>
+</tr>
+<tr>
+<td>Workloads</td>
+<td><code>cluster/workloads</code></td>
+<td>Workloads running on the provisioned cluster.</td>
+<td><a href="pages/cockpit/cluster-workloads.md">Open</a></td>
+</tr>
+<tr>
+<td>Networking</td>
+<td><code>cluster/network</code></td>
+<td>CNI / MetalLB / ingress networking status.</td>
+<td><a href="pages/cockpit/cluster-network.md">Open</a></td>
+</tr>
+<tr>
+<td>Storage</td>
+<td><code>cluster/storage</code></td>
+<td>Storage classes and CSI status.</td>
+<td><a href="pages/cockpit/cluster-storage.md">Open</a></td>
+</tr>
+<tr>
+<td>Virtual Machines</td>
+<td><code>cluster/vms</code></td>
+<td>KubeVirt VMs when virtualization add-ons are installed.</td>
+<td><a href="pages/cockpit/cluster-vms.md">Open</a></td>
+</tr>
+<tr>
+<td>Templates</td>
+<td><code>cluster/templates</code></td>
+<td>Cluster / workload templates.</td>
+<td><a href="pages/cockpit/cluster-templates.md">Open</a></td>
+</tr>
+<tr>
+<td>GPU</td>
+<td><code>cluster/gpu</code></td>
+<td>GPU node and operator status.</td>
+<td><a href="pages/cockpit/cluster-gpu.md">Open</a></td>
+</tr>
+<tr>
+<td>Platform</td>
+<td><code>cluster/platform</code></td>
+<td>Zyvor platform components installed on the cluster.</td>
+<td><a href="pages/cockpit/cluster-platform.md">Open</a></td>
+</tr>
+<tr>
+<td>Instruments</td>
+<td><code>cluster/instruments</code></td>
+<td>Instrument / telemetry panels for the cluster.</td>
+<td><a href="pages/cockpit/cluster-instruments.md">Open</a></td>
+</tr>
+<tr>
+<td>Observability</td>
+<td><code>cluster/observability</code></td>
+<td>Observability stack status (metrics, logs).</td>
+<td><a href="pages/cockpit/cluster-observability.md">Open</a></td>
+</tr>
+<tr>
+<td>Security</td>
+<td><code>cluster/security</code></td>
+<td>Security posture and hardening checklist.</td>
+<td><a href="pages/cockpit/cluster-security.md">Open</a></td>
+</tr>
+<tr>
+<td>Backups</td>
+<td><code>cluster/backups</code></td>
+<td>Backup and etcd/snapshot related ops.</td>
+<td><a href="pages/cockpit/cluster-backups.md">Open</a></td>
+</tr>
+<tr>
+<td>Upgrades</td>
+<td><code>cluster/upgrades</code></td>
+<td>Upgrade paths for k3s/Kubespray clusters.</td>
+<td><a href="pages/cockpit/cluster-upgrades.md">Open</a></td>
+</tr>
+<tr>
+<td>Cluster Settings</td>
+<td><code>cluster/settings</code></td>
+<td>Per-cluster settings and conf linkage.</td>
+<td><a href="pages/cockpit/cluster-settings.md">Open</a></td>
+</tr>
+</tbody></table>
+<h3>CLI</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Route</th>
+<th>Purpose</th>
+<th>Guide</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CLI Provisioning</td>
+<td><code>cli/provision</code></td>
+<td>CLI deploy / wizard / profiles for bare-metal Kubernetes.</td>
+<td><a href="pages/cli/cli-provision.md">Open</a></td>
+</tr>
+<tr>
+<td>Node Lifecycle</td>
+<td><code>cli/lifecycle</code></td>
+<td>Scale, upgrade, destroy, unlock via hypercluster CLI.</td>
+<td><a href="pages/cli/cli-lifecycle.md">Open</a></td>
+</tr>
+<tr>
+<td>SSH &amp; Kubeconfig</td>
+<td><code>cli/ssh</code></td>
+<td>SSH, jump hosts, kubeconfig fetch/merge, API tunnels.</td>
+<td><a href="pages/cli/cli-ssh.md">Open</a></td>
+</tr>
+<tr>
+<td>Discovery &amp; Preflight</td>
+<td><code>cli/discover</code></td>
+<td>Discovery sources and preflight checks before deploy.</td>
+<td><a href="pages/cli/cli-discover.md">Open</a></td>
+</tr>
+<tr>
+<td>Health &amp; Status</td>
+<td><code>cli/health</code></td>
+<td>health / status / test / forge-handoff JSON ops.</td>
+<td><a href="pages/cli/cli-health.md">Open</a></td>
+</tr>
+<tr>
+<td>Lab Mode</td>
+<td><code>cli/lab</code></td>
+<td>Lab mode storage/tune/setup helpers.</td>
+<td><a href="pages/cli/cli-lab.md">Open</a></td>
+</tr>
+<tr>
+<td>Zyvor Platform Handoff</td>
+<td><code>cli/zyvor-handoff</code></td>
+<td>Hand off a ready cluster to the Zyvor product stack.</td>
+<td><a href="pages/cli/cli-zyvor-handoff.md">Open</a></td>
+</tr>
+</tbody></table>
+<h3>Related</h3>
+<ul>
+<li><a href="README.md">Customer docs home</a></li>
+<li><a href="pages/README.md">Page-by-page guides</a></li>
+</ul>
+</main></body></html>

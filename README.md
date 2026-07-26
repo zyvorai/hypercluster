@@ -201,3 +201,7 @@ sudo pkgutil --forget com.zyvor.hypercluster
 ## License
 
 Proprietary — Zyvor / HyperCluster. All rights reserved.
+
+## Customer manual
+
+**[Customer manual (page-by-page)](docs/customer/README.md)**
