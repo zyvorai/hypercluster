@@ -4,7 +4,7 @@
 
 | Surface | Notes |
 |---------|-------|
-| Desktop | Hypercluster.app / `npm run desktop` |
+| Desktop | Hypercluster.app |
 | CLI | `hypercluster` binary |
 | SSH | port 22 to nodes |
 | k3s API | :6443 (optional local tunnel :16443) |

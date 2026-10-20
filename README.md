@@ -29,7 +29,7 @@ cluster.conf  →  hypercluster  →  Kubespray (Ansible)  →  nodes via SSH
 | **Kubernetes** | v1.32 (pinned) |
 | **Runtime** | Podman (default) · containerd · Docker |
 | **CNI** | Calico · Cilium · Flannel · kube-ovn |
-| **CLI commands** | 12 — preflight, deploy, scale, upgrade, destroy, kubeconfig, health |
+| **CLI commands** | Core: preflight, deploy, scale, upgrade, destroy, kubeconfig, health |
 | **Day-2** | Scale workers, rolling upgrade, graceful node removal, destroy |
 | **Desktop** | macOS 13 Ventura+ · Apple Silicon (M1+) · 30-day free trial |
 

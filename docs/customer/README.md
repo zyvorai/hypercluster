@@ -10,7 +10,6 @@ Desktop studio + CLI for bare-metal Kubernetes (k3s/Kubespray) over SSH — no b
 | Look up any screen | [Complete page index](PAGE_INDEX.md) |
 | Deploy, auth, ports | [Admin basics](admin-basics.md) |
 | Multi-page jobs | [Common workflows](workflows.md) |
-| Capability map | [Feature Guide](../hypercluster-customer-feature-guide.md) |
 
 ## Printable PDFs
 
