@@ -1,0 +1,23 @@
+# One-time setup: repo Settings > Pages > Source = "GitHub Actions".
+name: Deploy site
+on:
+  push:
+    branches: [main]
+    paths: ['site/**', '.github/workflows/pages.yml']
+  workflow_dispatch: {}
+concurrency:
+  group: pages
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: {name: github-pages, url: "${{ steps.deployment.outputs.page_url }}"}
+    permissions: {pages: write, id-token: write}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-pages-artifact@v3
+        with: {path: site}
+      - id: deployment
+        uses: actions/deploy-pages@v4
