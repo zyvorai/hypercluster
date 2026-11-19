@@ -4,7 +4,7 @@ Deploy and upgrade production Kubernetes clusters with Kubespray — preflight, 
 
 All cluster operations run over SSH. No daemons, no persistent agents, no mandatory cloud accounts.
 
-**→ [Download HyperCluster 0.1.0](https://github.com/hypersdk/hypercluster/releases/latest)** · `brew install --cask hypersdk/tap/hypercluster` · **[Book a demo](https://zyvor.dev/contact)**
+**→ [HyperCluster on zyvor.dev](https://zyvor.dev/hypercluster)** · **[Pricing](https://zyvor.dev/hypercluster/pricing)** · **[Book a demo](https://zyvor.dev/contact)**
 
 ## What is HyperCluster?
 
@@ -47,21 +47,14 @@ No Python, Ansible, or Homebrew required on your Mac — HyperCluster bundles ev
 
 ## Install
 
-### Option A — Homebrew Cask (recommended)
+HyperCluster is distributed directly by Zyvor. Request the installer and a 30-day trial key from [sales@zyvor.dev](mailto:sales@zyvor.dev) or the [contact page](https://zyvor.dev/contact). This repository holds customer documentation only; there is no public download.
 
-```bash
-brew install --cask hypersdk/tap/hypercluster
-```
+Once you have the installer:
 
-This downloads the PKG, installs `Hypercluster.app` to `/Applications`, and keeps it updated with `brew upgrade --cask hypercluster`.
-
-### Option B — PKG installer
-
-1. Download `Hypercluster-0.1.0.pkg` from the [GitHub Releases](https://github.com/hypersdk/hypercluster/releases/latest) page
-2. Double-click the `.pkg` file
-3. Click **Continue → Agree → Install**
-4. Enter your Mac password when prompted
-5. HyperCluster is installed to `/Applications/Hypercluster.app`
+1. Double-click the `.pkg` file
+2. Click **Continue → Agree → Install**
+3. Enter your Mac password when prompted
+4. HyperCluster is installed to `/Applications/Hypercluster.app`
 
 ### First launch — Gatekeeper prompt
 
@@ -194,13 +187,13 @@ sudo pkgutil --forget com.zyvor.hypercluster
 
 - **Product page:** [zyvor.dev/hypercluster](https://zyvor.dev/hypercluster)
 - **Documentation:** [zyvor.dev/docs/hypercluster](https://zyvor.dev/docs/hypercluster)
-- **Feedback / issues:** [github.com/hypersdk/hypercluster/issues](https://github.com/hypersdk/hypercluster/issues)
+- **Feedback / issues:** [sales@zyvor.dev](mailto:sales@zyvor.dev)
 - **Licence enquiry:** [sales@zyvor.dev](mailto:sales@zyvor.dev)
 - **Demo:** [zyvor.dev/contact](https://zyvor.dev/contact)
 
 ## License
 
-Proprietary — Zyvor / HyperCluster. All rights reserved.
+Zyvor Production License v1.0 (see [LICENSE](LICENSE)). Closed source: this repository holds customer documentation only. Free for non-production use; production use needs a paid licence from Zyvor AI Labs Private Limited.
 
 ## Customer manual
 
