@@ -1,53 +1,77 @@
-# HyperCluster — Kubernetes Cluster Lifecycle
+<p align="center">
+  <img src="social/og.png" alt="HyperCluster: Kubernetes on your own metal. From one file." width="100%">
+</p>
 
-Deploy and upgrade production Kubernetes clusters with Kubespray — preflight, deploy, scale, upgrade, and kubeconfig delivery from one config file. No cloud provider. No special agents.
+<h1 align="center">HyperCluster</h1>
 
-All cluster operations run over SSH. No daemons, no persistent agents, no mandatory cloud accounts.
+<p align="center"><strong>Kubernetes on your own metal. From one file.</strong><br>
+Cluster lifecycle for bare metal and private cloud: preflight, deploy, scale, upgrade and kubeconfig over SSH, with Kubespray underneath.</p>
 
-**→ [HyperCluster on zyvor.dev](https://zyvor.dev/hypercluster)** · **[Pricing](https://zyvor.dev/hypercluster/pricing)** · **[Book a demo](https://zyvor.dev/contact)**
+<p align="center">
+  <a href="https://zyvor.dev/contact"><strong>Book a demo</strong></a> ·
+  <a href="mailto:sales@zyvor.dev?subject=HyperCluster%2030-day%20trial">Request a 30-day trial</a> ·
+  <a href="https://zyvor.dev/hypercluster/pricing">Pricing</a> ·
+  <a href="https://zyvorai.github.io/hypercluster/">Website</a> ·
+  <a href="docs/customer/README.md">Customer manual</a>
+</p>
+
+> **Closed source, documentation only.** This repository holds the customer documentation for HyperCluster. There is no public download: request the installer and a 30-day trial from [sales@zyvor.dev](mailto:sales@zyvor.dev).
+
+---
 
 ## What is HyperCluster?
 
-Kubernetes bring-up with Kubespray is powerful but raw — inventory files, group_vars, Ansible configuration, and kubeconfig retrieval all require manual wiring. HyperCluster wraps the full Kubespray lifecycle behind a single `cluster.conf`:
+Kubernetes bring-up with Kubespray is powerful but raw: inventory files, `group_vars`, Ansible configuration and kubeconfig retrieval all need manual wiring. HyperCluster wraps the full Kubespray lifecycle behind a single `cluster.conf`.
+
+**HyperCluster Desktop**, a native macOS app for Apple Silicon, adds a visual Cluster Studio on top of the same engine: a create wizard, a node topology canvas and health views. Everything runs over SSH. There is no cloud provider requirement.
+
+## Highlights
+
+- **One file.** Nodes, SSH access, Kubernetes version, container manager and CNI live in `cluster.conf`. `hypercluster wizard` writes it interactively.
+- **Every lifecycle step is a command.** `preflight`, `deploy`, `scale`, `upgrade`, `remove-node`, `fetch-kubeconfig`, `merge-kubeconfig`, `destroy`, `status`, `health`. Add `-n` for a dry run; several commands accept `--json`.
+- **Kubespray or k3s.** The Kubespray path is the default; set `K8S_DISTRO="k3s"` for a lightweight lab cluster with Cilium, cert-manager, MetalLB and KubeVirt with CDI.
+- **Storage with guardrails.** `storage inventory`, `plan`, `apply` and `teardown` for local-path, lvm-raw and rook-ceph. Disks that hold data are reported ineligible, and `apply` refuses them unless you name each one with `--confirm-destroy`.
+- **KubeVirt when you want VMs.** Install the operator and CDI, list VMs and templates, preview a VM create.
+- **Discovery.** Find hosts and VMs from libvirt, Proxmox, VMware, an SSH scan or a CSV.
+- **Optional AI help.** Ask Zyra in the desktop app is off until you enable it. It calls the provider you configure (an OpenAI-compatible API, Anthropic or a local Ollama); the key is kept in the macOS keychain.
+
+## How it works
 
 ```
-cluster.conf  →  hypercluster  →  Kubespray (Ansible)  →  nodes via SSH
-                                  │
-                                  ├─ pinned Kubespray v2.30
-                                  ├─ generates hosts.yaml + group_vars
-                                  ├─ cluster.yml · scale.yml · upgrade_cluster.yml
-                                  └─ fetches kubeconfig to your laptop
+cluster.conf  ->  hypercluster  ->  Kubespray (Ansible)  ->  your nodes, over SSH
+                                    |
+                                    |- clones the pinned Kubespray release (KUBESPRAY_VERSION)
+                                    |- generates the inventory and group_vars
+                                    |- cluster.yml | scale.yml | upgrade | reset
+                                    '- fetch-kubeconfig copies admin.conf from the first control-plane node
 ```
 
-**HyperCluster Desktop** — a native macOS app (Apple Silicon) — adds a visual cluster studio on top of the same engine: cluster create wizard, node topology canvas, live health view, AI-assisted preflight insights, and one-click kubeconfig delivery.
-
-## At a Glance
+## At a glance
 
 | Area | Detail |
 |------|--------|
-| **Engine** | Kubespray v2.30 (Ansible) |
-| **Kubernetes** | v1.32 (pinned) |
-| **Runtime** | Podman (default) · containerd · Docker |
-| **CNI** | Calico · Cilium · Flannel · kube-ovn |
-| **CLI commands** | Core: preflight, deploy, scale, upgrade, destroy, kubeconfig, health |
-| **Day-2** | Scale workers, rolling upgrade, graceful node removal, destroy |
-| **Desktop** | macOS 13 Ventura+ · Apple Silicon (M1+) · 30-day free trial |
+| **Engine** | Kubespray v2.31.0 (Ansible), pinned by `KUBESPRAY_VERSION` |
+| **Kubernetes** | v1.35.4 by default, set with `KUBE_VERSION` |
+| **Container manager** | Podman (default), containerd or Docker |
+| **CNI** | Cilium (default), Calico, Flannel or kube-ovn |
+| **Distribution** | Kubespray (default) or k3s, set with `K8S_DISTRO` |
+| **Desktop** | Apple Silicon, macOS 11 or later, 30-day trial on request |
+
+Values above are the defaults in the `cluster.conf` example shipped with HyperCluster 0.1.0.
 
 ## Requirements
 
 | Requirement | Details |
 |-------------|---------|
-| **macOS** | 13 Ventura or later · Apple Silicon (M1+) |
-| **Cluster nodes** | Linux nodes reachable over SSH (bare metal, VMs, or cloud instances) |
-| **SSH key** | Passwordless SSH access from your Mac to each node |
-| **Internet** | Required during cluster deploy (Kubernetes images pulled to nodes) |
-| **Disk space** | ~50 MB installed |
+| **Your Mac (Desktop)** | Apple Silicon (arm64), macOS 11 or later |
+| **Mac tooling** | bash 5, Python 3.11+, Ansible, `kubectl`, `helm`, `ssh` and `git`, typically installed with Homebrew. The installer's documentation describes a setup script. |
+| **Cluster nodes** | Linux nodes reachable over SSH (bare metal, VMs or cloud instances) |
+| **SSH key** | Passwordless SSH from your Mac to each node |
+| **Internet** | Needed during deploy, to pull Kubernetes images onto the nodes |
 
-No Python, Ansible, or Homebrew required on your Mac — HyperCluster bundles everything it needs.
+## Get it
 
-## Install
-
-HyperCluster is distributed directly by Zyvor. Request the installer and a 30-day trial key from [sales@zyvor.dev](mailto:sales@zyvor.dev) or the [contact page](https://zyvor.dev/contact). This repository holds customer documentation only; there is no public download.
+HyperCluster is distributed directly by Zyvor. Request the installer and a 30-day trial from [sales@zyvor.dev](mailto:sales@zyvor.dev) or the [contact page](https://zyvor.dev/contact). This repository holds customer documentation only; there is no public download.
 
 Once you have the installer:
 
@@ -70,60 +94,60 @@ This only needs to be done once.
 
 ### Trial period
 
-HyperCluster starts a **30-day free trial** at installation time. All features are fully available during the trial.
+HyperCluster starts a **30-day free trial** when you accept the licence in the app. The trial cannot be reset by reinstalling. After 30 days, contact [sales@zyvor.dev](mailto:sales@zyvor.dev) for a licence key. Per-seat and team plans for platform and infrastructure teams.
 
-After 30 days, contact [sales@zyvor.dev](mailto:sales@zyvor.dev) for a licence key. Per-seat and team plans for platform and infrastructure teams.
-
-## Quick Start
+## Quick start
 
 ### Desktop app
 
 1. Open **Hypercluster.app** from Applications or Spotlight (`⌘Space → Hypercluster`)
-2. Click **New Cluster** — the wizard guides you through node IPs, SSH user, CNI, and runtime
-3. Click **Preflight** — validates SSH access, Ansible, Python modules, and connectivity
-4. Click **Deploy** — runs Kubespray cluster.yml over SSH
-5. Click **Kubeconfig** — fetches `admin.conf` to `~/.kube/config`
+2. Click **New Cluster** to open the Create Cluster hub, then choose Quick Deploy or Cluster Studio
+3. Run preflight: it validates SSH access and your local tools
+4. Deploy: runs Kubespray over SSH
+5. Fetch the kubeconfig to `~/.kube/`
 
 ### CLI
 
-The CLI is bundled inside the app. Access it via the Desktop Terminal panel or add it to your PATH:
-
 ```bash
-hypercluster preflight   # validate SSH, Ansible, Python, connectivity
-hypercluster deploy      # run Kubespray cluster.yml
-hypercluster kubeconfig  # fetch admin.conf to ~/.kube/config
-hypercluster health      # cluster health summary
-hypercluster scale       # add/remove worker nodes
-hypercluster upgrade     # rolling Kubernetes version upgrade
-hypercluster destroy     # tear down the cluster
+hypercluster wizard           # write cluster.conf interactively
+hypercluster preflight        # verify local tools and SSH to every node
+hypercluster deploy           # preflight + init + Kubespray cluster.yml
+hypercluster fetch-kubeconfig # copy admin.conf from the first control-plane node
+hypercluster health           # nodes, pods, services and VMs
+hypercluster scale            # add the worker nodes listed in cluster.conf
+hypercluster upgrade          # move to the version in cluster.conf
+hypercluster destroy          # tear the cluster down
 ```
+
+Run `hypercluster -h` for the full command list. Options: `-c <file>` config path, `-n` dry run, `-f` force, `-v` verbose Ansible output.
 
 ## Configuration
 
-All settings live in a single `cluster.conf`:
+All settings live in a single `cluster.conf`. An abridged example:
 
-```ini
-# Node IPs (comma-separated)
-CONTROL_PLANE_IPS=10.0.0.10,10.0.0.11,10.0.0.12
-WORKER_IPS=10.0.0.20,10.0.0.21,10.0.0.22
+```bash
+KUBESPRAY_VERSION="v2.31.0"
+K8S_DISTRO="kubespray"              # kubespray | k3s
 
-# SSH
-SSH_USER=ubuntu
-SSH_KEY=~/.ssh/id_rsa
+KUBE_VERSION="v1.35.4"
+CONTAINER_MANAGER="podman"          # podman | containerd | docker
+CNI_PLUGIN="cilium"                 # cilium | calico | flannel | kube-ovn
 
-# Kubernetes
-K8S_VERSION=v1.32.0
-CNI=cilium
-CONTAINER_RUNTIME=podman
+# Pod / service CIDRs (must not overlap with the node network)
+KUBE_PODS_SUBNET="10.233.64.0/18"
+KUBE_SERVICE_ADDRESSES="10.233.0.0/18"
 
-# Networking (ensure no overlap with node subnets)
-KUBE_PODS_SUBNET=10.233.64.0/18
-KUBE_SERVICE_ADDRESSES=10.233.0.0/18
+SSH_USER="root"
+SSH_KEY="$HOME/.ssh/id_rsa"
+
+# Nodes (space-separated IPv4 addresses)
+CONTROL_PLANE_IPS="192.168.1.100"
+WORKER_IPS="192.168.1.101 192.168.1.102"
 ```
 
-The Desktop app generates and edits `cluster.conf` visually — manual editing is optional.
+The Desktop app generates and edits the cluster configuration visually; manual editing is optional.
 
-## CNI Options
+## CNI options
 
 | CNI | When to choose |
 |-----|---------------|
@@ -132,7 +156,7 @@ The Desktop app generates and edits `cluster.conf` visually — manual editing i
 | **Flannel** | Simple overlay; good for lab and single-site clusters |
 | **kube-ovn** | SDN overlay for multi-tenant or OpenStack-adjacent deployments |
 
-## Suite Integration
+## Suite integration
 
 HyperCluster is the cluster substrate for the full Zyvor product suite:
 
@@ -150,51 +174,38 @@ Export → Convert → Inspect → HyperCluster (K8s) → Deploy VMs → Manage 
 
 ## Security
 
-| Property | Guarantee |
-|----------|-----------|
-| Node access | SSH only — no persistent agent installed on nodes |
-| Credentials | SSH keys stay on your Mac; no key material sent off-device |
-| kubeconfig | Fetched directly to `~/.kube/config` over SSH |
-| Telemetry | Zero analytics, no update checks, no outbound calls from the app |
+| Property | Detail |
+|----------|--------|
+| Node access | Over SSH, using Kubespray and Ansible |
+| Credentials | SSH key paths are set in `cluster.conf` and stay on your Mac; the optional AI provider key is stored in the macOS keychain |
+| kubeconfig | Copied from the first control-plane node over SSH |
+| AI assistant | Off by default. When you enable it, requests go to the provider you configure |
 
 ## Uninstall
 
-### Quick uninstall (app only)
+Remove `/Applications/Hypercluster.app`. The distribution folder includes `Uninstall-Hypercluster.command`, which can also remove cluster data; your trial record stays on the Mac so reinstalling does not start a new trial.
 
-```bash
-sudo rm -rf /Applications/Hypercluster.app
-sudo pkgutil --forget com.zyvor.hypercluster
-```
-
-### Full uninstall (app + all data)
-
-Double-click `Uninstall-Hypercluster.command` (in the distribution folder), or run:
-
-```bash
-sudo rm -rf /Applications/Hypercluster.app
-rm -rf "$HOME/Library/Application Support/com.zyvor.hypercluster"
-rm -f "$HOME/Library/Preferences/com.zyvor.hypercluster.plist"
-sudo pkgutil --forget com.zyvor.hypercluster
-```
-
-## Version History
+## Version history
 
 | Version | Date | Changes |
 |---------|------|---------|
-| **0.1.0** | 2026-06 | Initial release — Desktop app, CLI, Kubespray v2.30, K8s v1.32, 4 CNI, AI preflight insights |
+| **0.1.0** | 2026-06 | Initial release: Desktop app, CLI, Kubespray v2.31.0, Kubernetes v1.35.4 default, four CNIs, k3s path, storage commands |
 
-## Links
+## Licence and pricing
 
+HyperCluster is closed source under the [Zyvor Production License v1.0](LICENSE): free for non-production use such as evaluation, testing and labs; production use needs a paid licence from Zyvor AI Labs Private Limited. Plans and prices are on the [pricing page](https://zyvor.dev/hypercluster/pricing).
+
+## Contact
+
+- **Book a demo:** [zyvor.dev/contact](https://zyvor.dev/contact)
+- **Trial and licence enquiries:** [sales@zyvor.dev](mailto:sales@zyvor.dev)
 - **Product page:** [zyvor.dev/hypercluster](https://zyvor.dev/hypercluster)
 - **Documentation:** [zyvor.dev/docs/hypercluster](https://zyvor.dev/docs/hypercluster)
-- **Feedback / issues:** [sales@zyvor.dev](mailto:sales@zyvor.dev)
-- **Licence enquiry:** [sales@zyvor.dev](mailto:sales@zyvor.dev)
-- **Demo:** [zyvor.dev/contact](https://zyvor.dev/contact)
-
-## License
-
-Zyvor Production License v1.0 (see [LICENSE](LICENSE)). Closed source: this repository holds customer documentation only. Free for non-production use; production use needs a paid licence from Zyvor AI Labs Private Limited.
 
 ## Customer manual
 
 **[Customer manual (page-by-page)](docs/customer/README.md)**
+
+---
+
+<sub>© ZYVORAI LABS PRIVATE LIMITED · [zyvor.dev](https://zyvor.dev)</sub>

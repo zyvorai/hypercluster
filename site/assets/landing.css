@@ -1,0 +1,209 @@
+/* Zyvor marketing kit: design tokens. Light by default, dark via prefers-color-scheme,
+   and a manual override with [data-theme="light|dark"] (used by docs pages that ship a toggle).
+   Per-product accent: override --accent-ink / --accent-btn / --accent-grad-a / --accent-grad-b on :root. */
+:root{
+  color-scheme:light dark;
+  --bg:#fff; --bg-alt:#f5f5f7; --surface:#fff; --text:#1d1d1f; --dim:#6e6e73; --line:rgba(0,0,0,.12);
+  --glass:rgba(255,255,255,.78);
+  --link:#0066cc;                 /* 5.6:1 on white */
+  --accent-btn:#0071e3; --on-accent:#fff;  /* 4.6:1 */
+  --accent-ink:#0071e3;           /* decorative accent (large text, rules) */
+  --accent-grad-a:#0071e3; --accent-grad-b:#32ade6;
+  --warn-bg:#fff7e6; --warn-line:#e0a800;
+  --code-bg:#f5f5f7; --code:#1d1d1f;
+  --shot-shadow:0 2px 6px rgba(0,0,0,.06),0 30px 60px -12px rgba(0,0,0,.28),0 60px 120px -30px rgba(0,0,0,.22);
+  --focus:#0071e3;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --maxw:1080px; --wide:1280px; --radius:20px; --nav-h:52px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#000; --bg-alt:#111113; --surface:#1c1c1e; --text:#f5f5f7; --dim:#a1a1a6; --line:rgba(255,255,255,.16);
+    --glass:rgba(22,22,24,.72); --link:#2997ff; --accent-ink:#2997ff;
+    --warn-bg:#2a2410; --warn-line:#b38600; --code-bg:#1c1c1e; --code:#f5f5f7; --focus:#2997ff;
+    --shot-shadow:0 0 0 1px rgba(255,255,255,.08),0 30px 70px -10px rgba(0,0,0,.9),0 0 120px -20px color-mix(in srgb,var(--accent-ink) 35%,transparent);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#000; --bg-alt:#111113; --surface:#1c1c1e; --text:#f5f5f7; --dim:#a1a1a6; --line:rgba(255,255,255,.16);
+  --glass:rgba(22,22,24,.72); --link:#2997ff; --accent-ink:#2997ff;
+  --warn-bg:#2a2410; --warn-line:#b38600; --code-bg:#1c1c1e; --code:#f5f5f7; --focus:#2997ff;
+  --shot-shadow:0 0 0 1px rgba(255,255,255,.08),0 30px 70px -10px rgba(0,0,0,.9),0 0 120px -20px color-mix(in srgb,var(--accent-ink) 35%,transparent);
+}
+:root[data-theme="light"]{color-scheme:light}
+
+/* Zyvor marketing kit: base, nav, buttons, footer. Shared by landing and docs. */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-padding-top:calc(var(--nav-h) + 16px)}
+body{margin:0;background:var(--bg);color:var(--text);font:17px/1.47 var(--font);letter-spacing:-.011em;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+img,picture,svg{display:block;max-width:100%;height:auto}
+a{color:var(--link);text-underline-offset:3px}
+a:hover{text-decoration-thickness:2px}
+:focus-visible{outline:3px solid var(--focus);outline-offset:3px;border-radius:6px}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:12px;top:-80px;z-index:100;background:var(--surface);color:var(--text);padding:10px 18px;border-radius:99px;box-shadow:0 4px 20px rgba(0,0,0,.25)}
+.skip:focus{top:10px}
+code,kbd,pre{font-family:var(--mono)}
+code{font-size:.9em;background:var(--code-bg);padding:.12em .4em;border-radius:6px;overflow-wrap:anywhere}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:50;height:var(--nav-h);display:flex;align-items:center;gap:8px;padding:0 max(16px,calc((100% - var(--maxw))/2));
+  background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--line)}
+.nav .brand{display:flex;align-items:center;gap:10px;color:var(--text);text-decoration:none;font-weight:600;font-size:17px;margin-right:auto}
+.nav .brand img{width:26px;height:26px;border-radius:6px}
+.nav ul{display:flex;gap:4px;list-style:none;margin:0;padding:0}
+.nav ul a{display:inline-flex;align-items:center;min-height:44px;padding:0 10px;font-size:14px;color:var(--dim);text-decoration:none;border-radius:99px}
+.nav ul a:hover,.nav ul a[aria-current]{color:var(--text)}
+.nav .btn{margin-left:8px}
+@media (max-width:860px){.nav ul{display:none}}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 22px;border-radius:99px;font:inherit;font-size:17px;font-weight:500;letter-spacing:-.01em;text-decoration:none;border:1px solid transparent;cursor:pointer;transition:background-color .2s,transform .2s,border-color .2s}
+.btn.primary{background:var(--accent-btn);color:var(--on-accent)}
+.btn.primary:hover{filter:brightness(1.08);text-decoration:none}
+.btn.ghost{background:transparent;color:var(--link);border-color:color-mix(in srgb,var(--link) 55%,transparent)}
+.btn.ghost:hover{background:color-mix(in srgb,var(--link) 10%,transparent);text-decoration:none}
+.btn.small{min-height:36px;padding:0 14px;font-size:14px}
+.btn:active{transform:scale(.98)}
+.textlink{font-size:19px;color:var(--link);text-decoration:none}
+.textlink::after{content:" \203A"}
+.textlink:hover{text-decoration:underline}
+
+/* footer */
+.footer{background:var(--bg-alt);color:var(--dim);font-size:13px;line-height:1.6;padding:40px max(20px,calc((100% - var(--maxw))/2)) 56px;border-top:1px solid var(--line)}
+.footer p{margin:0 0 10px}
+.footer a{color:var(--dim)}
+.footer a:hover{color:var(--text)}
+.footer .links{display:flex;flex-wrap:wrap;gap:6px 22px;margin:14px 0}
+.footer strong{color:var(--text)}
+
+/* Zyvor marketing kit: landing page. Sections: hero, band, feature (alternating), specs, steps, pricing, faq. */
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 20px}
+.eyebrow{font-size:14px;font-weight:600;letter-spacing:.02em;text-transform:none;color:var(--dim);margin:0 0 12px}
+section{position:relative}
+
+/* hero */
+.hero{text-align:center;padding:72px 20px 0;overflow:hidden;
+  background:radial-gradient(900px 420px at 50% -80px,color-mix(in srgb,var(--accent-grad-a) 20%,transparent),transparent 70%),
+             radial-gradient(700px 360px at 85% 10%,color-mix(in srgb,var(--accent-grad-b) 14%,transparent),transparent 70%)}
+.hero .icon{width:96px;height:96px;margin:0 auto 24px;border-radius:22%;box-shadow:0 14px 40px -10px rgba(0,0,0,.45)}
+.hero h1{margin:0;font-size:clamp(64px,15vw,168px);line-height:.95;font-weight:700;letter-spacing:-.055em;padding-bottom:.06em;
+  background:linear-gradient(180deg,var(--text) 35%,color-mix(in srgb,var(--text) 55%,var(--accent-ink)));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .tagline{margin:18px auto 0;max-width:20ch;text-wrap:balance;font-size:clamp(26px,4.6vw,48px);line-height:1.1;font-weight:600;letter-spacing:-.03em}
+.hero .promise{margin:20px auto 0;max-width:44ch;font-size:clamp(18px,2.2vw,22px);color:var(--dim);line-height:1.4}
+.cta{display:flex;flex-wrap:wrap;gap:14px 18px;justify-content:center;align-items:center;margin:32px 0 0}
+.cta .btn{font-size:18px;min-height:48px;padding:0 28px}
+.hero .fine{margin:18px 0 0;font-size:14px;color:var(--dim)}
+.shot.hero-shot{margin:56px auto 0;max-width:min(1040px,100%)}
+.shot{margin:0}
+.shot picture,.shot>img{border-radius:12px}
+.shot img{width:100%;height:auto;border-radius:12px;box-shadow:var(--shot-shadow);background:var(--surface)}
+.shot figcaption{margin:18px auto 0;max-width:60ch;text-align:center;font-size:13px;color:var(--dim)}
+.hero-shot img{border-bottom-left-radius:0;border-bottom-right-radius:0;box-shadow:var(--shot-shadow)}
+.hero-shot figcaption{padding-bottom:0}
+
+/* statement band */
+.band{padding:120px 20px 40px;text-align:center}
+.band h2{margin:0 auto;max-width:18ch;font-size:clamp(34px,6vw,64px);line-height:1.05;font-weight:700;letter-spacing:-.035em;word-spacing:.04em;text-wrap:balance}
+.band p{margin:22px auto 0;max-width:46ch;font-size:clamp(18px,2.2vw,24px);color:var(--dim);line-height:1.4}
+
+/* features */
+.feature{padding:96px 20px}
+.feature.flip{background:var(--bg-alt)}
+.feature .grid{max-width:var(--wide);margin:0 auto;display:grid;gap:40px;align-items:center;grid-template-columns:1fr}
+.feature h3{margin:0;text-wrap:balance;word-spacing:.04em;font-size:clamp(32px,5vw,56px);line-height:1.05;font-weight:700;letter-spacing:-.032em;word-spacing:.05em}
+.feature .eyebrow{color:var(--accent-ink)}
+.feature .copy p{margin:18px 0 0;font-size:clamp(18px,2vw,21px);color:var(--dim);max-width:34ch;line-height:1.4}
+.feature .copy .textlink{display:inline-block;margin-top:18px}
+@media (min-width:960px){
+  .feature .grid{grid-template-columns:minmax(0,5fr) minmax(0,8fr);gap:64px}
+  .feature.flip .grid{grid-template-columns:minmax(0,8fr) minmax(0,5fr)}
+  .feature.flip .copy{order:2}
+}
+@media (max-width:959px){.feature{text-align:center}.feature .copy p{margin-left:auto;margin-right:auto}}
+
+/* more cards */
+.more{padding:96px 20px;max-width:var(--maxw);margin:0 auto}
+.more h2,.specs h2,.steps h2,.pricing h2,.faq h2,.privacy h2{margin:0 0 40px;text-align:center;font-size:clamp(32px,5vw,56px);line-height:1.05;font-weight:700;letter-spacing:-.032em;word-spacing:.05em}
+.cards{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.card{background:var(--bg-alt);border-radius:var(--radius);padding:28px}
+.more .card,.privacy .card{background:var(--bg-alt)}
+.card h3{margin:0 0 8px;font-size:21px;line-height:1.2;font-weight:600;letter-spacing:-.02em}
+.card p{margin:0;color:var(--dim);font-size:16px}
+.card a{color:var(--link)}
+
+/* specs strip */
+.specs{padding:96px 20px;background:var(--bg-alt)}
+.specs-grid{max-width:var(--maxw);margin:0 auto;display:grid;gap:0;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));border-top:1px solid var(--line)}
+.spec{padding:28px 20px 28px 0;border-bottom:1px solid var(--line)}
+.spec dt{font-size:14px;color:var(--dim);margin:0 0 6px}
+.spec dd{margin:0;font-size:clamp(22px,2.6vw,30px);font-weight:600;letter-spacing:-.03em;line-height:1.15}
+.spec dd small{display:block;margin-top:6px;font-size:14px;font-weight:400;letter-spacing:-.01em;color:var(--dim)}
+.limit{max-width:var(--maxw);margin:32px auto 0;padding:20px 24px;border-radius:var(--radius);background:var(--warn-bg);border:1px solid var(--warn-line)}
+.limit h3{margin:0 0 6px;font-size:17px}
+.limit p{margin:0;font-size:16px}
+
+/* steps */
+.steps{padding:96px 20px;max-width:var(--maxw);margin:0 auto}
+.steps ol{list-style:none;margin:0;padding:0;display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));counter-reset:s}
+.steps li{counter-increment:s;background:var(--bg-alt);border-radius:var(--radius);padding:28px}
+.steps li::before{content:counter(s);display:grid;place-items:center;width:40px;height:40px;margin-bottom:18px;border-radius:50%;background:var(--accent-btn);color:var(--on-accent);font-weight:700}
+.steps h3{margin:0 0 8px;font-size:21px;letter-spacing:-.02em}
+.steps p{margin:0;color:var(--dim)}
+.sha{margin-top:32px;background:var(--bg-alt);border-radius:var(--radius);padding:22px 24px}
+.sha p{margin:0 0 8px;color:var(--dim);font-size:14px}
+.sha pre{margin:0;overflow-x:auto;font-size:14px;line-height:1.5;color:var(--code);white-space:pre-wrap;overflow-wrap:anywhere}
+
+/* pricing */
+.pricing{padding:96px 20px;background:var(--bg-alt)}
+.pricing .inner{max-width:760px;margin:0 auto}
+.pricing .lead{font-size:clamp(19px,2.2vw,23px);line-height:1.4;margin:0 0 28px}
+.pricing .lead b{font-weight:600}
+.pricing p{margin:0 0 16px}
+.pricing .fine{color:var(--dim);font-size:16px}
+.pricing .cta{justify-content:flex-start;margin-top:24px}
+
+/* faq */
+.faq{padding:96px 20px;max-width:820px;margin:0 auto}
+.faq details{border-top:1px solid var(--line)}
+.faq details:last-of-type{border-bottom:1px solid var(--line)}
+.faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:16px;align-items:center;min-height:56px;padding:14px 0;font-size:21px;font-weight:600;letter-spacing:-.02em}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";font-size:28px;font-weight:300;color:var(--dim);transition:transform .25s}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq details p{margin:0 0 20px;color:var(--dim);max-width:62ch}
+
+.privacy{padding:96px 20px 40px;max-width:var(--maxw);margin:0 auto}
+
+/* reveal: CSS only. Uses scroll-driven animation where supported; otherwise a gentle load-in. */
+@keyframes rise{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:no-preference){
+  .hero>*{animation:rise .9s cubic-bezier(.2,.7,.2,1) both}
+  .hero>*:nth-child(2){animation-delay:.05s}.hero>*:nth-child(3){animation-delay:.1s}.hero>*:nth-child(4){animation-delay:.15s}
+  .hero>*:nth-child(5){animation-delay:.2s}.hero>*:nth-child(6){animation-delay:.25s}.hero>*:nth-child(7){animation-delay:.3s}
+  @supports (animation-timeline:view()){
+    .feature .grid>*,.cards>*,.specs-grid>*,.steps li,.band>*{animation:rise linear both;animation-timeline:view();animation-range:entry 0% entry 45%}
+  }
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+
+/* pricing card extras */
+.pricing .buy{background:var(--surface);border:1px solid var(--line);margin:0 0 24px}
+.pricing .buy .qr{margin-top:16px;background:#fff;border-radius:10px;padding:6px}
+.pricing .buy .cta{justify-content:flex-start;margin-top:18px}
+.pricing .buy .btn{font-size:16px;min-height:44px;padding:0 20px}
+.hero .eyebrow{margin-bottom:6px}
+
+/* plan cards (optional: "pricingWide": true plus .plans markup in pricingHtml) */
+.pricing .inner.wide{max-width:var(--maxw)}
+.plans{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));margin:0 0 28px}
+.plan{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:28px}
+.plan h3{margin:0;font-size:19px;font-weight:600;letter-spacing:-.02em}
+.plan .price{margin:14px 0 0;font-size:clamp(36px,4.4vw,46px);font-weight:700;letter-spacing:-.045em;line-height:1}
+.plan .per{margin:6px 0 0;color:var(--dim);font-size:15px}
+.plan .for{margin:16px 0 22px;font-size:16px}
+.plan .cta{margin:auto 0 0;justify-content:flex-start}
+.plan .cta .btn{font-size:16px;min-height:44px;padding:0 22px}
