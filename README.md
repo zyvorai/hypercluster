@@ -195,7 +195,7 @@ Remove `/Applications/Hypercluster.app`. The distribution folder includes `Unins
 
 ## Licence and pricing
 
-HyperCluster is closed source under the [Zyvor Production License v1.0](LICENSE): free for non-production use such as evaluation, testing and labs; production use needs a paid licence from Zyvor AI Labs Private Limited. Plans and prices are on the [pricing page](https://zyvor.dev/hypercluster/pricing).
+HyperCluster is closed source under the [Zyvor Production License v1.0](LICENSE): free for non-production use such as evaluation, testing and labs; production use needs a paid licence from Zyvor AI Labs Private Limited: INR 14,999 per node per year including 18% GST (about USD 151, GST-free). The Desktop app for Mac is INR 9,999 per seat per year (clusters up to 5 nodes), and a team licence for up to 5 seats and 25 nodes is INR 49,999 per year, by invoice. Plans and prices are also on the [pricing page](https://zyvor.dev/hypercluster/pricing).
 
 ## Contact
 
