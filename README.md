@@ -9,13 +9,13 @@ Cluster lifecycle for bare metal and private cloud: preflight, deploy, scale, up
 
 <p align="center">
   <a href="https://zyvor.dev/contact"><strong>Book a demo</strong></a> ·
-  <a href="mailto:sales@zyvor.dev?subject=HyperCluster%2030-day%20trial">Request a 30-day trial</a> ·
+  <a href="https://github.com/zyvorai/hypercluster/releases/tag/desktop-v0.2.0">Download the 30-day trial</a> ·
   <a href="https://zyvor.dev/hypercluster/pricing">Pricing</a> ·
   <a href="https://zyvorai.github.io/hypercluster/">Website</a> ·
   <a href="docs/customer/README.md">Customer manual</a>
 </p>
 
-> **Closed source, documentation only.** This repository holds the customer documentation for HyperCluster. There is no public download: request the installer and a 30-day trial from [sales@zyvor.dev](mailto:sales@zyvor.dev).
+> **Closed source.** This repository holds the customer documentation for HyperCluster; the source is private. The notarized Desktop app for Apple Silicon is a free 30-day trial on the [releases page](https://github.com/zyvorai/hypercluster/releases/tag/desktop-v0.2.0).
 
 ---
 
@@ -50,14 +50,14 @@ cluster.conf  ->  hypercluster  ->  Kubespray (Ansible)  ->  your nodes, over SS
 
 | Area | Detail |
 |------|--------|
-| **Engine** | Kubespray v2.31.0 (Ansible), pinned by `KUBESPRAY_VERSION` |
-| **Kubernetes** | v1.35.4 by default, set with `KUBE_VERSION` |
+| **Engine** | Kubespray v2.32.0 (Ansible), pinned by `KUBESPRAY_VERSION` |
+| **Kubernetes** | v1.36.4 by default, set with `KUBE_VERSION` |
 | **Container manager** | Podman (default), containerd or Docker |
 | **CNI** | Cilium (default), Calico, Flannel or kube-ovn |
 | **Distribution** | Kubespray (default) or k3s, set with `K8S_DISTRO` |
-| **Desktop** | Apple Silicon, macOS 11 or later, 30-day trial on request |
+| **Desktop** | Apple Silicon, macOS 11 or later (tested on macOS 27), 30-day trial |
 
-Values above are the defaults in the `cluster.conf` example shipped with HyperCluster 0.1.0.
+Values above are the defaults in the `cluster.conf` example shipped with HyperCluster 0.2.0.
 
 ## Requirements
 
@@ -71,14 +71,13 @@ Values above are the defaults in the `cluster.conf` example shipped with HyperCl
 
 ## Get it
 
-HyperCluster is distributed directly by Zyvor. Request the installer and a 30-day trial from [sales@zyvor.dev](mailto:sales@zyvor.dev) or the [contact page](https://zyvor.dev/contact). This repository holds customer documentation only; there is no public download.
+Download **Hypercluster-0.2.0-arm64.dmg** from the [releases page](https://github.com/zyvorai/hypercluster/releases/tag/desktop-v0.2.0), next to its SHA-256 checksum. It is signed with Zyvor's Developer ID and notarized by Apple.
 
-Once you have the installer:
+1. Open the DMG
+2. Drag **Hypercluster** into **Applications**
+3. Open it, read and accept the Zyvor licence, and the 30-day trial starts on this Mac
 
-1. Double-click the `.pkg` file
-2. Click **Continue → Agree → Install**
-3. Enter your Mac password when prompted
-4. HyperCluster is installed to `/Applications/Hypercluster.app`
+Check the download with `shasum -a 256 Hypercluster-0.2.0-arm64.dmg` and compare it with the `.sha256` file on the release.
 
 ### First launch — Gatekeeper prompt
 
@@ -90,11 +89,13 @@ To allow it:
 3. Click **"Open Anyway"** next to the Hypercluster message
 4. Click **Open** in the confirmation dialog
 
-This only needs to be done once.
+This only needs to be done once. The release is notarized, so you should normally not see this prompt.
 
 ### Trial period
 
-HyperCluster starts a **30-day free trial** when you accept the licence in the app. The trial cannot be reset by reinstalling. After 30 days, contact [sales@zyvor.dev](mailto:sales@zyvor.dev) for a licence key. Per-seat and team plans for platform and infrastructure teams.
+HyperCluster starts a **30-day free trial** when you accept the licence in the app. Reinstalling does not restart it.
+
+**Hypercluster never locks you out.** When the trial ends, or a licence key expires, every feature keeps working; the app only shows that it is unlicensed. A licence key keeps you in good standing, with updates and support. To enter one, click the licence badge at the bottom-right of the window, paste the key (it starts with `ZYV1.`) and choose **Activate**. Keys are checked on your Mac against a public key built into the app; nothing is sent to Zyvor. Prices and plans are on the [pricing page](https://zyvor.dev/hypercluster/pricing); for a key or a quote write to [sales@zyvor.dev](mailto:sales@zyvor.dev).
 
 ## Quick start
 
@@ -126,10 +127,10 @@ Run `hypercluster -h` for the full command list. Options: `-c <file>` config pat
 All settings live in a single `cluster.conf`. An abridged example:
 
 ```bash
-KUBESPRAY_VERSION="v2.31.0"
+KUBESPRAY_VERSION="v2.32.0"
 K8S_DISTRO="kubespray"              # kubespray | k3s
 
-KUBE_VERSION="v1.35.4"
+KUBE_VERSION="v1.36.4"
 CONTAINER_MANAGER="podman"          # podman | containerd | docker
 CNI_PLUGIN="cilium"                 # cilium | calico | flannel | kube-ovn
 
@@ -183,12 +184,13 @@ Export → Convert → Inspect → HyperCluster (K8s) → Deploy VMs → Manage 
 
 ## Uninstall
 
-Remove `/Applications/Hypercluster.app`. The distribution folder includes `Uninstall-Hypercluster.command`, which can also remove cluster data; your trial record stays on the Mac so reinstalling does not start a new trial.
+Remove `/Applications/Hypercluster.app`. The distribution folder includes `Uninstall-Hypercluster.command`, which can also remove cluster data; your trial record stays on the Mac so reinstalling does not start a new trial. Your licence key, if any, is kept in `~/.hypercluster/licence.key`.
 
 ## Version history
 
 | Version | Date | Changes |
 |---------|------|---------|
+| **0.2.0** | 2026-11 | First public notarized DMG (trial). Offline licence keys that never disable features, no default web-console password, web console binds to localhost by default, Kubespray v2.32.0, Kubernetes v1.36.4 default |
 | **0.1.0** | 2026-06 | Initial release: Desktop app, CLI, Kubespray v2.31.0, Kubernetes v1.35.4 default, four CNIs, k3s path, storage commands |
 
 ## Licence and pricing
@@ -198,7 +200,7 @@ HyperCluster is closed source under the [Zyvor Production License v1.0](LICENSE)
 ## Contact
 
 - **Book a demo:** [zyvor.dev/contact](https://zyvor.dev/contact)
-- **Trial and licence enquiries:** [sales@zyvor.dev](mailto:sales@zyvor.dev)
+- **Licence keys and quotes:** [sales@zyvor.dev](mailto:sales@zyvor.dev)
 - **Product page:** [zyvor.dev/hypercluster](https://zyvor.dev/hypercluster)
 - **Documentation:** [zyvor.dev/docs/hypercluster](https://zyvor.dev/docs/hypercluster)
 
