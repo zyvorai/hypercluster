@@ -1,0 +1,196 @@
+{
+  "routes": [
+    {
+      "label": "Dashboard",
+      "path": "dashboard",
+      "category": "Nav",
+      "legacy": false
+    },
+    {
+      "label": "Cluster detail",
+      "path": "cluster",
+      "category": "Nav",
+      "legacy": false
+    },
+    {
+      "label": "Create Cluster",
+      "path": "studio-hub",
+      "category": "Nav",
+      "legacy": false
+    },
+    {
+      "label": "Advanced ops",
+      "path": "operations",
+      "category": "Nav",
+      "legacy": false
+    },
+    {
+      "label": "Settings",
+      "path": "settings",
+      "category": "Nav",
+      "legacy": false
+    },
+    {
+      "label": "Ask Zeus",
+      "path": "copilot",
+      "category": "Nav",
+      "legacy": false
+    },
+    {
+      "label": "Cluster Studio",
+      "path": "studio",
+      "category": "Create",
+      "legacy": false
+    },
+    {
+      "label": "Quick Deploy",
+      "path": "quick-deploy",
+      "category": "Create",
+      "legacy": false
+    },
+    {
+      "label": "Conf editor",
+      "path": "editor",
+      "category": "Edit",
+      "legacy": false
+    },
+    {
+      "label": "Deploy console",
+      "path": "deploy",
+      "category": "Ops",
+      "legacy": false
+    },
+    {
+      "label": "Overview",
+      "path": "cluster/overview",
+      "category": "Cockpit",
+      "legacy": false
+    },
+    {
+      "label": "Nodes",
+      "path": "cluster/nodes",
+      "category": "Cockpit",
+      "legacy": false
+    },
+    {
+      "label": "Workloads",
+      "path": "cluster/workloads",
+      "category": "Cockpit",
+      "legacy": false
+    },
+    {
+      "label": "Networking",
+      "path": "cluster/network",
+      "category": "Cockpit",
+      "legacy": false
+    },
+    {
+      "label": "Storage",
+      "path": "cluster/storage",
+      "category": "Cockpit",
+      "legacy": false
+    },
+    {
+      "label": "Virtual Machines",
+      "path": "cluster/vms",
+      "category": "Cockpit",
+      "legacy": false
+    },
+    {
+      "label": "Templates",
+      "path": "cluster/templates",
+      "category": "Cockpit",
+      "legacy": false
+    },
+    {
+      "label": "GPU",
+      "path": "cluster/gpu",
+      "category": "Cockpit",
+      "legacy": false
+    },
+    {
+      "label": "Platform",
+      "path": "cluster/platform",
+      "category": "Cockpit",
+      "legacy": false
+    },
+    {
+      "label": "Instruments",
+      "path": "cluster/instruments",
+      "category": "Cockpit",
+      "legacy": false
+    },
+    {
+      "label": "Observability",
+      "path": "cluster/observability",
+      "category": "Cockpit",
+      "legacy": false
+    },
+    {
+      "label": "Security",
+      "path": "cluster/security",
+      "category": "Cockpit",
+      "legacy": false
+    },
+    {
+      "label": "Backups",
+      "path": "cluster/backups",
+      "category": "Cockpit",
+      "legacy": false
+    },
+    {
+      "label": "Upgrades",
+      "path": "cluster/upgrades",
+      "category": "Cockpit",
+      "legacy": false
+    },
+    {
+      "label": "Cluster Settings",
+      "path": "cluster/settings",
+      "category": "Cockpit",
+      "legacy": false
+    },
+    {
+      "label": "CLI Provisioning",
+      "path": "cli/provision",
+      "category": "CLI",
+      "legacy": false
+    },
+    {
+      "label": "Node Lifecycle",
+      "path": "cli/lifecycle",
+      "category": "CLI",
+      "legacy": false
+    },
+    {
+      "label": "SSH & Kubeconfig",
+      "path": "cli/ssh",
+      "category": "CLI",
+      "legacy": false
+    },
+    {
+      "label": "Discovery & Preflight",
+      "path": "cli/discover",
+      "category": "CLI",
+      "legacy": false
+    },
+    {
+      "label": "Health & Status",
+      "path": "cli/health",
+      "category": "CLI",
+      "legacy": false
+    },
+    {
+      "label": "Lab Mode",
+      "path": "cli/lab",
+      "category": "CLI",
+      "legacy": false
+    },
+    {
+      "label": "Zyvor Platform Handoff",
+      "path": "cli/zyvor-handoff",
+      "category": "CLI",
+      "legacy": false
+    }
+  ]
+}

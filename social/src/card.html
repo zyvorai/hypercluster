@@ -1,0 +1,32 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+:root{--bg:#000;--surf:#1d1d1f;--line:rgba(255,255,255,.08);--ink:#f5f5f7;--soft:#86868b;--blue:#2997ff}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#000}
+body{background:linear-gradient(180deg,#000 0%,#1d1d1f 160%);color:var(--ink);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;position:relative;overflow:hidden}
+body::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 30% 0%,rgba(255,255,255,.04),transparent 60%)}
+.mono{font-family:"SF Mono",Menlo,monospace}
+.box{background:var(--surf);border:1px solid var(--line);border-radius:18px;padding:22px 30px}
+.lab{font-size:15px;font-weight:700;letter-spacing:.14em;color:var(--blue);text-transform:uppercase}
+.big{font-size:30px;font-weight:700;margin:8px 0;letter-spacing:-.01em}
+.code{font-family:"SF Mono",Menlo,monospace;font-size:19px;line-height:1.55;color:var(--ink)}.code b{font-weight:400;color:var(--blue)}
+.arrow{text-align:center;color:var(--blue);font-size:28px;line-height:34px}
+.nodes{display:flex;gap:14px}.nodes div{flex:1;text-align:center;background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:12px 4px;font-size:19px}.nodes small{display:block;color:var(--soft);font-size:13px}
+.diagram{position:absolute}
+.t{position:absolute}.t img{width:96px;height:96px;border-radius:22px;display:block}
+.t .z{color:var(--blue);letter-spacing:.2em;font-size:19px;font-weight:600;margin:26px 0 14px}
+.t h1{margin:0;font-weight:700;letter-spacing:-.035em;line-height:1}
+.t p{color:#a1a1a6;margin:22px 0 0;line-height:1.2}
+.t .f{color:var(--soft);position:absolute;white-space:nowrap}
+/* wide */
+.wide .t{left:72px;top:72px;width:620px;height:486px}.wide .t h1{font-size:92px}.wide .t p{font-size:38px}.wide .t .f{left:0;bottom:0;font-size:18px}
+.wide .diagram{left:736px;top:318px;width:720px}
+.sq .t .f{display:none}
+.sq .t{left:84px;top:80px;width:900px}.sq .t h1{font-size:150px}.sq .t p{font-size:44px}
+.sq .diagram{left:76px;top:598px;width:928px}
+/* docs diagram only */
+.dg .diagram{left:40px;top:40px;width:920px}.dg .box{padding:28px 32px}.dg .big{font-size:40px}.dg .code{font-size:25px}.dg .lab{font-size:19px}.dg .arrow{font-size:36px;line-height:50px}.dg .nodes div{font-size:23px;padding:16px 4px}
+</style></head><body class="MODE">
+<div class="t" style="DISP"><img src="icon.png"><div class="z">ZYVOR</div><h1>HyperCluster</h1><p>Kubernetes on your own<br>metal. From one file.</p><div class="f">cluster.conf to Kubespray, over SSH</div></div>
+<div class="diagram"><div class="box"><div class="lab">You write</div><div class="big">cluster.conf</div><div class="code">CONTROL_PLANE_IPS<b>="..."</b><br>WORKER_IPS<b>="..."</b><br>KUBE_VERSION<b>="v1.35.4"</b><br>CNI_PLUGIN<b>="cilium"</b></div></div>
+<div class="arrow">&#8595;</div><div class="box"><div class="lab">HyperCluster &#8594; Kubespray</div><div class="big">preflight &middot; deploy &middot; scale &middot; upgrade</div></div>
+<div class="arrow">&#8595;</div><div class="nodes"><div>Control plane<small>over SSH</small></div><div>Control plane<small>over SSH</small></div><div>Worker<small>over SSH</small></div><div>Worker<small>over SSH</small></div></div></div>
+</body></html>

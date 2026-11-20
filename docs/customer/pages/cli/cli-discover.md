@@ -1,0 +1,30 @@
+# Discovery & Preflight
+
+## Purpose
+
+Discovery sources and preflight checks before deploy.
+
+## When to use it
+
+- Open this surface when the job matches the purpose above
+- Start from the product home / dashboard if you are unsure where to begin
+- Confirm auth and that required backends/operators are reachable if data looks empty
+
+## How to get there
+
+- Route / id: `cli/discover`
+- Nav: **CLI → Discovery & Preflight** (sidebar, command palette, or desktop nav)
+
+## What you can do
+
+1. Open `cli/discover` and wait for live data from HyperCluster.
+2. Use filters and search when the page provides them.
+3. Drill into a row or card for detail, then jump to related surfaces.
+4. For mutating actions: review impact, role gates, and confirmation dialogs first.
+
+If the page stays empty, check service health, auth configuration, and that dependencies for this domain are installed.
+
+## Related pages
+
+- [Getting Started](../../getting-started.md)
+- [Page index](../../PAGE_INDEX.md)

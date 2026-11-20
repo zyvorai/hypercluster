@@ -1,0 +1,24 @@
+.kubespray/
+.kubespray-venv/
+.docs-venv/
+__pycache__/
+*.pyc
+cluster.conf
+cluster-test.conf
+cluster-podman.conf
+cluster-remote.conf
+node_modules/
+desktop/node_modules/
+desktop/dist/
+desktop/src-tauri/target/
+*.bak
+
+# Local AI caches
+.grok/
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Local presentation exports
+presentations/

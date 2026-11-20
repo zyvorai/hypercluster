@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<title>HyperCluster · Kubernetes on your own metal. From one file.</title>
+<meta name="description" content="HyperCluster: Kubernetes cluster lifecycle for bare metal and private cloud. A Kubespray-based CLI and the HyperCluster Desktop macOS app. Preflight, deploy, scale, upgrade and kubeconfig over SSH from one cluster.conf. Closed source; documentation in this repository.">
+<link rel="canonical" href="https://zyvorai.github.io/hypercluster/">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="HyperCluster">
+<meta property="og:title" content="HyperCluster · Kubernetes on your own metal. From one file.">
+<meta property="og:description" content="Kubernetes cluster lifecycle for bare metal and private cloud. One cluster.conf, Kubespray underneath, everything over SSH. CLI and macOS app.">
+<meta property="og:url" content="https://zyvorai.github.io/hypercluster/">
+<meta property="og:image" content="https://zyvorai.github.io/hypercluster/social/og.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="HyperCluster: Kubernetes on your own metal. From one file. A diagram shows cluster.conf flowing into hypercluster, then Kubespray, then Linux nodes over SSH.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="HyperCluster · Kubernetes on your own metal. From one file.">
+<meta name="twitter:description" content="Kubernetes cluster lifecycle for bare metal and private cloud. One cluster.conf, Kubespray underneath, everything over SSH. CLI and macOS app.">
+<meta name="twitter:image" content="https://zyvorai.github.io/hypercluster/social/og.png">
+<meta name="twitter:image:alt" content="HyperCluster: Kubernetes on your own metal. From one file. A diagram shows cluster.conf flowing into hypercluster, then Kubespray, then Linux nodes over SSH.">
+<link rel="stylesheet" href="assets/landing.css">
+<style>:root{--accent-btn:#0071e3;--accent-ink:#0071e3;--accent-grad-a:#2997ff;--accent-grad-b:#0071e3}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--accent-ink:#2997ff}}:root[data-theme="dark"]{--accent-ink:#2997ff}</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"HyperCluster","applicationCategory":"DeveloperApplication","operatingSystem":"macOS (Apple Silicon) client; Linux cluster nodes","softwareVersion":"0.2.0","downloadUrl":"https://github.com/zyvorai/hypercluster/releases/tag/desktop-v0.2.0","url":"https://zyvorai.github.io/hypercluster/","description":"HyperCluster: Kubernetes cluster lifecycle for bare metal and private cloud. A Kubespray-based CLI and the HyperCluster Desktop macOS app. Preflight, deploy, scale, upgrade and kubeconfig over SSH from one cluster.conf. Closed source; documentation in this repository.","image":"https://zyvorai.github.io/hypercluster/social/og.png","publisher":{"@type":"Organization","name":"ZYVORAI LABS PRIVATE LIMITED","url":"https://zyvor.dev"}}</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav">
+  <a class="brand" href="./" aria-label="HyperCluster home"><img src="favicon.svg" width="26" height="26" alt=""><span>HyperCluster</span></a>
+  <nav aria-label="Primary"><ul><li><a href="#features">Features</a></li><li><a href="#specs">Requirements</a></li><li><a href="#start">Get started</a></li><li><a href="#pricing">Licence</a></li><li><a href="#faq">FAQ</a></li><li><a href="https://github.com/zyvorai/hypercluster/blob/main/docs/customer/README.md">Docs</a></li></ul></nav>
+  <a class="btn small primary" href="https://zyvor.dev/contact">Book a demo</a>
+</header>
+<main id="main">
+<section class="hero" aria-labelledby="top">
+  <img class="icon" src="favicon.svg" width="96" height="96" alt="HyperCluster app icon">
+  <p class="eyebrow">Zyvor · Kubernetes lifecycle</p>
+  <h1 id="top">HyperCluster</h1>
+  <p class="tagline">Kubernetes on your own metal. From one file.</p>
+  <p class="promise"><strong>Preflight, deploy, scale, upgrade and kubeconfig, over SSH, from a single cluster.conf.</strong> HyperCluster wraps Kubespray for bare metal and private cloud. You describe the cluster once; it pins Kubespray, generates the inventory and group_vars, runs the playbooks over SSH and hands you a kubeconfig. A command-line tool and a macOS desktop app drive the same engine.</p>
+  <p class="cta"><a class="btn primary" href="https://zyvor.dev/contact">Book a demo</a><a class="textlink" href="https://github.com/zyvorai/hypercluster/releases/tag/desktop-v0.2.0">Download the 30-day trial</a></p>
+  <p class="fine">Version 0.2.0 · Kubespray v2.32.0 · Mac app for Apple Silicon (notarized DMG) · free 30-day trial · never locks you out when it ends</p>
+  <figure class="shot hero-shot"><picture><img src="assets/img/hero-img-light-1200.webp" srcset="assets/img/hero-img-light-1200.webp 1200w" sizes="(min-width:1080px) 1040px, 100vw" width="1600" height="740" alt="A diagram of the HyperCluster flow: a cluster.conf file with the cluster name, node IPs, SSH user, Kubernetes version and CNI, then the hypercluster wrapper, then Kubespray, then control-plane and worker Linux nodes reached over SSH." fetchpriority="high" decoding="async"></picture><figcaption>How it works: cluster.conf, then hypercluster, then Kubespray, then your nodes over SSH. A diagram, not a screenshot.</figcaption></figure>
+</section>
+
+<section class="band" aria-label="Overview">
+  <h2>Kubespray is powerful. Wiring it by hand is not the job.</h2>
+  <p>Inventory files, group_vars, Ansible setup and kubeconfig retrieval all need manual care. HyperCluster puts them behind one cluster.conf and a short list of commands, and keeps every operation on plain SSH.</p>
+</section>
+
+<div id="features">
+<h2 class="sr">Features</h2>
+<section class="feature" id="config" aria-labelledby="h-config"><div class="grid"><div class="copy"><p class="eyebrow">One file</p><h3 id="h-config">The whole cluster, in cluster.conf.</h3><p>Nodes, SSH access, Kubernetes version, container manager and CNI live in one file. Prefer questions to editing? The wizard writes it for you, and the desktop app edits it visually.</p><a class="textlink" href="https://github.com/zyvorai/hypercluster/blob/main/docs/customer/pages/cli/cli-lifecycle.md">Cluster lifecycle commands</a></div><figure class="shot"><picture><img src="assets/img/config-light-1200.webp" srcset="assets/img/config-light-1200.webp 1200w" sizes="(min-width:960px) 62vw, 100vw" width="1600" height="960" alt="A terminal window showing a cluster.conf with the Kubespray version, Kubernetes version, container manager, CNI plugin, SSH user and key, and control-plane and worker IP addresses." loading="lazy" decoding="async"></picture><figcaption>cluster.conf, abridged from the example configuration shipped with HyperCluster 0.2.0. Example addresses.</figcaption></figure></div></section>
+<section class="feature flip" id="cli" aria-labelledby="h-cli"><div class="grid"><div class="copy"><p class="eyebrow">Lifecycle</p><h3 id="h-cli">Every step is a command.</h3><p>Preflight checks your tools and SSH access to every node. Deploy, scale, upgrade, remove a node, fetch the kubeconfig, tear it down. Add -n for a dry run, and --json where scripts need it.</p><a class="textlink" href="https://github.com/zyvorai/hypercluster/blob/main/docs/customer/pages/README.md">CLI guide, page by page</a></div><figure class="shot"><picture><img src="assets/img/cli-light-1200.webp" srcset="assets/img/cli-light-1200.webp 1200w" sizes="(min-width:960px) 62vw, 100vw" width="1600" height="900" alt="A terminal window listing hypercluster commands: init, wizard, preflight, deploy, scale, upgrade, remove-node, fetch-kubeconfig, merge-kubeconfig, test, destroy, status and health, each with a one-line description." loading="lazy" decoding="async"></picture><figcaption>The output of hypercluster -h for version 0.1.0, abridged.</figcaption></figure></div></section>
+<section class="feature" id="storage" aria-labelledby="h-storage"><div class="grid"><div class="copy"><p class="eyebrow">Storage</p><h3 id="h-storage">Plan first. It will not take a disk with data on it.</h3><p>Inventory the block devices on each node, preview a plan for local-path, lvm-raw or rook-ceph, then apply. Disks that hold data are reported ineligible, and apply refuses them unless you name each one explicitly.</p><a class="textlink" href="https://github.com/zyvorai/hypercluster/blob/main/docs/customer/pages/cli/cli-provision.md">Provisioning commands</a></div><figure class="shot"><picture><img src="assets/img/storage-light-1200.webp" srcset="assets/img/storage-light-1200.webp 1200w" sizes="(min-width:960px) 62vw, 100vw" width="1600" height="820" alt="A terminal window showing hypercluster storage inventory, plan, apply and teardown, with a note that apply refuses any disk that is not eligible unless it is named with confirm-destroy." loading="lazy" decoding="async"></picture><figcaption>The storage commands as described by hypercluster -h for version 0.1.0.</figcaption></figure></div></section>
+</div>
+
+<section class="more" aria-labelledby="more-h">
+  <h2 id="more-h">And the rest of the toolbox.</h2>
+  <div class="cards"><div class="card"><h3>HyperCluster Desktop</h3><p>A native Mac app on the same engine. A Cluster Studio walks through nodes, storage, network, validate and deploy, with a node topology canvas. <a href="https://github.com/zyvorai/hypercluster/blob/main/docs/customer/pages/create/studio.md">Cluster Studio</a>.</p></div><div class="card"><h3>Kubespray or k3s</h3><p>Choose the distribution in cluster.conf. The Kubespray path is the default and supports HA control planes; the k3s path adds Cilium, cert-manager, MetalLB and KubeVirt with CDI.</p></div><div class="card"><h3>Day-2 built in</h3><p>Add workers with scale, move to a new Kubernetes version with upgrade, drain and remove one node, or reset the whole cluster with destroy.</p></div><div class="card"><h3>KubeVirt when you want VMs</h3><p>Install the KubeVirt operator and CDI after bootstrap, list VMs and the template catalog, and preview a VM create.</p></div><div class="card"><h3>Find your hosts</h3><p>Discover VMs and hosts from libvirt, Proxmox, VMware, an SSH scan or a CSV, then feed them into the config.</p></div><div class="card"><h3>Health at a glance</h3><p>Status and health report nodes, pods, services and VMs, and several commands accept --json for scripting.</p></div><div class="card"><h3>Hand off to the Zyvor suite</h3><p>forge-handoff emits a JSON handoff for Forge Day-2 import. Other Zyvor products install after the cluster is up.</p></div><div class="card"><h3>Optional AI help</h3><p>Ask Zyra in the desktop app is off until you enable it in Settings. It calls the provider you configure (an OpenAI-compatible API, Anthropic or a local Ollama), and the key is kept in the macOS keychain.</p></div></div>
+</section>
+
+<section class="privacy" aria-labelledby="privacy-h">
+  <h2 id="privacy-h">Plain SSH. No cloud account.</h2>
+  <div class="cards"><div class="card"><h3>Over SSH</h3><p>Kubespray and Ansible reach your nodes over SSH. There is no cloud provider requirement; bare metal, VMs and cloud instances all work as long as SSH does.</p></div><div class="card"><h3>Preview before you change</h3><p>A dry-run flag prints what would run, and the storage plan previews before apply.</p></div><div class="card"><h3>One cluster at a time</h3><p>A per-cluster lock stops two runs colliding, and the unlock command clears a stale one after a crash.</p></div></div>
+</section>
+
+<section class="specs" id="specs" aria-labelledby="specs-h">
+  <h2 id="specs-h">Requirements.</h2>
+  <dl class="specs-grid"><div class="spec"><dt>Engine</dt><dd>Kubespray v2.32.0<small>Pinned by KUBESPRAY_VERSION in cluster.conf.</small></dd></div><div class="spec"><dt>Kubernetes</dt><dd>v1.36.4 by default<small>Set KUBE_VERSION in cluster.conf.</small></dd></div><div class="spec"><dt>Container manager</dt><dd>Podman, containerd or Docker<small>Podman is the default.</small></dd></div><div class="spec"><dt>CNI</dt><dd>Cilium, Calico, Flannel or kube-ovn<small>Cilium is the default.</small></dd></div><div class="spec"><dt>Nodes</dt><dd>Linux, reachable over SSH<small>Bare metal, VMs or cloud instances.</small></dd></div><div class="spec"><dt>Your Mac</dt><dd>Apple Silicon, macOS 11 or later<small>Release artifacts are built for arm64.</small></dd></div><div class="spec"><dt>Mac tooling</dt><dd>bash 5, Python 3.11+, Ansible, kubectl, helm<small>Installed with Homebrew; the product documents a setup script.</small></dd></div><div class="spec"><dt>Version</dt><dd>0.2.0<small>Desktop and CLI.</small></dd></div></dl>
+  <div class="limit" role="note"><h3>Stated plainly</h3><p>HyperCluster is closed source: this repository holds customer documentation, and the notarized Desktop app is on the releases page as a free 30-day trial. It is Apple Silicon only and has not been tested on Intel Macs. macOS may show a Gatekeeper prompt on first launch of the desktop app; the <a href="https://github.com/zyvorai/hypercluster#first-launch--gatekeeper-prompt">README</a> shows how to continue. Cluster nodes need internet access during deploy to pull images.</p></div>
+</section>
+
+<section class="steps" id="start" aria-labelledby="steps-h">
+  <h2 id="steps-h">From request to running cluster.</h2>
+  <ol><li><h3>Download the app</h3><p>Get the <a href="https://github.com/zyvorai/hypercluster/releases/tag/desktop-v0.2.0">notarized DMG</a>, drag Hypercluster to Applications and accept the licence in the app: the 30-day trial starts on your Mac. Prefer a walkthrough? <a href="https://zyvor.dev/contact">Book a demo</a>.</p></li><li><h3>Describe the cluster</h3><p>Run <code>hypercluster wizard</code> to write cluster.conf, or edit it by hand, then <code>hypercluster preflight</code> to check your tools and SSH access to every node.</p></li><li><h3>Deploy and connect</h3><p>Run <code>hypercluster deploy</code>, then <code>hypercluster fetch-kubeconfig</code>. Next: <a href="https://github.com/zyvorai/hypercluster/blob/main/docs/customer/getting-started.md">Getting started</a>, <a href="https://github.com/zyvorai/hypercluster/blob/main/docs/customer/admin-basics.md">Admin basics</a>.</p></li></ol>
+  <div class="sha"><p>The core flow</p><pre><code>hypercluster wizard           # write cluster.conf
+hypercluster preflight        # tools and SSH to every node
+hypercluster deploy           # Kubespray cluster.yml over SSH
+hypercluster fetch-kubeconfig # admin.conf from the first control-plane node</code></pre></div>
+<p class="cta" style="margin-top:28px"><a class="btn primary" href="https://zyvor.dev/contact">Book a demo</a><a class="textlink" href="https://github.com/zyvorai/hypercluster/releases/tag/desktop-v0.2.0">Download the 30-day trial</a><a class="textlink" href="https://github.com/zyvorai/hypercluster/blob/main/docs/customer/README.md">Customer manual</a></p>
+</section>
+
+<section class="pricing" id="pricing" aria-labelledby="pricing-h">
+  <div class="inner">
+  <h2 id="pricing-h" style="text-align:left">Licence and pricing.</h2>
+  <p class="lead">HyperCluster is closed source under the Zyvor Production License v1.0. A paid licence is needed to run it from Zyvor AI Labs Private Limited: <b>USD 151 per node per year worldwide (excl. tax), or INR 14,999 in India (incl. 18% GST)</b>. Desktop for Mac is USD 101 / INR 9,999 per seat per year; a team licence (5 seats, 25 nodes) is USD 504 / INR 49,999 per year. The 30-day trial is free.</p>
+<p class="fine">Prices: INR incl. 18% GST in India; US dollars excl. tax elsewhere (VAT, GST or sales tax added where applicable). Pay online by UPI, card or netbanking where a buy page exists; international cards work (charged in rupees); or request a US-dollar invoice by bank transfer. Buy / get a quote: <a href="https://zyvor.dev/buy">zyvor.dev/buy</a>. Custom pricing: contact <a href="mailto:sales@zyvor.dev">sales@zyvor.dev</a>.</p>
+<p class="fine">Plans and prices are on the <a href="https://zyvor.dev/hypercluster/pricing">HyperCluster pricing page</a>. For a licence key or a quote, write to <a href="mailto:sales@zyvor.dev">sales@zyvor.dev</a>. <a href="https://github.com/zyvorai/hypercluster/blob/main/LICENSE">Read the licence</a>.</p>
+  </div>
+</section>
+
+<section class="faq" id="faq" aria-labelledby="faq-h">
+  <h2 id="faq-h">Questions, answered.</h2>
+  <details><summary>Is HyperCluster open source?</summary><p>No. It is closed source. This repository contains customer documentation only, under the Zyvor Production License v1.0.</p></details>
+<details><summary>Can I download it?</summary><p>Yes: the notarized Desktop app for Apple Silicon is on the <a href="https://github.com/zyvorai/hypercluster/releases/tag/desktop-v0.2.0">releases page</a> as a free 30-day trial. When the trial ends it keeps working; a licence key keeps you licensed and supported.</p></details>
+<details><summary>How is it different from running Kubespray myself?</summary><p>It runs Kubespray for you. It pins a Kubespray release, generates the inventory and group_vars from cluster.conf, runs the cluster, scale and upgrade playbooks, and fetches the kubeconfig. The engine underneath is still Kubespray.</p></details>
+<details><summary>Do I need a cloud account?</summary><p>No. There is no cloud provider requirement. Everything runs over SSH to your Linux nodes.</p></details>
+<details><summary>Can it build lab clusters too?</summary><p>Yes. Set the distribution to k3s in cluster.conf for a lightweight cluster with Cilium, cert-manager, MetalLB and KubeVirt with CDI.</p></details>
+<details><summary>Does it use AI?</summary><p>Only if you turn it on. Ask Zyra in the desktop app is disabled by default. When enabled it calls the provider you configure, which can be a local Ollama.</p></details>
+<details><summary>What does it cost?</summary><p>See the <a href="https://zyvor.dev/hypercluster/pricing">pricing page</a>, or ask <a href="mailto:sales@zyvor.dev">sales@zyvor.dev</a>.</p></details>
+<details><summary>Which Mac do I need?</summary><p>An Apple Silicon Mac. Release artifacts are built for arm64.</p></details>
+</section>
+</main>
+<footer class="footer">
+  <p><strong>HyperCluster</strong> · Documentation only. HyperCluster is closed source.</p>
+  <p class="links"><a href="https://github.com/zyvorai/hypercluster/blob/main/docs/customer/README.md">Customer manual</a><a href="https://zyvor.dev/hypercluster/pricing">Pricing</a><a href="https://zyvor.dev/contact">Book a demo</a><a href="https://github.com/zyvorai/hypercluster">GitHub</a><a href="https://github.com/zyvorai/hypercluster/blob/main/LICENSE">LICENSE</a><a href="mailto:sales@zyvor.dev">sales@zyvor.dev</a></p>
+  <p>© ZYVORAI LABS PRIVATE LIMITED · <a href="https://zyvor.dev">zyvor.dev</a> · Zyvor Production License v1.0</p>
+</footer>
+</body>
+</html>
