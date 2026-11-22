@@ -28,6 +28,7 @@
 <meta name="twitter:image" content="https://zyvorai.github.io/hypercluster/social/og.png">
 <meta name="twitter:image:alt" content="HyperCluster: Kubernetes on your own metal. From one file. A diagram shows cluster.conf flowing into hypercluster, then Kubespray, then Linux nodes over SSH.">
 <link rel="stylesheet" href="assets/landing.css">
+<link rel="stylesheet" href="assets/zyvor-buyer.css">
 <style>:root{--accent-btn:#0071e3;--accent-ink:#0071e3;--accent-grad-a:#2997ff;--accent-grad-b:#0071e3}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--accent-ink:#2997ff}}:root[data-theme="dark"]{--accent-ink:#2997ff}</style>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"HyperCluster","applicationCategory":"DeveloperApplication","operatingSystem":"macOS (Apple Silicon) client; Linux cluster nodes","softwareVersion":"0.2.0","downloadUrl":"https://github.com/zyvorai/hypercluster/releases/tag/desktop-v0.2.0","url":"https://zyvorai.github.io/hypercluster/","description":"HyperCluster: Kubernetes cluster lifecycle for bare metal and private cloud. A Kubespray-based CLI and the HyperCluster Desktop macOS app. Preflight, deploy, scale, upgrade and kubeconfig over SSH from one cluster.conf. Closed source; documentation in this repository.","image":"https://zyvorai.github.io/hypercluster/social/og.png","publisher":{"@type":"Organization","name":"ZYVORAI LABS PRIVATE LIMITED","url":"https://zyvor.dev"}}</script>
 </head>
@@ -45,9 +46,22 @@
   <h1 id="top">HyperCluster</h1>
   <p class="tagline">Kubernetes on your own metal. From one file.</p>
   <p class="promise"><strong>Preflight, deploy, scale, upgrade and kubeconfig, over SSH, from a single cluster.conf.</strong> HyperCluster wraps Kubespray for bare metal and private cloud. You describe the cluster once; it pins Kubespray, generates the inventory and group_vars, runs the playbooks over SSH and hands you a kubeconfig. A command-line tool and a macOS desktop app drive the same engine.</p>
-  <p class="cta"><a class="btn primary" href="https://zyvor.dev/contact">Book a demo</a><a class="textlink" href="https://github.com/zyvorai/hypercluster/releases/tag/desktop-v0.2.0">Download the 30-day trial</a></p>
-  <p class="fine">Version 0.2.0 · Kubespray v2.32.0 · Mac app for Apple Silicon (notarized DMG) · free 30-day trial · never locks you out when it ends</p>
+  <div class="buyer" role="group" aria-label="Get HyperCluster Desktop">
+    <div class="actions">
+      <a class="btn primary" href="https://github.com/zyvorai/hypercluster/releases/download/desktop-v0.2.0/Hypercluster-0.2.0-arm64.dmg">Download HyperCluster Desktop 0.2.0</a>
+      <a class="btn ghost" href="https://zyvor.dev/contact?intent=trial&amp;product=hypercluster" rel="noopener">Ask for a 30-day trial</a>
+      <a class="btn ghost" href="https://zyvor.dev/contact?intent=sales&amp;product=hypercluster" rel="noopener">Contact sales</a>
+    </div>
+    <p class="sub">Hypercluster-0.2.0-arm64.dmg &middot; macOS, Apple silicon &middot; <a href="https://zyvor.dev/pricing" rel="noopener">See current prices</a> &middot; <a href="https://github.com/zyvorai/hypercluster/releases/tag/desktop-v0.2.0">All downloads</a></p>
+    <p class="trust"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg><span><strong>Verified by Apple:</strong> Developer ID signed and notarized. This applies to the Mac Desktop app DMG only.</span></p>
+    <ul class="reqs"><li>Needs an Apple silicon Mac. The 30-day trial also starts in the app when you accept the licence, and the app never locks you out when it ends.</li></ul>
+  </div>
   <figure class="shot hero-shot"><picture><img src="assets/img/hero-img-light-1200.webp" srcset="assets/img/hero-img-light-1200.webp 1200w" sizes="(min-width:1080px) 1040px, 100vw" width="1600" height="740" alt="A diagram of the HyperCluster flow: a cluster.conf file with the cluster name, node IPs, SSH user, Kubernetes version and CNI, then the hypercluster wrapper, then Kubespray, then control-plane and worker Linux nodes reached over SSH." fetchpriority="high" decoding="async"></picture><figcaption>How it works: cluster.conf, then hypercluster, then Kubespray, then your nodes over SSH. A diagram, not a screenshot.</figcaption></figure>
+</section>
+
+<section class="outcomes" aria-labelledby="outcomes-h">
+  <h2 id="outcomes-h">Run Kubernetes on your own servers, without the wiring.</h2>
+  <ul class="tiles"><li class="tile"><h3>Describe the cluster once</h3><p>Nodes, SSH access, Kubernetes version, container manager and CNI live in one cluster.conf file.</p></li><li class="tile"><h3>Use the servers you already have</h3><p>There is no cloud provider requirement. Everything runs over SSH to your Linux nodes.</p></li><li class="tile"><h3>Get a working kubeconfig</h3><p>HyperCluster runs preflight checks, deploys with Kubespray, and fetches the admin kubeconfig from the first control-plane node.</p></li></ul>
 </section>
 
 <section class="band" aria-label="Overview">
@@ -85,16 +99,14 @@
 hypercluster preflight        # tools and SSH to every node
 hypercluster deploy           # Kubespray cluster.yml over SSH
 hypercluster fetch-kubeconfig # admin.conf from the first control-plane node</code></pre></div>
-<p class="cta" style="margin-top:28px"><a class="btn primary" href="https://zyvor.dev/contact">Book a demo</a><a class="textlink" href="https://github.com/zyvorai/hypercluster/releases/tag/desktop-v0.2.0">Download the 30-day trial</a><a class="textlink" href="https://github.com/zyvorai/hypercluster/blob/main/docs/customer/README.md">Customer manual</a></p>
+<p class="cta" style="margin-top:28px"><a class="btn primary" href="https://github.com/zyvorai/hypercluster/releases/download/desktop-v0.2.0/Hypercluster-0.2.0-arm64.dmg">Download HyperCluster Desktop 0.2.0</a><a class="textlink" href="https://github.com/zyvorai/hypercluster/blob/main/docs/customer/README.md">Customer manual</a></p>
 </section>
 
-<section class="pricing" id="pricing" aria-labelledby="pricing-h">
-  <div class="inner">
-  <h2 id="pricing-h" style="text-align:left">Licence and pricing.</h2>
-  <p class="lead">HyperCluster is closed source under the Zyvor Production License v1.0. A paid licence is needed to run it from Zyvor AI Labs Private Limited: <b>USD 151 per node per year worldwide (excl. tax), or INR 14,999 in India (incl. 18% GST)</b>. Desktop for Mac is USD 101 / INR 9,999 per seat per year; a team licence (5 seats, 25 nodes) is USD 504 / INR 49,999 per year. The 30-day trial is free.</p>
-<p class="fine">Prices: INR incl. 18% GST in India; US dollars excl. tax elsewhere (VAT, GST or sales tax added where applicable). Pay online by UPI, card or netbanking where a buy page exists; international cards work (charged in rupees); or request a US-dollar invoice by bank transfer. Buy / get a quote: <a href="https://zyvor.dev/buy">zyvor.dev/buy</a>. Custom pricing: contact <a href="mailto:sales@zyvor.dev">sales@zyvor.dev</a>.</p>
-<p class="fine">Plans and prices are on the <a href="https://zyvor.dev/hypercluster/pricing">HyperCluster pricing page</a>. For a licence key or a quote, write to <a href="mailto:sales@zyvor.dev">sales@zyvor.dev</a>. <a href="https://github.com/zyvorai/hypercluster/blob/main/LICENSE">Read the licence</a>.</p>
-  </div>
+<section class="buy-pointer" id="pricing" aria-labelledby="pricing-h">
+  <h2 id="pricing-h">Prices and licenses</h2>
+  <p>Current prices are on zyvor.dev. Online purchase for HyperCluster is not open yet, so please contact sales for a licence key or a quote. The 30-day trial is free.</p>
+  <p class="cta"><a class="btn primary" href="https://zyvor.dev/contact?intent=sales&amp;product=hypercluster" rel="noopener">Contact sales</a><a class="btn ghost" href="https://zyvor.dev/contact?intent=trial&amp;product=hypercluster" rel="noopener">Ask for a 30-day trial</a><a class="textlink" href="https://zyvor.dev/pricing" rel="noopener">See current prices</a></p>
+  <p class="fine">HyperCluster is closed source under the <a href="https://github.com/zyvorai/hypercluster/blob/main/LICENSE">Zyvor Production License v1.0</a>.</p>
 </section>
 
 <section class="faq" id="faq" aria-labelledby="faq-h">
@@ -105,13 +117,13 @@ hypercluster fetch-kubeconfig # admin.conf from the first control-plane node</co
 <details><summary>Do I need a cloud account?</summary><p>No. There is no cloud provider requirement. Everything runs over SSH to your Linux nodes.</p></details>
 <details><summary>Can it build lab clusters too?</summary><p>Yes. Set the distribution to k3s in cluster.conf for a lightweight cluster with Cilium, cert-manager, MetalLB and KubeVirt with CDI.</p></details>
 <details><summary>Does it use AI?</summary><p>Only if you turn it on. Ask Zyra in the desktop app is disabled by default. When enabled it calls the provider you configure, which can be a local Ollama.</p></details>
-<details><summary>What does it cost?</summary><p>See the <a href="https://zyvor.dev/hypercluster/pricing">pricing page</a>, or ask <a href="mailto:sales@zyvor.dev">sales@zyvor.dev</a>.</p></details>
+<details><summary>What does it cost?</summary><p>See the <a href="https://zyvor.dev/pricing" rel="noopener">pricing page</a>, or ask <a href="mailto:sales@zyvor.dev">sales@zyvor.dev</a>.</p></details>
 <details><summary>Which Mac do I need?</summary><p>An Apple Silicon Mac. Release artifacts are built for arm64.</p></details>
 </section>
 </main>
 <footer class="footer">
   <p><strong>HyperCluster</strong> · Documentation only. HyperCluster is closed source.</p>
-  <p class="links"><a href="https://github.com/zyvorai/hypercluster/blob/main/docs/customer/README.md">Customer manual</a><a href="https://zyvor.dev/hypercluster/pricing">Pricing</a><a href="https://zyvor.dev/contact">Book a demo</a><a href="https://github.com/zyvorai/hypercluster">GitHub</a><a href="https://github.com/zyvorai/hypercluster/blob/main/LICENSE">LICENSE</a><a href="mailto:sales@zyvor.dev">sales@zyvor.dev</a></p>
+  <p class="links"><a href="https://github.com/zyvorai/hypercluster/blob/main/docs/customer/README.md">Customer manual</a><a href="https://zyvor.dev/pricing">Pricing</a><a href="https://zyvor.dev/contact">Book a demo</a><a href="https://github.com/zyvorai/hypercluster">GitHub</a><a href="https://github.com/zyvorai/hypercluster/blob/main/LICENSE">LICENSE</a><a href="https://zyvor.dev">zyvor.dev</a><a href="mailto:sales@zyvor.dev">Support: sales@zyvor.dev</a></p>
   <p>© ZYVORAI LABS PRIVATE LIMITED · <a href="https://zyvor.dev">zyvor.dev</a> · Zyvor Production License v1.0</p>
 </footer>
 </body>
