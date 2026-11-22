@@ -1,0 +1,53 @@
+/* Zyvor Pages buyer kit v1. Plain CSS, no fonts, no scripts, no trackers.
+   Layer on top of assets/landing.css (it reuses its tokens: --bg, --text, --dim,
+   --line, --surface, --accent-btn, --on-accent, --link, --focus, --radius).
+   Dark and light follow prefers-color-scheme. Motion respects prefers-reduced-motion.
+   Per product, set only --accent-btn / --accent-ink on :root. See snippet.html. */
+
+/* Buyer panel: the three actions, directly under the hero text */
+.buyer{max-width:760px;margin:32px auto 0;padding:20px;text-align:left;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:0 1px 2px rgba(0,0,0,.06),0 18px 40px -22px rgba(0,0,0,.35)}
+.buyer .actions{display:grid;gap:12px;grid-template-columns:1fr}
+.buyer .actions .btn{width:100%;font-size:17px;min-height:48px;padding:0 20px;text-align:center}
+.buyer .actions .btn.primary{font-weight:600}
+.buyer .sub{margin:12px 0 0;font-size:14px;color:var(--dim);text-align:center}
+.buyer .sub a{color:var(--link)}
+.buyer .trust{display:flex;gap:10px;align-items:flex-start;margin:16px 0 0;padding-top:16px;border-top:1px solid var(--line);font-size:15px;line-height:1.4}
+.buyer .trust svg{flex:none;width:20px;height:20px;margin-top:1px;color:var(--accent-btn)}
+.buyer .reqs{margin:8px 0 0;padding-left:30px;font-size:14px;color:var(--dim)}
+@media (min-width:640px){
+  .buyer{padding:24px}
+  .buyer .actions{grid-template-columns:1.3fr 1fr 1fr}
+}
+.buyer .btn.ghost{color:var(--link)}
+
+/* Outcome tiles: three benefits, each a plain sentence */
+.outcomes{max-width:var(--maxw);margin:0 auto;padding:72px 20px 0}
+.outcomes h2{margin:0 0 28px;text-align:center;font-size:clamp(28px,4.2vw,44px);line-height:1.1;font-weight:700;letter-spacing:-.03em;text-wrap:balance}
+.tiles{display:grid;gap:16px;grid-template-columns:1fr;list-style:none;margin:0;padding:0}
+@media (min-width:768px){.tiles{grid-template-columns:repeat(3,1fr)}}
+.tile{background:var(--bg-alt);border:1px solid var(--line);border-radius:var(--radius);padding:28px;border-top:4px solid var(--accent-btn)}
+.tile h3{margin:0 0 10px;font-size:22px;line-height:1.2;font-weight:650;letter-spacing:-.02em}
+.tile p{margin:0;color:var(--dim);font-size:17px;line-height:1.45}
+
+/* Pricing pointer: no prices on this page, the catalog on zyvor.dev is the source */
+.buy-pointer{max-width:760px;margin:0 auto;padding:72px 20px;text-align:center}
+.buy-pointer h2{margin:0 0 12px;font-size:clamp(28px,4.2vw,44px);line-height:1.1;font-weight:700;letter-spacing:-.03em}
+.buy-pointer p{margin:0 auto 8px;max-width:52ch;color:var(--dim);font-size:18px}
+.buy-pointer .cta{margin-top:24px}
+
+/* Footer helpers */
+.footer .links a{display:inline-flex;align-items:center;min-height:32px}
+
+/* Small screens: keep targets large, avoid horizontal scroll */
+@media (max-width:480px){
+  .hero{padding-top:48px}
+  .hero .icon{width:76px;height:76px}
+  .band{padding-top:72px}
+  .buyer{margin-left:-4px;margin-right:-4px}
+}
+@media (prefers-reduced-motion:reduce){.buyer,.tile{transition:none}}
+@media (forced-colors:active){.tile{border:1px solid CanvasText}.buyer{border:1px solid CanvasText}}
+/* HyperCluster: the 12-letter name must fit a 375px screen */
+@media (max-width:480px){.hero h1{font-size:clamp(40px,13.5vw,64px)}}
