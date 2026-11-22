@@ -89,7 +89,7 @@
 <section class="specs" id="specs" aria-labelledby="specs-h">
   <h2 id="specs-h">Requirements.</h2>
   <dl class="specs-grid"><div class="spec"><dt>Engine</dt><dd>Kubespray v2.32.0<small>Pinned by KUBESPRAY_VERSION in cluster.conf.</small></dd></div><div class="spec"><dt>Kubernetes</dt><dd>v1.36.4 by default<small>Set KUBE_VERSION in cluster.conf.</small></dd></div><div class="spec"><dt>Container manager</dt><dd>Podman, containerd or Docker<small>Podman is the default.</small></dd></div><div class="spec"><dt>CNI</dt><dd>Cilium, Calico, Flannel or kube-ovn<small>Cilium is the default.</small></dd></div><div class="spec"><dt>Nodes</dt><dd>Linux, reachable over SSH<small>Bare metal, VMs or cloud instances.</small></dd></div><div class="spec"><dt>Your Mac</dt><dd>Apple Silicon, macOS 11 or later<small>Release artifacts are built for arm64.</small></dd></div><div class="spec"><dt>Mac tooling</dt><dd>bash 5, Python 3.11+, Ansible, kubectl, helm<small>Installed with Homebrew; the product documents a setup script.</small></dd></div><div class="spec"><dt>Version</dt><dd>0.2.0<small>Desktop and CLI.</small></dd></div></dl>
-  <div class="limit" role="note"><h3>Stated plainly</h3><p>HyperCluster is closed source: this repository holds customer documentation, and the notarized Desktop app is on the releases page as a free 30-day trial. It is Apple Silicon only and has not been tested on Intel Macs. macOS may show a Gatekeeper prompt on first launch of the desktop app; the <a href="https://github.com/zyvorai/hypercluster#first-launch--gatekeeper-prompt">README</a> shows how to continue. Cluster nodes need internet access during deploy to pull images.</p></div>
+  <div class="limit" role="note"><h3>Stated plainly</h3><p>HyperCluster is closed source: this repository holds customer documentation, and the notarized Desktop app is on the releases page as a 30-day trial. It is Apple Silicon only and has not been tested on Intel Macs. macOS may show a Gatekeeper prompt on first launch of the desktop app; the <a href="https://github.com/zyvorai/hypercluster#first-launch--gatekeeper-prompt">README</a> shows how to continue. Cluster nodes need internet access during deploy to pull images.</p></div>
 </section>
 
 <section class="steps" id="start" aria-labelledby="steps-h">
@@ -104,15 +104,15 @@ hypercluster fetch-kubeconfig # admin.conf from the first control-plane node</co
 
 <section class="buy-pointer" id="pricing" aria-labelledby="pricing-h">
   <h2 id="pricing-h">Prices and licenses</h2>
-  <p>Current prices are on zyvor.dev. Online purchase for HyperCluster is not open yet, so please contact sales for a licence key or a quote. The 30-day trial is free.</p>
+  <p>Current prices are on zyvor.dev. Online purchase for HyperCluster is not open yet, so please contact sales for a licence key or a quote. A 30-day trial is available on request from sales@zyvor.dev (a paid evaluation Order at no charge).</p>
   <p class="cta"><a class="btn primary" href="https://zyvor.dev/contact?intent=sales&amp;product=hypercluster" rel="noopener">Contact sales</a><a class="btn ghost" href="https://zyvor.dev/contact?intent=trial&amp;product=hypercluster" rel="noopener">Ask for a 30-day trial</a><a class="textlink" href="https://zyvor.dev/pricing" rel="noopener">See current prices</a></p>
-  <p class="fine">HyperCluster is closed source under the <a href="https://github.com/zyvorai/hypercluster/blob/main/LICENSE">Zyvor Production License v1.0</a>.</p>
+  <p class="fine">HyperCluster is closed source under the <a href="https://github.com/zyvorai/hypercluster/blob/main/LICENSE">Zyvor Production Licence v2.0</a>.</p>
 </section>
 
 <section class="faq" id="faq" aria-labelledby="faq-h">
   <h2 id="faq-h">Questions, answered.</h2>
-  <details><summary>Is HyperCluster open source?</summary><p>No. It is closed source. This repository contains customer documentation only, under the Zyvor Production License v1.0.</p></details>
-<details><summary>Can I download it?</summary><p>Yes: the notarized Desktop app for Apple Silicon is on the <a href="https://github.com/zyvorai/hypercluster/releases/tag/desktop-v0.2.0">releases page</a> as a free 30-day trial. When the trial ends it keeps working; a licence key keeps you licensed and supported.</p></details>
+  <details><summary>Is HyperCluster open source?</summary><p>No. It is closed source. This repository contains customer documentation only, under the Zyvor Production Licence v2.0.</p></details>
+<details><summary>Can I download it?</summary><p>Yes: the notarized Desktop app for Apple Silicon is on the <a href="https://github.com/zyvorai/hypercluster/releases/tag/desktop-v0.2.0">releases page</a> as a 30-day trial. When the trial ends it keeps working; a licence key keeps you licensed and supported.</p></details>
 <details><summary>How is it different from running Kubespray myself?</summary><p>It runs Kubespray for you. It pins a Kubespray release, generates the inventory and group_vars from cluster.conf, runs the cluster, scale and upgrade playbooks, and fetches the kubeconfig. The engine underneath is still Kubespray.</p></details>
 <details><summary>Do I need a cloud account?</summary><p>No. There is no cloud provider requirement. Everything runs over SSH to your Linux nodes.</p></details>
 <details><summary>Can it build lab clusters too?</summary><p>Yes. Set the distribution to k3s in cluster.conf for a lightweight cluster with Cilium, cert-manager, MetalLB and KubeVirt with CDI.</p></details>
@@ -124,7 +124,7 @@ hypercluster fetch-kubeconfig # admin.conf from the first control-plane node</co
 <footer class="footer">
   <p><strong>HyperCluster</strong> · Documentation only. HyperCluster is closed source.</p>
   <p class="links"><a href="https://github.com/zyvorai/hypercluster/blob/main/docs/customer/README.md">Customer manual</a><a href="https://zyvor.dev/pricing">Pricing</a><a href="https://zyvor.dev/contact">Book a demo</a><a href="https://github.com/zyvorai/hypercluster">GitHub</a><a href="https://github.com/zyvorai/hypercluster/blob/main/LICENSE">LICENSE</a><a href="https://zyvor.dev">zyvor.dev</a><a href="mailto:sales@zyvor.dev">Support: sales@zyvor.dev</a></p>
-  <p>© ZYVORAI LABS PRIVATE LIMITED · <a href="https://zyvor.dev">zyvor.dev</a> · Zyvor Production License v1.0</p>
+  <p>© ZYVORAI LABS PRIVATE LIMITED · <a href="https://zyvor.dev">zyvor.dev</a> · Zyvor Production Licence v2.0</p>
 </footer>
 </body>
 </html>
