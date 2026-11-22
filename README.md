@@ -15,7 +15,7 @@ Cluster lifecycle for bare metal and private cloud: preflight, deploy, scale, up
   <a href="docs/customer/README.md">Customer manual</a>
 </p>
 
-> **Closed source.** This repository holds the customer documentation for HyperCluster; the source is private. The notarized Desktop app for Apple Silicon is a free 30-day trial on the [releases page](https://github.com/zyvorai/hypercluster/releases/tag/desktop-v0.2.0).
+> **Closed source.** This repository holds the customer documentation for HyperCluster; the source is private. The notarized Desktop app for Apple Silicon is a 30-day trial on the [releases page](https://github.com/zyvorai/hypercluster/releases/tag/desktop-v0.2.0).
 
 ---
 
@@ -93,7 +93,7 @@ This only needs to be done once. The release is notarized, so you should normall
 
 ### Trial period
 
-HyperCluster starts a **30-day free trial** when you accept the licence in the app. Reinstalling does not restart it.
+HyperCluster starts a **30-day trial** when you accept the licence in the app. Reinstalling does not restart it.
 
 **Hypercluster never locks you out.** When the trial ends, or a licence key expires, every feature keeps working; the app only shows that it is unlicensed. A licence key keeps you in good standing, with updates and support. To enter one, click the licence badge at the bottom-right of the window, paste the key (it starts with `ZYV1.`) and choose **Activate**. Keys are checked on your Mac against a public key built into the app; nothing is sent to Zyvor. Prices and plans are on the [pricing page](https://zyvor.dev/hypercluster/pricing); for a key or a quote write to [sales@zyvor.dev](mailto:sales@zyvor.dev).
 
@@ -195,7 +195,7 @@ Remove `/Applications/Hypercluster.app`. The distribution folder includes `Unins
 
 ## Licence and pricing
 
-HyperCluster is closed source under the [Zyvor Production License v1.0](LICENSE): a paid licence is needed to run it from Zyvor AI Labs Private Limited: USD 151 per node per year worldwide (excl. tax), or INR 14,999 per node per year in India (incl. 18% GST). The Desktop app for Mac is USD 101 / INR 9,999 per seat per year (clusters up to 5 nodes), and a team licence for up to 5 seats and 25 nodes is USD 504 / INR 49,999 per year, by invoice. A 30-day trial is free (the Desktop app starts it on acceptance; a 30-day trial key is available for production evaluation). Prices: INR incl. 18% GST in India; US dollars excl. tax elsewhere (VAT, GST or sales tax added where applicable). Pay online by UPI, card or netbanking where a buy page exists; international cards work (charged in rupees). Orders of USD 5,000 or more and quotes are invoiced in USD through Skydo. Custom pricing: contact [sales@zyvor.dev](mailto:sales@zyvor.dev). Buy or get a quote: [zyvor.dev/buy](https://zyvor.dev/buy#hypercluster). Plans and prices are also on the [pricing page](https://zyvor.dev/hypercluster/pricing).
+HyperCluster is closed source under the [Zyvor Production Licence v2.0](LICENSE): a paid licence is needed to run it from Zyvor AI Labs Private Limited: USD 151 per node per year worldwide (excl. tax), or INR 14,999 per node per year in India (incl. 18% GST). The Desktop app for Mac is USD 101 / INR 9,999 per seat per year (clusters up to 5 nodes), and a team licence for up to 5 seats and 25 nodes is USD 504 / INR 49,999 per year, by invoice. The Desktop app starts a built-in 30-day trial on acceptance; for other trials, a 30-day trial is available on request from sales@zyvor.dev (a paid evaluation Order at no charge). Prices: INR incl. 18% GST in India; US dollars excl. tax elsewhere (VAT, GST or sales tax added where applicable). Pay online by UPI, card or netbanking where a buy page exists; international cards work (charged in rupees). Orders of USD 5,000 or more and quotes are invoiced in USD through Skydo. Custom pricing: contact [sales@zyvor.dev](mailto:sales@zyvor.dev). Buy or get a quote: [zyvor.dev/buy](https://zyvor.dev/buy#hypercluster). Plans and prices are also on the [pricing page](https://zyvor.dev/hypercluster/pricing).
 
 ## Contact
 
